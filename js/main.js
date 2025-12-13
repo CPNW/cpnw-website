@@ -3,20 +3,22 @@ document.getElementById('y').textContent = new Date().getFullYear();
 
 (function(){
   const root = document.documentElement;
-  const btn = document.getElementById('themeToggle');
-  const icon = document.getElementById('themeIcon');
-  const label = document.getElementById('themeLabel');
+  const toggles = Array.from(document.querySelectorAll('[data-theme-toggle], #themeToggle'));
 
   const STORAGE_KEY = 'cpnw-theme';
   const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
 
   function applyTheme(theme){
     root.setAttribute('data-bs-theme', theme);
-    if (icon && label){
-      const isLight = theme === 'light';
-      icon.textContent = isLight ? '☀️' : '🌙';
-      label.textContent = isLight ? 'Light' : 'Dark';
-    }
+    toggles.forEach(btn => {
+      const icon = btn.querySelector('[data-theme-icon], #themeIcon');
+      const label = btn.querySelector('[data-theme-label], #themeLabel');
+      if (icon && label){
+        const isLight = theme === 'light';
+        icon.textContent = isLight ? '☀️' : '🌙';
+        label.textContent = isLight ? 'Light' : 'Dark';
+      }
+    });
   }
 
   let saved = null;
@@ -24,14 +26,14 @@ document.getElementById('y').textContent = new Date().getFullYear();
   const initial = saved || (prefersLight ? 'light' : 'dark');
   applyTheme(initial);
 
-  if (btn){
+  toggles.forEach(btn => {
     btn.addEventListener('click', function(){
       const current = root.getAttribute('data-bs-theme') || 'dark';
       const next = current === 'light' ? 'dark' : 'light';
       applyTheme(next);
       try{ localStorage.setItem(STORAGE_KEY, next); }catch(e){}
     });
-  }
+  });
 })();
 
 // Ad rotator (3 slides, 15s each)
