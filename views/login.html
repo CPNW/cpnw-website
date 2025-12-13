@@ -17,7 +17,20 @@
         ></button>
       </div>
       <div class="modal-body">
-        <form>
+        <div
+          class="alert alert-dismissible fade show d-none"
+          role="alert"
+          data-login-status
+        >
+          <span data-login-status-text></span>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
+        </div>
+        <form id="loginForm">
           <div class="mb-3">
             <label class="form-label" for="loginEmail">Email address</label>
             <input

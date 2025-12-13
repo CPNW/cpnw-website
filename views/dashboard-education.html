@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Education Dashboard</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a
+          class="navbar-brand d-flex align-items-center"
+          href="../index.html"
+          aria-label="CPNW Home"
+        >
+          <img
+            class="cpnw-logo"
+            src="../images/CPNWLogoo.png"
+            alt="Clinical Placements Northwest"
+          />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="../index.html">Landing</a>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-12 col-lg-3">
+          <aside class="cpnw-nav-panel">
+            <div class="cpnw-nav-section">
+              <div class="cpnw-nav-title">Requirements</div>
+              <a class="cpnw-nav-link" href="#">
+                <span class="cpnw-nav-pill"></span>
+                Requirements
+              </a>
+            </div>
+            <div class="cpnw-nav-section">
+              <div class="cpnw-nav-title">My Account</div>
+              <div class="cpnw-nav-sub d-grid gap-1">
+                <a class="cpnw-nav-link" href="#">My Profile</a>
+                <a class="cpnw-nav-link" href="#">Security Settings</a>
+                <a class="cpnw-nav-link" href="#">My Demographics</a>
+              </div>
+            </div>
+            <div class="cpnw-nav-section">
+              <div class="cpnw-nav-title">Admin</div>
+              <div class="cpnw-nav-sub d-grid gap-1">
+                <a class="cpnw-nav-link" href="#">Review</a>
+                <a class="cpnw-nav-link" href="#">Assignments</a>
+                <a class="cpnw-nav-link" href="#">Reports</a>
+                <a class="cpnw-nav-link" href="#">Users</a>
+                <a class="cpnw-nav-link" href="#">Background + WATCH Reports</a>
+              </div>
+            </div>
+          </aside>
+        </div>
+        <div class="col-12 col-lg-9">
+          <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+              <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Education</p>
+              <h1 class="h3 fw-semibold mb-1">Welcome back, Alex Educator</h1>
+              <p class="text-body-secondary mb-0">Here’s the latest on cohorts, placements, and compliance.</p>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-outline-secondary btn-cpnw btn-sm">Invite faculty</button>
+              <button class="btn btn-cpnw btn-cpnw-primary btn-sm">Create rotation</button>
+            </div>
+          </div>
+
+          <div class="row g-3 g-lg-4 mb-4">
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="cpnw-shell p-3 h-100">
+                <p class="text-body-secondary small mb-1">Students ready</p>
+                <div class="h2 mb-0">18</div>
+                <p class="small text-success mb-0">+3 since yesterday</p>
+              </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="cpnw-shell p-3 h-100">
+                <p class="text-body-secondary small mb-1">Awaiting documents</p>
+                <div class="h2 mb-0">7</div>
+                <p class="small text-warning mb-0">4 approaching deadline</p>
+              </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="cpnw-shell p-3 h-100">
+                <p class="text-body-secondary small mb-1">Upcoming rotations</p>
+                <div class="h2 mb-0">5</div>
+                <p class="small text-body-secondary mb-0">Next starts in 9 days</p>
+              </div>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+              <div class="cpnw-shell p-3 h-100">
+                <p class="text-body-secondary small mb-1">Expiring items</p>
+                <div class="h2 mb-0">12</div>
+                <p class="small text-danger mb-0">Action needed this week</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 g-lg-4 mb-4">
+            <div class="col-12 col-xl-6">
+              <div class="cpnw-shell p-3 p-md-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h2 class="h5 fw-bold mb-0">Notifications</h2>
+                    <p class="text-body-secondary small mb-0">Latest alerts for your cohorts and accounts.</p>
+                  </div>
+                  <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="#">View all</a>
+                </div>
+                <ul class="list-unstyled d-grid gap-2 mb-0">
+                  <li class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-semibold">4 documents pending approval</div>
+                      <p class="small text-body-secondary mb-1">Spring BSN cohort • Due in 2 days</p>
+                      <a href="#" class="small text-decoration-none">Review documents</a>
+                    </div>
+                    <span class="badge text-bg-warning text-dark">Action</span>
+                  </li>
+                  <li class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-semibold">Rotation change requested</div>
+                      <p class="small text-body-secondary mb-1">Advanced Practicum • Starts Mar 18</p>
+                      <a href="#" class="small text-decoration-none">View request</a>
+                    </div>
+                    <span class="badge text-bg-secondary">Review</span>
+                  </li>
+                  <li class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-semibold">All caught up</div>
+                      <p class="small text-body-secondary mb-1">No additional alerts.</p>
+                    </div>
+                    <span class="badge text-bg-success">Clear</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="col-12 col-xl-6">
+              <div class="cpnw-shell p-3 p-md-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h2 class="h5 fw-bold mb-0">Tasks</h2>
+                    <p class="text-body-secondary small mb-0">Quick actions for this week.</p>
+                  </div>
+                </div>
+                <ul class="list-unstyled d-grid gap-2 mb-0">
+                  <li class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-semibold">Review expiring immunizations</div>
+                      <p class="text-body-secondary small mb-1">12 items across 3 cohorts</p>
+                      <a href="#" class="small text-decoration-none">View details</a>
+                    </div>
+                    <span class="badge text-bg-danger">Due</span>
+                  </li>
+                  <li class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-semibold">Send onboarding reminder</div>
+                      <p class="text-body-secondary small mb-1">4 students need document uploads</p>
+                      <a href="#" class="small text-decoration-none">Send reminders</a>
+                    </div>
+                    <span class="badge text-bg-warning text-dark">This week</span>
+                  </li>
+                  <li class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-semibold">Approve rotation schedule</div>
+                      <p class="text-body-secondary small mb-1">5 rotations start this month</p>
+                      <a href="#" class="small text-decoration-none">Review</a>
+                    </div>
+                    <span class="badge text-bg-secondary">Optional</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 g-lg-4">
+            <div class="col-12">
+              <div class="cpnw-shell p-3 p-md-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h2 class="h5 fw-bold mb-0">Cohort readiness</h2>
+                    <p class="text-body-secondary small mb-0">Top cohorts and their readiness status.</p>
+                  </div>
+                  <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="#">View all</a>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-borderless align-middle mb-0">
+                    <thead class="text-body-secondary small">
+                      <tr>
+                        <th scope="col">Cohort</th>
+                        <th scope="col">Students</th>
+                        <th scope="col">Ready</th>
+                        <th scope="col">Pending</th>
+                        <th scope="col">Expiring</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="fw-semibold">Spring BSN</td>
+                        <td>24</td>
+                        <td><span class="text-success fw-semibold">18</span></td>
+                        <td>4</td>
+                        <td>2</td>
+                      </tr>
+                      <tr>
+                        <td class="fw-semibold">Advanced Practicum</td>
+                        <td>12</td>
+                        <td><span class="text-success fw-semibold">9</span></td>
+                        <td>2</td>
+                        <td>1</td>
+                      </tr>
+                      <tr>
+                        <td class="fw-semibold">Clinical Skills Lab</td>
+                        <td>16</td>
+                        <td><span class="text-success fw-semibold">11</span></td>
+                        <td>3</td>
+                        <td>2</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+</body>
+</html>

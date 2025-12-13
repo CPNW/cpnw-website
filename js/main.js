@@ -63,6 +63,20 @@ document.getElementById('y').textContent = new Date().getFullYear();
 
   let modalEl = null;
   let modalInstance = null;
+  const fakeUsers = [
+    { email: 'edu@example.com', password: 'Password123!', role: 'education', name: 'Alex Educator' },
+    { email: 'student@example.com', password: 'Student123!', role: 'student', name: 'Sam Student' },
+    { email: 'faculty@example.com', password: 'Faculty123!', role: 'faculty', name: 'Fran Faculty' },
+    { email: 'facultyadmin@example.com', password: 'Admin123!', role: 'faculty-admin', name: 'Avery Admin Faculty' },
+    { email: 'health@example.com', password: 'Health123!', role: 'healthcare', name: 'Harper Health' }
+  ];
+  const roleRoutes = {
+    education: 'views/dashboard-education.html',
+    student: 'views/dashboard-student.html',
+    faculty: 'views/dashboard-student.html', // same experience as student
+    'faculty-admin': 'views/dashboard-faculty-admin.html',
+    healthcare: 'views/dashboard-healthcare.html'
+  };
 
   const fallbackHTML = `
     <div
@@ -84,7 +98,20 @@ document.getElementById('y').textContent = new Date().getFullYear();
             ></button>
           </div>
           <div class="modal-body">
-            <form>
+            <div
+              class="alert alert-dismissible fade show d-none"
+              role="alert"
+              data-login-status
+            >
+              <span data-login-status-text></span>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
+            </div>
+            <form id="loginForm">
               <div class="mb-3">
                 <label class="form-label" for="loginEmail">Email address</label>
                 <input
@@ -128,6 +155,47 @@ document.getElementById('y').textContent = new Date().getFullYear();
     </div>
   `;
 
+  function attachLoginHandlers(modal){
+    const form = modal.querySelector('#loginForm');
+    const emailInput = modal.querySelector('#loginEmail');
+    const passwordInput = modal.querySelector('#loginPassword');
+    const statusBox = modal.querySelector('[data-login-status]');
+    const statusText = modal.querySelector('[data-login-status-text]');
+    if (!form || !emailInput || !passwordInput || !statusBox || !statusText) return;
+
+    function setStatus(type, message){
+      statusBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+      statusBox.classList.add(`alert-${type}`);
+      statusText.textContent = message;
+    }
+
+    modal.addEventListener('shown.bs.modal', () => {
+      statusBox.classList.add('d-none');
+      form.reset();
+      emailInput.focus();
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim().toLowerCase();
+      const pwd = passwordInput.value;
+      const user = fakeUsers.find(u => u.email.toLowerCase() === email);
+      if (!user || user.password !== pwd){
+        setStatus('danger', 'Invalid email or password.');
+        return;
+      }
+      const target = roleRoutes[user.role];
+      if (!target){
+        setStatus('danger', 'No dashboard available for this role yet.');
+        return;
+      }
+      setStatus('success', `Welcome back, ${user.name}! Redirecting...`);
+      setTimeout(() => {
+        window.location.href = target;
+      }, 900);
+    });
+  }
+
   async function ensureModal(){
     if (modalEl) return;
 
@@ -148,6 +216,7 @@ document.getElementById('y').textContent = new Date().getFullYear();
     document.body.appendChild(modal);
     modalEl = modal;
     modalInstance = new bootstrap.Modal(modalEl);
+    attachLoginHandlers(modalEl);
     modalEl.addEventListener('hidden.bs.modal', () => {
       const form = modalEl.querySelector('form');
       if (form) form.reset();
