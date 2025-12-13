@@ -28,7 +28,15 @@
           />
         </a>
         <div class="d-flex align-items-center gap-2 ms-auto">
-          <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="../index.html">Landing</a>
+          <button
+            id="themeToggle"
+            type="button"
+            class="btn btn-outline-secondary btn-sm btn-cpnw"
+            aria-label="Toggle dark and light mode"
+          >
+            <span class="me-1" aria-hidden="true" id="themeIcon">🌙</span>
+            <span class="fw-bold" id="themeLabel">Dark</span>
+          </button>
           <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
         </div>
       </div>
@@ -170,5 +178,6 @@
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"
   ></script>
+  <script src="../js/main.js"></script>
 </body>
 </html>
