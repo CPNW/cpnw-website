@@ -1,0 +1,61 @@
+<div
+  class="modal fade"
+  id="loginModal"
+  tabindex="-1"
+  aria-labelledby="loginModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="loginModalLabel">Login</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3">
+            <label class="form-label" for="loginEmail">Email address</label>
+            <input
+              type="email"
+              class="form-control"
+              id="loginEmail"
+              name="email"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="loginPassword">Password</label>
+            <input
+              type="password"
+              class="form-control"
+              id="loginPassword"
+              name="password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <div class="d-flex justify-content-end align-items-center mb-3">
+            <a href="#forgot" class="small text-decoration-none">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn btn-cpnw btn-cpnw-primary w-100">
+            Continue
+          </button>
+        </form>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <p class="small m-0">
+          New to CPNW?
+          <a href="#register" class="fw-semibold text-decoration-none"
+            >Create an account</a
+          >
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

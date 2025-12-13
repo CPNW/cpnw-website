@@ -1,0 +1,211 @@
+/*
+  Bootstrap-first approach:
+  - Layout uses Bootstrap grid/utilities/components
+  - Custom CSS ONLY for brand look (colors, hero styling, ad rail styling)
+  - Dark/Light uses Bootstrap 5.3 data-bs-theme
+*/
+
+:root{
+  --cpnw-brand:#14b8a6; /* teal */
+  --cpnw-brand2:#22c55e; /* green accent */
+  --cpnw-focus: 0 0 0 .25rem rgba(20,184,166,.25);
+  --cpnw-radius: 1.25rem;
+  --cpnw-radius2: 1.5rem;
+  --cpnw-shadow: 0 12px 30px rgba(0,0,0,.35);
+}
+
+/* Smooth page background (matches your earlier dark gradient vibe) */
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(1200px 700px at 10% 0%, rgba(20,184,166,.18), transparent 60%),
+    radial-gradient(900px 600px at 95% 20%, rgba(34,197,94,.12), transparent 55%),
+    var(--bs-body-bg);
+}
+
+/* Sticky header glass */
+.cpnw-header{
+  position:sticky;
+  top:0;
+  z-index:1030;
+  backdrop-filter:saturate(140%) blur(10px);
+  border-bottom:1px solid var(--bs-border-color);
+  background: color-mix(in srgb, var(--bs-body-bg) 75%, transparent);
+}
+
+/* Logo image */
+.cpnw-logo{
+  display:block;
+  height:48px;
+  width:auto;
+}
+@media (max-width: 575.98px){
+  .cpnw-logo{height:40px;}
+}
+
+/* Buttons that match the earlier rounded look */
+.btn-cpnw{
+  border-radius: .9rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+.btn-cpnw-primary{
+  border: 0;
+  color: #07101e;
+  background: linear-gradient(135deg, rgba(20,184,166,.95), rgba(34,197,94,.90));
+  box-shadow: 0 14px 30px rgba(20,184,166,.18);
+}
+.btn-cpnw-primary:hover{filter:saturate(1.05) brightness(1.02);}
+
+.btn:focus-visible{box-shadow: var(--cpnw-focus) !important;}
+
+/* Hero panel */
+.cpnw-hero{
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--cpnw-radius2);
+  box-shadow: var(--cpnw-shadow);
+  overflow:hidden;
+  position:relative;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--bs-body-bg) 30%, #0f1b33 70%),
+    color-mix(in srgb, var(--bs-body-bg) 55%, #0f1b33 45%)
+  );
+}
+[data-bs-theme="light"] .cpnw-hero{
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(242,245,251,.92));
+  box-shadow: 0 12px 30px rgba(11,18,32,.10);
+}
+.cpnw-hero::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  background:
+    radial-gradient(900px 400px at 20% 0%, rgba(20,184,166,.30), transparent 60%),
+    radial-gradient(700px 350px at 85% 30%, rgba(34,197,94,.18), transparent 55%);
+  pointer-events:none;
+}
+
+.cpnw-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.45rem .75rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--bs-body-color) 12%, transparent);
+  background: color-mix(in srgb, var(--bs-body-bg) 65%, transparent);
+  color: color-mix(in srgb, var(--bs-body-color) 70%, transparent);
+  font-size: .85rem;
+  width: fit-content;
+}
+.cpnw-dot{
+  width:8px; height:8px; border-radius:999px;
+  background: var(--cpnw-brand);
+  box-shadow: 0 0 0 4px rgba(20,184,166,.12);
+}
+
+/* Hero art */
+.cpnw-hero-art{
+  display:flex;
+  justify-content:center;
+}
+.cpnw-dandelion{
+  max-width:260px;
+  height:auto;
+  filter: drop-shadow(0 12px 20px rgba(0,0,0,.25));
+  opacity:0.9;
+  animation: cpnw-float 12s ease-in-out infinite alternate;
+  transform-origin: 50% 45%;
+}
+@keyframes cpnw-float{
+  0%{transform: translate(-6px, 0px) rotate(0deg) scale(1);}
+  40%{transform: translate(4px, -14px) rotate(-3deg) scale(1.015);}
+  70%{transform: translate(8px, 8px) rotate(3deg) scale(0.99);}
+  100%{transform: translate(-6px, 12px) rotate(-2deg) scale(1.005);}
+}
+@media (prefers-reduced-motion: reduce){
+  .cpnw-dandelion{
+    animation: none;
+  }
+}
+
+/* Card/section shell */
+.cpnw-shell{
+  border:1px solid var(--bs-border-color);
+  border-radius: var(--cpnw-radius2);
+  background: color-mix(in srgb, var(--bs-body-bg) 60%, transparent);
+  box-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+[data-bs-theme="light"] .cpnw-shell{box-shadow: 0 10px 24px rgba(11,18,32,.10);}
+
+/* Ad rail */
+.cpnw-ad{
+  position: sticky;
+  top: 96px;
+  border-radius: var(--cpnw-radius2);
+  border: 1px dashed color-mix(in srgb, var(--bs-body-color) 20%, transparent);
+  background: color-mix(in srgb, var(--bs-body-bg) 70%, transparent);
+  box-shadow: 0 10px 24px rgba(0,0,0,.22);
+}
+.cpnw-ad-rotator{
+  position: relative;
+  height: 320px;
+  border-radius: 1.15rem;
+  border:1px solid color-mix(in srgb, var(--bs-body-color) 14%, transparent);
+  overflow: hidden;
+}
+.cpnw-ad-slide{
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .6s ease;
+  display:flex;
+}
+.cpnw-ad-slide-active{
+  opacity: 1;
+}
+.cpnw-ad-slot-img{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+}
+
+@media (max-width: 991.98px){
+  .cpnw-ad{position:relative; top:auto;}
+  .cpnw-ad-rotator{height: 180px;}
+}
+
+/* Footer */
+.cpnw-footer{
+  border-top: 1px solid var(--bs-border-color);
+  color: color-mix(in srgb, var(--bs-body-color) 70%, transparent);
+}
+
+/* Skip link */
+.cpnw-skip{
+  position:absolute;
+  left:-9999px;
+  top:auto;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+}
+.cpnw-skip:focus{
+  left:1rem;
+  top:.75rem;
+  width:auto;
+  height:auto;
+  padding:.6rem .8rem;
+  border-radius:.75rem;
+  background: color-mix(in srgb, var(--bs-body-bg) 92%, transparent);
+  border:1px solid var(--bs-border-color);
+  z-index:9999;
+  box-shadow: var(--cpnw-shadow);
+}
+
+/* Utility tweaks pulled from former inline styles */
+.cpnw-ls-06{letter-spacing:.06em;}
+.cpnw-ls-08{letter-spacing:.08em;}
+.cpnw-ls-neg-02{letter-spacing:-.02em;}
+.cpnw-fs-90{font-size:.9rem;}
+.cpnw-fs-75{font-size:.75rem;}
+.cpnw-maxw-54ch{max-width:54ch;}

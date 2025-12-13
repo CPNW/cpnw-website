@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">
+  <defs>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.92"/>
+      <stop offset="100%" stop-color="#2dd4bf" stop-opacity="0.92"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="640" height="400" rx="28" fill="url(#g2)"/>
+  <text x="50%" y="44%" text-anchor="middle" font-family="Arial, sans-serif" font-size="64" font-weight="700" fill="rgba(255,255,255,0.9)">AD SPACE</text>
+  <text x="50%" y="60%" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="600" fill="rgba(255,255,255,0.75)">Placeholder 2</text>
+</svg>
