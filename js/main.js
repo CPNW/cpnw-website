@@ -198,23 +198,18 @@ document.getElementById('y').textContent = new Date().getFullYear();
 
   async function ensureModal(){
     if (modalEl) return;
-
-    let html = null;
-    try{
-      const res = await fetch('views/login.html', {cache: 'no-cache'});
-      if (!res.ok) throw new Error('Unable to load login modal');
-      html = await res.text();
-    }catch(err){
-      console.warn('Falling back to inline login modal:', err);
-      html = fallbackHTML;
+    // Prefer existing markup in DOM; otherwise create from fallback.
+    const existing = document.getElementById('loginModal');
+    if (existing){
+      modalEl = existing;
+    }else{
+      const wrap = document.createElement('div');
+      wrap.innerHTML = fallbackHTML;
+      const modal = wrap.querySelector('.modal');
+      if (!modal) throw new Error('Login modal markup missing');
+      document.body.appendChild(modal);
+      modalEl = modal;
     }
-
-    const wrap = document.createElement('div');
-    wrap.innerHTML = html;
-    const modal = wrap.querySelector('.modal');
-    if (!modal) throw new Error('Login modal markup missing');
-    document.body.appendChild(modal);
-    modalEl = modal;
     modalInstance = new bootstrap.Modal(modalEl);
     attachLoginHandlers(modalEl);
     modalEl.addEventListener('hidden.bs.modal', () => {
