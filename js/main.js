@@ -61,6 +61,156 @@
   }, DURATION);
 })();
 
+// Contact modal (mock captcha + basic client-side spam checks)
+(function(){
+  const modalEl = document.getElementById('contactModal');
+  if (!modalEl) return;
+
+  // Prevent anchor triggers (e.g., footer link) from jumping the page.
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[data-bs-target="#contactModal"]');
+    if (!link) return;
+    event.preventDefault();
+  });
+
+  const form = modalEl.querySelector('#contactForm');
+  const submitBtn = modalEl.querySelector('#contactSubmit');
+  const statusBox = modalEl.querySelector('[data-contact-status]');
+  const statusText = modalEl.querySelector('[data-contact-status-text]');
+
+  const nameInput = modalEl.querySelector('#contactName');
+  const emailInput = modalEl.querySelector('#contactEmail');
+  const orgInput = modalEl.querySelector('#contactOrg');
+  const messageInput = modalEl.querySelector('#contactMessage');
+  const honeypotInput = modalEl.querySelector('#contactWebsite');
+
+  const captchaCheck = modalEl.querySelector('#contactCaptchaCheck');
+  const captchaWrap = modalEl.querySelector('[data-contact-captcha]');
+  const captchaQuestion = modalEl.querySelector('[data-contact-captcha-question]');
+  const captchaAnswer = modalEl.querySelector('#contactCaptchaAnswer');
+
+  if (
+    !form ||
+    !submitBtn ||
+    !statusBox ||
+    !statusText ||
+    !nameInput ||
+    !emailInput ||
+    !orgInput ||
+    !messageInput ||
+    !honeypotInput ||
+    !captchaCheck ||
+    !captchaWrap ||
+    !captchaQuestion ||
+    !captchaAnswer
+  ){
+    return;
+  }
+
+  let captchaExpected = null;
+
+  function setStatus(type, message){
+    statusBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+    statusBox.classList.add(`alert-${type}`);
+    statusText.textContent = message;
+  }
+
+  function clearStatus(){
+    statusBox.classList.add('d-none');
+    statusText.textContent = '';
+    statusBox.classList.remove('alert-success', 'alert-danger');
+  }
+
+  function newCaptcha(){
+    const a = 2 + Math.floor(Math.random() * 8);
+    const b = 2 + Math.floor(Math.random() * 8);
+    captchaExpected = String(a + b);
+    captchaQuestion.textContent = `${a} + ${b} = ?`;
+    captchaAnswer.value = '';
+  }
+
+  function setCaptchaVisible(visible){
+    captchaWrap.classList.toggle('d-none', !visible);
+    if (visible){
+      newCaptcha();
+      captchaAnswer.focus();
+    }else{
+      captchaExpected = null;
+      captchaAnswer.value = '';
+    }
+  }
+
+  function isCaptchaValid(){
+    if (!captchaCheck.checked) return false;
+    if (!captchaExpected) return false;
+    return captchaAnswer.value.trim() === captchaExpected;
+  }
+
+  function updateSubmitState(){
+    const hasHoneypot = honeypotInput.value.trim().length > 0;
+    const baseValid = form.checkValidity();
+    const captchaOk = isCaptchaValid();
+    submitBtn.disabled = hasHoneypot || !baseValid || !captchaOk;
+  }
+
+  modalEl.addEventListener('shown.bs.modal', () => {
+    clearStatus();
+    form.reset();
+    form.classList.remove('was-validated');
+    setCaptchaVisible(false);
+    submitBtn.disabled = true;
+    nameInput.focus();
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    clearStatus();
+    form.reset();
+    form.classList.remove('was-validated');
+    setCaptchaVisible(false);
+    submitBtn.disabled = true;
+  });
+
+  captchaCheck.addEventListener('change', () => {
+    setCaptchaVisible(captchaCheck.checked);
+    updateSubmitState();
+  });
+
+  [nameInput, emailInput, orgInput, messageInput, honeypotInput, captchaAnswer].forEach((el) => {
+    el.addEventListener('input', updateSubmitState);
+    el.addEventListener('blur', updateSubmitState);
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clearStatus();
+
+    if (!form.checkValidity()){
+      form.classList.add('was-validated');
+      setStatus('danger', 'Please complete all required fields.');
+      updateSubmitState();
+      return;
+    }
+
+    if (honeypotInput.value.trim()){
+      setStatus('danger', 'Unable to submit this request.');
+      return;
+    }
+
+    if (!isCaptchaValid()){
+      setStatus('danger', 'Please complete the spam check.');
+      updateSubmitState();
+      return;
+    }
+
+    submitBtn.disabled = true;
+    setStatus('success', 'Message sent (demo). This form is not wired to email yet.');
+    setTimeout(() => {
+      const instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      instance.hide();
+    }, 900);
+  });
+})();
+
 // Login modal loader + trigger
 (function(){
   const trigger = document.getElementById('loginTrigger');
