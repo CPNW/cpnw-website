@@ -47,8 +47,22 @@
 
           <div class="collapse navbar-collapse" id="nav">
             <ul class="navbar-nav mx-auto gap-md-2">
-              <li class="nav-item">
-                <a class="nav-link" href="#about">About</a>
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  id="aboutDropdown"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  About Us
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="aboutDropdown">
+                  <li><a class="dropdown-item" href="#partner">Healthcare Partners</a></li>
+                  <li><a class="dropdown-item" href="#educator">Participating Programs</a></li>
+                  <li><a class="dropdown-item" href="#student">Nursing Placements</a></li>
+                </ul>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#services">Services</a>
@@ -57,17 +71,17 @@
             </ul>
 
             <div class="d-flex align-items-center gap-2">
-              <button
+          <button
             data-theme-toggle
             type="button"
-            class="btn btn-outline-secondary btn-sm btn-cpnw"
+            class="btn btn-cpnw btn-cpnw-primary btn-sm"
             aria-label="Toggle dark and light mode"
           >
             <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
             <span class="fw-bold" data-theme-label>Dark</span>
           </button>
             <a
-              class="btn btn-outline-secondary btn-sm btn-cpnw"
+              class="btn btn-cpnw btn-cpnw-primary btn-sm"
               href="#login"
               id="loginTrigger"
               >Login</a
@@ -144,29 +158,7 @@
                       healthcare partners across the Pacific Northwest.
                     </p>
 
-                    <div
-                      class="d-flex flex-wrap gap-2"
-                      aria-label="Choose your path"
-                    >
-                      <a
-                        class="btn btn-cpnw btn-cpnw-primary"
-                        href="#student"
-                        aria-label="I am a student"
-                        >🎓 I’m a Student</a
-                      >
-                      <a
-                        class="btn btn-outline-secondary btn-cpnw"
-                        href="#educator"
-                        aria-label="I am an educator"
-                        >🏫 I’m an Educator</a
-                      >
-                      <a
-                        class="btn btn-outline-secondary btn-cpnw"
-                        href="#partner"
-                        aria-label="I am a program partner"
-                        >🏥 I’m a Program Partner</a
-                      >
-                    </div>
+
                   </div>
 
                   <div class="col-12 col-lg-5">
@@ -211,14 +203,181 @@
             <section
               id="about"
               class="cpnw-shell p-3 p-md-4 mt-3 mt-lg-4"
-              aria-label="What CPNW does"
+              aria-label="Our services"
             >
-              <h2 class="h5 fw-bold mb-2">What CPNW does</h2>
-              <p class="mb-0 text-body-secondary">
-                CPNW provides a secure, centralized platform that streamlines
-                clinical placement onboarding, verification, and compliance for
-                students, schools, and healthcare partners.
-              </p>
+              <div class="row g-3 g-lg-4 align-items-center mb-3">
+                <div class="col-12 col-lg-7">
+                  <h2 id="services" class="h5 fw-bold mb-2">Our Services</h2>
+                  <p class="h3 fw-semibold mb-2 cpnw-ls-neg-02">
+                    The right learning. The right time. The right place.
+                  </p>
+                  <p class="text-body-secondary mb-0 cpnw-maxw-60ch">
+                    CPNW offers innovative onboarding tools to ensure a smooth transition into the clinical phase of your career training. This secure, easy-to-use web application provides a clinical passport and e-learning modules to prepare for your next steps toward your professional career. It&#39;s the right learning, at the right time, and the right place. Get started today!
+                  </p>
+                </div>
+                <div class="col-12 col-lg-5">
+                  <div class="cpnw-services-art" aria-hidden="true">
+                    <img
+                      src="images/spores-watermark.png"
+                      class="cpnw-services-spores"
+                      alt=""
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="accordion cpnw-accordion" id="servicesAccordion">
+                <div class="accordion-item">
+                  <h3 class="accordion-header" id="servicesPassportHeading">
+                    <button
+                      class="accordion-button"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#servicesPassport"
+                      aria-expanded="true"
+                      aria-controls="servicesPassport"
+                    >
+                      <span class="me-2" aria-hidden="true">🛂</span>
+                      Clinical Passport
+                      <span class="ms-2 text-body-secondary small fw-normal">Health + Safety Requirements</span>
+                    </button>
+                  </h3>
+                  <div
+                    id="servicesPassport"
+                    class="accordion-collapse collapse show"
+                    aria-labelledby="servicesPassportHeading"
+                    data-bs-parent="#servicesAccordion"
+                  >
+                    <div class="accordion-body text-body-secondary">
+                      All users have a standard set of requirements that must be met prior to their clinical learning experience. These requirements are contained within the CPNW Clinical Passport. The requirements cover immunity status for vaccine-preventable diseases, background checks, pre-clinical training, license and insurance information.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <h3 class="accordion-header" id="servicesElearningHeading">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#servicesElearning"
+                      aria-expanded="false"
+                      aria-controls="servicesElearning"
+                    >
+                      <span class="me-2" aria-hidden="true">📚</span>
+                      eLearning Modules
+                      <span class="ms-2 text-body-secondary small fw-normal">Improving Your Service</span>
+                    </button>
+                  </h3>
+                  <div
+                    id="servicesElearning"
+                    class="accordion-collapse collapse"
+                    aria-labelledby="servicesElearningHeading"
+                    data-bs-parent="#servicesAccordion"
+                  >
+                    <div class="accordion-body text-body-secondary">
+                      As you complete the required interactive training on this site, your progress is tracked real-time and recorded in your account. Schools and healthcare partners can access your pre-clinical preparation records, providing a paperless transition into your clinical education experience.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <h3 class="accordion-header" id="servicesOigHeading">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#servicesOig"
+                      aria-expanded="false"
+                      aria-controls="servicesOig"
+                    >
+                      <span class="me-2" aria-hidden="true">🛡️</span>
+                      OIG/SAM Checks
+                      <span class="ms-2 text-body-secondary small fw-normal">An Added Value</span>
+                    </button>
+                  </h3>
+                  <div
+                    id="servicesOig"
+                    class="accordion-collapse collapse"
+                    aria-labelledby="servicesOigHeading"
+                    data-bs-parent="#servicesAccordion"
+                  >
+                    <div class="accordion-body text-body-secondary">
+                      Excluded provider checks are performed bi-monthly on the 1st and 15th of each month for all users in the clinical setting. Your annual subscription covers the cost of this service. The results are made available on a need-to-know basis through our HIPAA &amp; FERPA compliant secure interface.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <h3 class="accordion-header" id="servicesSupportHeading">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#servicesSupport"
+                      aria-expanded="false"
+                      aria-controls="servicesSupport"
+                    >
+                      <span class="me-2" aria-hidden="true">🧭</span>
+                      Site Support
+                      <span class="ms-2 text-body-secondary small fw-normal">We&#39;re here to help!</span>
+                    </button>
+                  </h3>
+                  <div
+                    id="servicesSupport"
+                    class="accordion-collapse collapse"
+                    aria-labelledby="servicesSupportHeading"
+                    data-bs-parent="#servicesAccordion"
+                  >
+                    <div class="accordion-body text-body-secondary">
+                      Questions? Visit the Frequently Asked Question (FAQ) tab or use the web based support features. The technical support tab to your left provides interactive access to our Knowledge Base. Live technical support is available weekdays as well.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="accordion-item">
+                  <h3 class="accordion-header" id="servicesFeesHeading">
+                    <button
+                      class="accordion-button collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#servicesFees"
+                      aria-expanded="false"
+                      aria-controls="servicesFees"
+                    >
+                      <span class="me-2" aria-hidden="true">💳</span>
+                      Fee Schedule
+                      <span class="ms-2 text-body-secondary small fw-normal">Services + Invoicing</span>
+                    </button>
+                  </h3>
+                  <div
+                    id="servicesFees"
+                    class="accordion-collapse collapse"
+                    aria-labelledby="servicesFeesHeading"
+                    data-bs-parent="#servicesAccordion"
+                  >
+                    <div class="accordion-body text-body-secondary">
+                      <p class="mb-3">
+                        CPNW’s fee structure allows us to provide a variety of services to health professions students, education programs and healthcare organizations.
+                      </p>
+                      <ul class="mb-0">
+                        <li>
+                          <a class="link-underline link-underline-opacity-0 link-underline-opacity-75-hover" href="#refund-policy">
+                            Student Self-Pay Refund Policy
+                          </a>
+                        </li>
+                        <li>Services + Invoicing</li>
+                      </ul>
+                      <div class="mt-3 d-flex flex-wrap gap-2">
+                        <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="#fee-schedule-details">Details</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="fee-schedule-details" class="visually-hidden" aria-hidden="true"></div>
+              <div id="refund-policy" class="visually-hidden" aria-hidden="true"></div>
             </section>
 
             <!-- Role cards -->
@@ -248,7 +407,7 @@
                       <li>Reduce back-and-forth with coordinators</li>
                     </ul>
                     <a
-                      class="btn btn-outline-secondary btn-sm btn-cpnw"
+                      class="btn btn-cpnw btn-cpnw-primary btn-sm"
                       href="#student-more"
                       >Learn more</a
                     >
@@ -268,7 +427,7 @@
                       <li>Standardize onboarding expectations</li>
                     </ul>
                     <a
-                      class="btn btn-outline-secondary btn-sm btn-cpnw"
+                      class="btn btn-cpnw btn-cpnw-primary btn-sm"
                       href="#educator-more"
                       >Learn more</a
                     >
@@ -288,27 +447,13 @@
                       <li>Support safe, prepared student placements</li>
                     </ul>
                     <a
-                      class="btn btn-outline-secondary btn-sm btn-cpnw"
+                      class="btn btn-cpnw btn-cpnw-primary btn-sm"
                       href="#partner-more"
                       >Learn more</a
                     >
                   </article>
                 </div>
               </div>
-            </section>
-
-            <!-- Services -->
-            <section
-              id="services"
-              class="cpnw-shell p-3 p-md-4 mt-3 mt-lg-4"
-              aria-label="Services"
-            >
-              <h2 class="h5 fw-bold mb-2">Our services</h2>
-              <p class="mb-0 text-body-secondary">
-                Summarize the top 3–5 services here in short, scannable bullets.
-                Avoid paragraphs. (This block is intentionally minimal in the
-                prototype.)
-              </p>
             </section>
 
             <!-- Help -->
@@ -328,13 +473,16 @@
                       <a class="btn btn-cpnw btn-cpnw-primary" href="#support"
                         >Technical Support</a
                       >
-                      <a
-                        class="btn btn-outline-secondary btn-cpnw"
-                        href="#contact"
-                        >Contact Us</a
+                      <button
+                        type="button"
+                        class="btn btn-cpnw btn-cpnw-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#contactModal"
                       >
+                        Contact Us
+                      </button>
                       <a
-                        class="btn btn-outline-secondary btn-cpnw"
+                        class="btn btn-cpnw btn-cpnw-primary"
                         href="#get-started"
                         >Getting Started</a
                       >
@@ -349,7 +497,7 @@
                       for details.
                     </p>
                     <a
-                      class="btn btn-outline-secondary btn-sm btn-cpnw"
+                      class="btn btn-cpnw btn-cpnw-primary btn-sm"
                       href="#faq-full"
                       >View FAQs</a
                     >
@@ -362,70 +510,26 @@
       </div>
     </main>
 
-    <footer class="cpnw-footer py-4 py-lg-5">
+    <footer class="cpnw-footer py-3 py-lg-4">
       <div class="container">
-        <div class="row g-3">
-          <div class="col-12 col-sm-6 col-lg-3">
-            <div class="text-uppercase fw-bold mb-2 cpnw-ls-08 cpnw-fs-75">
-              Students
-            </div>
-            <a class="d-block py-1 text-decoration-none" href="#student"
-              >Get started</a
-            >
-            <a class="d-block py-1 text-decoration-none" href="#student-more"
-              >Student guide</a
-            >
-            <a class="d-block py-1 text-decoration-none" href="#support"
-              >Help</a
-            >
+        <div class="cpnw-footer-inner text-center">
+          <div class="small text-body-secondary">
+            Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+            <a class="text-decoration-none" href="terms-privacy.html">Terms of Use and Privacy Policy</a>
           </div>
-          <div class="col-12 col-sm-6 col-lg-3">
-            <div class="text-uppercase fw-bold mb-2 cpnw-ls-08 cpnw-fs-75">
-              Educators
-            </div>
-            <a class="d-block py-1 text-decoration-none" href="#educator"
-              >Coordinator view</a
+          <div class="mt-2">
+            <button
+              type="button"
+              class="btn btn-cpnw btn-cpnw-primary btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#contactModal"
             >
-            <a class="d-block py-1 text-decoration-none" href="#educator-more"
-              >Reporting</a
-            >
-            <a class="d-block py-1 text-decoration-none" href="#support"
-              >Help</a
-            >
+              Contact Us
+            </button>
           </div>
-          <div class="col-12 col-sm-6 col-lg-3">
-            <div class="text-uppercase fw-bold mb-2 cpnw-ls-08 cpnw-fs-75">
-              Partners
-            </div>
-            <a class="d-block py-1 text-decoration-none" href="#partner"
-              >Partner onboarding</a
-            >
-            <a class="d-block py-1 text-decoration-none" href="#partner-more"
-              >Compliance</a
-            >
-            <a class="d-block py-1 text-decoration-none" href="#contact"
-              >Contact</a
-            >
-          </div>
-          <div class="col-12 col-sm-6 col-lg-3">
-            <div class="text-uppercase fw-bold mb-2 cpnw-ls-08 cpnw-fs-75">
-              About
-            </div>
-            <a class="d-block py-1 text-decoration-none" href="#about"
-              >Mission</a
-            >
-            <a class="d-block py-1 text-decoration-none" href="#services"
-              >Services</a
-            >
-            <a class="d-block py-1 text-decoration-none" href="#faq">FAQ</a>
-          </div>
-        </div>
-
-        <div class="small text-body-secondary mt-3">
-          © <span id="y"></span> Clinical Placements Northwest • Terms • Privacy
         </div>
       </div>
-  </footer>
+    </footer>
 
   <!-- Bootstrap JS -->
   <script
@@ -504,6 +608,153 @@
               >Create an account</a
             >
           </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact modal -->
+  <div
+    class="modal fade"
+    id="contactModal"
+    tabindex="-1"
+    aria-labelledby="contactModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="contactModalLabel">Contact Us</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div
+            class="alert alert-dismissible fade show d-none"
+            role="alert"
+            data-contact-status
+          >
+            <span data-contact-status-text></span>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <form id="contactForm" novalidate>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="contactName">Name</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="contactName"
+                  name="name"
+                  autocomplete="name"
+                  required
+                />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="contactEmail">Email address</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="contactEmail"
+                  name="email"
+                  autocomplete="email"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="contactOrg">Organization</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="contactOrg"
+                  name="organization"
+                  autocomplete="organization"
+                  required
+                />
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="contactMessage">Message</label>
+                <textarea
+                  class="form-control"
+                  id="contactMessage"
+                  name="message"
+                  rows="5"
+                  required
+                ></textarea>
+              </div>
+
+              <!-- Honeypot (hidden) -->
+              <div class="visually-hidden" aria-hidden="true">
+                <label class="form-label" for="contactWebsite">Website</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="contactWebsite"
+                  name="website"
+                  autocomplete="off"
+                  tabindex="-1"
+                />
+              </div>
+
+              <div class="col-12">
+                <div class="cpnw-shell p-3">
+                  <div class="fw-semibold mb-2">Spam check</div>
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      value="1"
+                      id="contactCaptchaCheck"
+                    />
+                    <label class="form-check-label" for="contactCaptchaCheck">
+                      I’m not a robot (mock captcha)
+                    </label>
+                  </div>
+                  <div class="mt-3 d-none" data-contact-captcha>
+                    <label class="form-label" for="contactCaptchaAnswer">
+                      Please answer: <span class="fw-semibold" data-contact-captcha-question></span>
+                    </label>
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      class="form-control"
+                      id="contactCaptchaAnswer"
+                      name="captcha"
+                      placeholder="Enter the answer"
+                    />
+                    <div class="form-text">
+                      Mock spam check placeholder. Replace with a real captcha service for production.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+                <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-bs-dismiss="modal">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn-cpnw btn-cpnw-primary"
+                  id="contactSubmit"
+                  disabled
+                >
+                  Send message
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>
