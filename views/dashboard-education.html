@@ -44,7 +44,8 @@
   </header>
 
   <main class="py-4 py-lg-5">
-    <div class="container">
+    <div class="container position-relative">
+      <img src="../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
           <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Education</p>
@@ -68,10 +69,10 @@
               Admin
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="#">Review</a></li>
-              <li><a class="dropdown-item" href="#">Assignments</a></li>
-              <li><a class="dropdown-item" href="#">Reports</a></li>
-              <li><a class="dropdown-item" href="#">Users</a></li>
+              <li><a class="dropdown-item" href="review-education.html">Review</a></li>
+              <li><a class="dropdown-item" href="assignments-education.html">Assignments</a></li>
+              <li><a class="dropdown-item" href="reports-education.html">Education Reports</a></li>
+              <li><a class="dropdown-item" href="users.html">Users</a></li>
               <li><a class="dropdown-item" href="#">Background + WATCH Reports</a></li>
             </ul>
           </div>
@@ -209,8 +210,8 @@
               <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="readinessToggle">View all</button>
             </div>
             <div class="table-responsive" id="readinessWrapper" style="max-height: 260px; overflow-y: auto;">
-              <table class="table table-borderless align-middle mb-0">
-                <thead class="text-body-secondary small">
+              <table class="table align-middle mb-0 cpnw-table">
+                <thead class="text-body-secondary small position-sticky top-0" style="z-index: 2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
                   <tr>
                     <th scope="col">Cohort</th>
                     <th scope="col">Students</th>
@@ -280,9 +281,9 @@
       }
 
       const programDefs = [
-        { id: 'bsn', name: 'BSN', base: 28, aySpan: 4 },
-        { id: 'adn', name: 'ADN', base: 24, aySpan: 2 },
-        { id: 'surg', name: 'Surgical Technology', base: 20, aySpan: 4 }
+        { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
+        { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
+        { id: 'surg', name: 'Surgical Technology', base: 8, aySpan: 2 }
       ];
 
       const termAdjust = { Fall: 3, Winter: 1, Spring: 0, Summer: -2 };
@@ -292,7 +293,7 @@
         const ayStarts = Array.from({length: p.aySpan}, (_, i) => CURRENT_AY_START - i);
         ayStarts.forEach(ay => {
           TERMS.forEach(term => {
-            const students = Math.max(14, p.base + termAdjust[term] + (CURRENT_AY_START - ay)); // keep counts up
+            const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay)); // keep counts reasonable
             const approved = Math.min(students, Math.max(10, Math.floor(students * 0.65) + termAdjust[term]));
             const requirementsReview = Math.max(0, students - approved);
             const expiringStudents = Math.min(requirementsReview, Math.max(2, Math.floor(students * 0.2)));
@@ -308,6 +309,17 @@
             });
           });
         });
+      });
+      // Explicit archived cohort example (hidden unless "Show archived" is enabled)
+      cohortSeeds.push({
+        programId: 'adn',
+        programName: 'ADN',
+        term: 'Fall',
+        year: CURRENT_AY_START - 5,
+        students: 10,
+        approvedAssignments: 7,
+        requirementsReview: 3,
+        expiringStudents: 2
       });
       // Add a couple of archived cohorts for restore/visibility examples
       cohortSeeds.push({
@@ -506,7 +518,8 @@
           cohortCount.textContent = selectedCohorts.length ? cohortCountSelected : activeCohorts.length || 'All';
         }
 
-        renderCohorts(cohortsForTotals);
+        const listForCard = showArchived ? visibleCohorts : cohortsForTotals;
+        renderCohorts(listForCard);
         renderReadiness(cohortsForTotals);
       }
 
@@ -596,7 +609,14 @@
       if (cohortSearch){
         cohortSearch.addEventListener('input', (e) => {
           const selectedIds = getSelectedPrograms().map(p => p.id);
-          renderCohortFilters(e.target.value || '', cohortShowArchived && cohortShowArchived.checked, selectedIds, true);
+          const term = (e.target.value || '').trim();
+          const showArchived = cohortShowArchived && cohortShowArchived.checked;
+          if (!term){
+            if (cohortShowArchived) cohortShowArchived.checked = false;
+            renderCohortFilters('', false, selectedIds, false); // reset selection
+          }else{
+            renderCohortFilters(term, showArchived, selectedIds, true);
+          }
           summarize();
         });
       }
