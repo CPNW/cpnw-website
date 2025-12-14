@@ -43,6 +43,7 @@
 (function(){
   const COHORTS_KEY = 'cpnw-custom-cohorts-v1';
   const MEMBERS_KEY = 'cpnw-cohort-members-v1';
+  const USER_COHORT_KEY = 'cpnw-user-cohort-v1';
 
   function loadJSON(key, fallback){
     try{
@@ -71,6 +72,10 @@
   function uid(){
     // Not cryptographic; good enough for demo IDs.
     return `coh_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function normalizeName(value){
+    return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
   }
 
   function getAyContext(){
@@ -129,6 +134,13 @@
     const trimmedProgram = String(program || '').trim();
     const start = Number.isFinite(Number(ayStart)) ? Number(ayStart) : null;
     if (!trimmedName || !trimmedProgram || !Number.isFinite(start)) return null;
+
+    // Enforce uniqueness (case-insensitive) within the same program.
+    const collision = listCustomCohortsRaw().find(c => {
+      return normalizeName(c.program) === normalizeName(trimmedProgram) &&
+        normalizeName(c.name) === normalizeName(trimmedName);
+    });
+    if (collision) return null;
 
     const record = {
       id: uid(),
@@ -208,7 +220,71 @@
     addCustomCohort,
     listCustomCohortsRaw,
     listCustomCohortsLegacy,
-    listCustomCohortsDashboard
+    listCustomCohortsDashboard,
+    findCustomCohortCollision(program, name){
+      const p = normalizeName(program);
+      const n = normalizeName(name);
+      if (!p || !n) return null;
+      return listCustomCohortsRaw().find(c => normalizeName(c.program) === p && normalizeName(c.name) === n) || null;
+    },
+    getUserCohort(email){
+      const map = loadJSON(USER_COHORT_KEY, {});
+      if (!map || typeof map !== 'object' || Array.isArray(map)) return null;
+      const key = String(email || '').trim().toLowerCase();
+      if (!key) return null;
+      const entry = map[key];
+      if (!entry || typeof entry !== 'object') return null;
+      const type = String(entry.type || '');
+      if (type === 'unassigned') return { type: 'unassigned' };
+      if (type === 'seed' && entry.label) return { type: 'seed', label: String(entry.label) };
+      if (type === 'custom' && entry.cohortId) return { type: 'custom', cohortId: String(entry.cohortId) };
+      return null;
+    },
+    setUserCohort(email, entry){
+      const key = String(email || '').trim().toLowerCase();
+      if (!key) return;
+      const map = loadJSON(USER_COHORT_KEY, {});
+      const next = (!map || typeof map !== 'object' || Array.isArray(map)) ? {} : map;
+      if (!entry){
+        delete next[key];
+        saveJSON(USER_COHORT_KEY, next);
+        return;
+      }
+      const type = String(entry.type || '');
+      if (type === 'unassigned'){
+        next[key] = { type: 'unassigned' };
+      }else if (type === 'seed' && entry.label){
+        next[key] = { type: 'seed', label: String(entry.label) };
+      }else if (type === 'custom' && entry.cohortId){
+        next[key] = { type: 'custom', cohortId: String(entry.cohortId) };
+      }else{
+        return;
+      }
+      saveJSON(USER_COHORT_KEY, next);
+    },
+    getUserCohortLabel(email){
+      const entry = this.getUserCohort(email);
+      if (!entry) return null;
+      if (entry.type === 'unassigned') return '';
+      if (entry.type === 'seed') return entry.label;
+      if (entry.type === 'custom'){
+        const cohort = listCustomCohortsRaw().find(c => c.id === entry.cohortId);
+        if (!cohort) return null;
+        return `${cohort.program} – ${cohort.name}`;
+      }
+      return null;
+    },
+    getUnassignedCount(){
+      const map = loadJSON(USER_COHORT_KEY, {});
+      if (!map || typeof map !== 'object' || Array.isArray(map)) return 0;
+      let count = 0;
+      Object.values(map).forEach((entry) => {
+        if (entry && typeof entry === 'object' && String(entry.type || '') === 'unassigned'){
+          count += 1;
+        }
+      });
+      return count;
+    }
   };
 })();
 
@@ -236,151 +312,315 @@
 
 // Contact modal (mock captcha + basic client-side spam checks)
 (function(){
-  const modalEl = document.getElementById('contactModal');
-  if (!modalEl) return;
+  const fallbackHTML = `
+    <div
+      class="modal fade"
+      id="contactModal"
+      tabindex="-1"
+      aria-labelledby="contactModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="contactModalLabel">Contact Us</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div
+              class="alert alert-dismissible fade show d-none"
+              role="alert"
+              data-contact-status
+            >
+              <span data-contact-status-text></span>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
+            </div>
 
-  // Prevent anchor triggers (e.g., footer link) from jumping the page.
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('a[data-bs-target="#contactModal"]');
-    if (!link) return;
-    event.preventDefault();
-  });
+            <form id="contactForm" novalidate>
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="contactName">Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="contactName"
+                    name="name"
+                    autocomplete="name"
+                    required
+                  />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="contactEmail">Email address</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="contactEmail"
+                    name="email"
+                    autocomplete="email"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="contactOrg">Organization</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="contactOrg"
+                    name="organization"
+                    autocomplete="organization"
+                    required
+                  />
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="contactMessage">Message</label>
+                  <textarea
+                    class="form-control"
+                    id="contactMessage"
+                    name="message"
+                    rows="5"
+                    required
+                  ></textarea>
+                </div>
 
-  const form = modalEl.querySelector('#contactForm');
-  const submitBtn = modalEl.querySelector('#contactSubmit');
-  const statusBox = modalEl.querySelector('[data-contact-status]');
-  const statusText = modalEl.querySelector('[data-contact-status-text]');
+                <div class="visually-hidden" aria-hidden="true">
+                  <label class="form-label" for="contactWebsite">Website</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="contactWebsite"
+                    name="website"
+                    autocomplete="off"
+                    tabindex="-1"
+                  />
+                </div>
 
-  const nameInput = modalEl.querySelector('#contactName');
-  const emailInput = modalEl.querySelector('#contactEmail');
-  const orgInput = modalEl.querySelector('#contactOrg');
-  const messageInput = modalEl.querySelector('#contactMessage');
-  const honeypotInput = modalEl.querySelector('#contactWebsite');
+                <div class="col-12">
+                  <div class="cpnw-shell p-3">
+                    <div class="fw-semibold mb-2">Spam check</div>
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        value="1"
+                        id="contactCaptchaCheck"
+                      />
+                      <label class="form-check-label" for="contactCaptchaCheck">
+                        I’m not a robot (mock captcha)
+                      </label>
+                    </div>
+                    <div class="mt-3 d-none" data-contact-captcha>
+                      <label class="form-label" for="contactCaptchaAnswer">
+                        Please answer: <span class="fw-semibold" data-contact-captcha-question></span>
+                      </label>
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        class="form-control"
+                        id="contactCaptchaAnswer"
+                        name="captcha"
+                        placeholder="Enter the answer"
+                      />
+                      <div class="form-text">
+                        Mock spam check placeholder. Replace with a real captcha service for production.
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-  const captchaCheck = modalEl.querySelector('#contactCaptchaCheck');
-  const captchaWrap = modalEl.querySelector('[data-contact-captcha]');
-  const captchaQuestion = modalEl.querySelector('[data-contact-captcha-question]');
-  const captchaAnswer = modalEl.querySelector('#contactCaptchaAnswer');
+                <div class="col-12 d-flex flex-wrap gap-2 justify-content-end">
+                  <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-bs-dismiss="modal">
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    class="btn btn-cpnw btn-cpnw-primary"
+                    id="contactSubmit"
+                    disabled
+                  >
+                    Send message
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
-  if (
-    !form ||
-    !submitBtn ||
-    !statusBox ||
-    !statusText ||
-    !nameInput ||
-    !emailInput ||
-    !orgInput ||
-    !messageInput ||
-    !honeypotInput ||
-    !captchaCheck ||
-    !captchaWrap ||
-    !captchaQuestion ||
-    !captchaAnswer
-  ){
-    return;
+  function ensureModal(){
+    let modalEl = document.getElementById('contactModal');
+    if (modalEl) return modalEl;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = fallbackHTML;
+    modalEl = wrap.querySelector('#contactModal');
+    if (!modalEl) return null;
+    document.body.appendChild(modalEl);
+    return modalEl;
   }
 
-  let captchaExpected = null;
+  function attachHandlers(modalEl){
+    if (!modalEl || modalEl.dataset.contactInit === 'true') return;
+    modalEl.dataset.contactInit = 'true';
 
-  function setStatus(type, message){
-    statusBox.classList.remove('d-none', 'alert-success', 'alert-danger');
-    statusBox.classList.add(`alert-${type}`);
-    statusText.textContent = message;
-  }
+    const form = modalEl.querySelector('#contactForm');
+    const submitBtn = modalEl.querySelector('#contactSubmit');
+    const statusBox = modalEl.querySelector('[data-contact-status]');
+    const statusText = modalEl.querySelector('[data-contact-status-text]');
 
-  function clearStatus(){
-    statusBox.classList.add('d-none');
-    statusText.textContent = '';
-    statusBox.classList.remove('alert-success', 'alert-danger');
-  }
+    const nameInput = modalEl.querySelector('#contactName');
+    const emailInput = modalEl.querySelector('#contactEmail');
+    const orgInput = modalEl.querySelector('#contactOrg');
+    const messageInput = modalEl.querySelector('#contactMessage');
+    const honeypotInput = modalEl.querySelector('#contactWebsite');
 
-  function newCaptcha(){
-    const a = 2 + Math.floor(Math.random() * 8);
-    const b = 2 + Math.floor(Math.random() * 8);
-    captchaExpected = String(a + b);
-    captchaQuestion.textContent = `${a} + ${b} = ?`;
-    captchaAnswer.value = '';
-  }
+    const captchaCheck = modalEl.querySelector('#contactCaptchaCheck');
+    const captchaWrap = modalEl.querySelector('[data-contact-captcha]');
+    const captchaQuestion = modalEl.querySelector('[data-contact-captcha-question]');
+    const captchaAnswer = modalEl.querySelector('#contactCaptchaAnswer');
 
-  function setCaptchaVisible(visible){
-    captchaWrap.classList.toggle('d-none', !visible);
-    if (visible){
-      newCaptcha();
-      captchaAnswer.focus();
-    }else{
-      captchaExpected = null;
+    if (
+      !form ||
+      !submitBtn ||
+      !statusBox ||
+      !statusText ||
+      !nameInput ||
+      !emailInput ||
+      !orgInput ||
+      !messageInput ||
+      !honeypotInput ||
+      !captchaCheck ||
+      !captchaWrap ||
+      !captchaQuestion ||
+      !captchaAnswer
+    ){
+      return;
+    }
+
+    let captchaExpected = null;
+
+    function setStatus(type, message){
+      statusBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+      statusBox.classList.add(`alert-${type}`);
+      statusText.textContent = message;
+    }
+
+    function clearStatus(){
+      statusBox.classList.add('d-none');
+      statusText.textContent = '';
+      statusBox.classList.remove('alert-success', 'alert-danger');
+    }
+
+    function newCaptcha(){
+      const a = 2 + Math.floor(Math.random() * 8);
+      const b = 2 + Math.floor(Math.random() * 8);
+      captchaExpected = String(a + b);
+      captchaQuestion.textContent = `${a} + ${b} = ?`;
       captchaAnswer.value = '';
     }
-  }
 
-  function isCaptchaValid(){
-    if (!captchaCheck.checked) return false;
-    if (!captchaExpected) return false;
-    return captchaAnswer.value.trim() === captchaExpected;
-  }
+    function setCaptchaVisible(visible){
+      captchaWrap.classList.toggle('d-none', !visible);
+      if (visible){
+        newCaptcha();
+        captchaAnswer.focus();
+      }else{
+        captchaExpected = null;
+        captchaAnswer.value = '';
+      }
+    }
 
-  function updateSubmitState(){
-    const hasHoneypot = honeypotInput.value.trim().length > 0;
-    const baseValid = form.checkValidity();
-    const captchaOk = isCaptchaValid();
-    submitBtn.disabled = hasHoneypot || !baseValid || !captchaOk;
-  }
+    function isCaptchaValid(){
+      if (!captchaCheck.checked) return false;
+      if (!captchaExpected) return false;
+      return captchaAnswer.value.trim() === captchaExpected;
+    }
 
-  modalEl.addEventListener('shown.bs.modal', () => {
-    clearStatus();
-    form.reset();
-    form.classList.remove('was-validated');
-    setCaptchaVisible(false);
-    submitBtn.disabled = true;
-    nameInput.focus();
-  });
+    function updateSubmitState(){
+      const hasHoneypot = honeypotInput.value.trim().length > 0;
+      const baseValid = form.checkValidity();
+      const captchaOk = isCaptchaValid();
+      submitBtn.disabled = hasHoneypot || !baseValid || !captchaOk;
+    }
 
-  modalEl.addEventListener('hidden.bs.modal', () => {
-    clearStatus();
-    form.reset();
-    form.classList.remove('was-validated');
-    setCaptchaVisible(false);
-    submitBtn.disabled = true;
-  });
+    modalEl.addEventListener('shown.bs.modal', () => {
+      clearStatus();
+      form.reset();
+      form.classList.remove('was-validated');
+      setCaptchaVisible(false);
+      submitBtn.disabled = true;
+      nameInput.focus();
+    });
 
-  captchaCheck.addEventListener('change', () => {
-    setCaptchaVisible(captchaCheck.checked);
-    updateSubmitState();
-  });
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      clearStatus();
+      form.reset();
+      form.classList.remove('was-validated');
+      setCaptchaVisible(false);
+      submitBtn.disabled = true;
+    });
 
-  [nameInput, emailInput, orgInput, messageInput, honeypotInput, captchaAnswer].forEach((el) => {
-    el.addEventListener('input', updateSubmitState);
-    el.addEventListener('blur', updateSubmitState);
-  });
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    clearStatus();
-
-    if (!form.checkValidity()){
-      form.classList.add('was-validated');
-      setStatus('danger', 'Please complete all required fields.');
+    captchaCheck.addEventListener('change', () => {
+      setCaptchaVisible(captchaCheck.checked);
       updateSubmitState();
-      return;
-    }
+    });
 
-    if (honeypotInput.value.trim()){
-      setStatus('danger', 'Unable to submit this request.');
-      return;
-    }
+    [nameInput, emailInput, orgInput, messageInput, honeypotInput, captchaAnswer].forEach((el) => {
+      el.addEventListener('input', updateSubmitState);
+      el.addEventListener('blur', updateSubmitState);
+    });
 
-    if (!isCaptchaValid()){
-      setStatus('danger', 'Please complete the spam check.');
-      updateSubmitState();
-      return;
-    }
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      clearStatus();
 
-    submitBtn.disabled = true;
-    setStatus('success', 'Message sent (demo). This form is not wired to email yet.');
-    setTimeout(() => {
-      const instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-      instance.hide();
-    }, 900);
+      if (!form.checkValidity()){
+        form.classList.add('was-validated');
+        setStatus('danger', 'Please complete all required fields.');
+        updateSubmitState();
+        return;
+      }
+
+      if (honeypotInput.value.trim()){
+        setStatus('danger', 'Unable to submit this request.');
+        return;
+      }
+
+      if (!isCaptchaValid()){
+        setStatus('danger', 'Please complete the spam check.');
+        updateSubmitState();
+        return;
+      }
+
+      submitBtn.disabled = true;
+      setStatus('success', 'Message sent (demo). This form is not wired to email yet.');
+      setTimeout(() => {
+        const instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        instance.hide();
+      }, 900);
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-contact-trigger]');
+    if (!trigger) return;
+    event.preventDefault();
+    const modalEl = ensureModal();
+    if (!modalEl) return;
+    attachHandlers(modalEl);
+    const instance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    instance.show();
   });
 })();
 

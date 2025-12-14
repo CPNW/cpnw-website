@@ -166,6 +166,22 @@
     </div>
   </main>
 
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
   <!-- Docs modal -->
   <div class="modal fade" id="reqModal" tabindex="-1" aria-labelledby="reqModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -296,18 +312,30 @@
       // Populate cohort filter
       const cohortFilter = document.getElementById('cohortFilter');
       if (cohortFilter){
-        const opts = [''];
+        const opts = ['', '__unassigned__'];
         cohorts.forEach(c => opts.push(c.cohortLabel));
         const unique = Array.from(new Set(opts));
-        cohortFilter.innerHTML = unique.map(val => `<option value="${val}">${val || 'All cohorts'}</option>`).join('');
+        cohortFilter.innerHTML = unique.map(val => {
+          if (!val) return `<option value="">All cohorts</option>`;
+          if (val === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
+          return `<option value="${val}">${val}</option>`;
+        }).join('');
       }
 
       // Build people data
       const users = [];
+      function applyCohortOverride(user){
+        if (!cohortAPI) return user;
+        const override = cohortAPI.getUserCohortLabel(user.email);
+        if (override !== null && override !== undefined){
+          user.cohort = override;
+        }
+        return user;
+      }
       cohorts.forEach((c, idx) => {
         const base = Math.min(12, c.students);
         for (let i=0; i<base; i++){
-          users.push({
+          const person = {
             name: `Student ${idx+1}-${i+1}`,
             email: `student${idx+1}${i+1}@demo.cpnw.org`,
             program: c.program,
@@ -327,10 +355,11 @@
               { file:'Immunization.pdf', req:'Immunization', date:'2025-02-10' },
               { file:'BLS.pdf', req:'BLS', date:'2025-02-08' }
             ]
-          });
+          };
+          users.push(applyCohortOverride(person));
         }
         // Add a few faculty and faculty-admin tied to this program
-        users.push({
+        users.push(applyCohortOverride({
           name: `Faculty ${c.program} ${idx+1}`,
           email: `faculty${idx+1}@demo.cpnw.org`,
           program: c.program,
@@ -347,8 +376,8 @@
           },
           docs: 1,
           docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
-        });
-        users.push({
+        }));
+        users.push(applyCohortOverride({
           name: `Faculty Admin ${c.program} ${idx+1}`,
           email: `facadmin${idx+1}@demo.cpnw.org`,
           program: c.program,
@@ -365,8 +394,26 @@
           },
           docs: 1,
           docItems: [{ file:'AdminAccess.pdf', req:'Admin Approval', date:'2025-02-11' }]
-        });
+        }));
       });
+      users.push(applyCohortOverride({
+        name: 'Fran Faculty',
+        email: 'fran.faculty@cpnw.org',
+        program: 'BSN',
+        cohort: '',
+        role: 'faculty',
+        status: 'complete',
+        start: '—',
+        reqs: {
+          cpnw: 'complete',
+          ed: 'complete',
+          hc: 'complete',
+          oig: 'pass',
+          sam: 'pass'
+        },
+        docs: 1,
+        docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
+      }));
 
       const statusButtons = document.querySelectorAll('[data-status]');
       const reportSearch = document.getElementById('reportSearch');
@@ -422,7 +469,13 @@
         const filtered = users.filter(u=>{
           if (currentStatus !== 'all' && u.status !== currentStatus) return false;
           if (program && u.program !== program) return false;
-          if (cohort && u.cohort !== cohort) return false;
+          if (cohort){
+            if (cohort === '__unassigned__'){
+              if ((u.cohort || '').trim()) return false;
+            }else{
+              if (u.cohort !== cohort) return false;
+            }
+          }
           if (showOnlySelected && !selectedIds.has(u.email)) return false;
           if (q && !`${u.name} ${u.email}`.toLowerCase().includes(q)) return false;
           return true;
@@ -441,7 +494,7 @@
             <td><input type="checkbox" class="form-check-input report-row" data-id="${u.email}" ${selectedIds.has(u.email) ? 'checked' : ''}></td>
             <td class="fw-semibold">${u.name}</td>
             <td>${u.program}</td>
-            <td>${u.cohort}</td>
+            <td>${u.cohort ? u.cohort : '<span class="text-body-secondary">Unassigned</span>'}</td>
             <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="cpnw" data-user="${u.email}">${statusBadge(u.reqs?.cpnw)}</button></td>
             <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="ed" data-user="${u.email}">${statusBadge(u.reqs?.ed)}</button></td>
             <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="hc" data-user="${u.email}">${statusBadge(u.reqs?.hc)}</button></td>

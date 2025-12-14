@@ -157,6 +157,22 @@
     </div>
   </main>
 
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
   <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
@@ -467,9 +483,13 @@
       }
       const cohortFilterEl = document.getElementById('cohortFilter');
       if (cohortFilterEl){
-        const options = [''];
+        const options = ['', '__unassigned__'];
         cohorts.forEach(c => options.push(c.cohortLabel));
-        cohortFilterEl.innerHTML = options.map(opt => `<option value="${opt}">${opt || 'All cohorts'}</option>`).join('');
+        cohortFilterEl.innerHTML = options.map(opt => {
+          if (!opt) return `<option value="">All cohorts</option>`;
+          if (opt === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
+          return `<option value="${opt}">${opt}</option>`;
+        }).join('');
       }
 
       const people = [];
@@ -478,7 +498,7 @@
         const count = Math.min(10, c.students);
         for (let i=0; i<count; i++){
           const dob = new Date(1995 + (i % 10), i % 12, (i % 27) + 1);
-          people.push({
+          const person = {
             name: `Student ${idx+1}-${i+1}`,
             email: `student${idx+1}${i+1}@demo.cpnw.org`,
             program: c.program,
@@ -491,8 +511,57 @@
             emergName: `Emergency Contact ${i+1}`,
             emergPhone: `(555) 77${idx}-${2000 + i}`,
             dob
-          });
+          };
+          if (cohortAPI){
+            const override = cohortAPI.getUserCohortLabel(person.email);
+            if (override !== null && override !== undefined){
+              person.cohort = override;
+            }
+          }
+          people.push(person);
         }
+      });
+
+      // Include faculty + faculty-admin accounts (education-role users are intentionally excluded from this table)
+      function addPerson(raw){
+        const person = { ...raw };
+        if (cohortAPI){
+          const override = cohortAPI.getUserCohortLabel(person.email);
+          if (override !== null && override !== undefined){
+            person.cohort = override;
+          }
+        }
+        people.push(person);
+      }
+
+      addPerson({
+        name: 'Fran Faculty',
+        email: 'fran.faculty@cpnw.org',
+        program: 'BSN',
+        school: 'CPNW Education',
+        cohort: '',
+        sid: 'EID-FF-001',
+        verified: true,
+        status: '',
+        phone: '(555) 010-2000',
+        emergName: '',
+        emergPhone: '',
+        dob: new Date(1988, 5, 12)
+      });
+
+      addPerson({
+        name: 'Faculty Admin (Demo)',
+        email: 'facadmin@cpnw.org',
+        program: 'BSN',
+        school: 'CPNW Education',
+        cohort: '',
+        sid: 'EID-FA-001',
+        verified: true,
+        status: '',
+        phone: '(555) 010-2001',
+        emergName: '',
+        emergPhone: '',
+        dob: new Date(1985, 9, 3)
       });
 
       const statusChipButtons = document.querySelectorAll('[data-status-chip]');
@@ -593,12 +662,18 @@
         const q = (reviewSearch?.value || '').toLowerCase();
         const school = schoolFilter?.value || '';
         const program = programFilter?.value || '';
-        const validCohorts = new Set(cohorts.map(c=>c.cohortLabel));
+        const validCohorts = new Set([...cohorts.map(c=>c.cohortLabel), '__unassigned__']);
         const cohortSel = cohortFilterEl && cohortFilterEl.value && validCohorts.has(cohortFilterEl.value) ? cohortFilterEl.value : '';
 
         const filtered = people.filter(p=>{
           if (currentStatusChip !== 'all' && p.status !== currentStatusChip) return false;
-          if (cohortSel && p.cohort !== cohortSel) return false;
+          if (cohortSel){
+            if (cohortSel === '__unassigned__'){
+              if ((p.cohort || '').trim()) return false;
+            }else{
+              if (p.cohort !== cohortSel) return false;
+            }
+          }
           if (school && p.school !== school) return false;
           if (program && p.program !== program) return false;
           if (q && !`${p.name} ${p.sid} ${p.email}`.toLowerCase().includes(q)) return false;
@@ -637,7 +712,7 @@
             <td>${statusBadge(p.status)}</td>
             <td>${p.program}</td>
             <td>${p.school}</td>
-            <td>${p.cohort}</td>
+            <td>${p.cohort ? p.cohort : '<span class="text-body-secondary">Unassigned</span>'}</td>
             <td>${p.sid}</td>
             <td class="text-end"><button class="btn btn-outline-secondary btn-sm" data-review="${p.sid}">View</button></td>
           </tr>

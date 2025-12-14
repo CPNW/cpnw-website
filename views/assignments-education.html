@@ -176,6 +176,22 @@
     </div>
   </main>
 
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -231,10 +247,14 @@
       // populate cohort filter
       const cohortFilter = document.getElementById('cohortFilter');
       if (cohortFilter){
-        const opts = [''];
+        const opts = ['', '__unassigned__'];
         cohorts.forEach(c => opts.push(c.cohortLabel));
         const unique = Array.from(new Set(opts));
-        cohortFilter.innerHTML = unique.map(v=>`<option value="${v}">${v || 'All cohorts'}</option>`).join('');
+        cohortFilter.innerHTML = unique.map(v => {
+          if (!v) return `<option value="">All cohorts</option>`;
+          if (v === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
+          return `<option value="${v}">${v}</option>`;
+        }).join('');
       }
 
       const programFilter = document.getElementById('programFilter');
@@ -268,6 +288,12 @@
             program: c.program,
             cohort: c.cohortLabel,
           };
+          if (cohortAPI){
+            const override = cohortAPI.getUserCohortLabel(student.email);
+            if (override !== null && override !== undefined){
+              student.cohort = override;
+            }
+          }
           students.push(student);
 
           // Some students have no current/upcoming assignment (wireframe demo)
@@ -370,7 +396,13 @@
         const rows = [];
         students.forEach(s=>{
           if (program && s.program !== program) return;
-          if (cohortVal && s.cohort !== cohortVal) return;
+          if (cohortVal){
+            if (cohortVal === '__unassigned__'){
+              if ((s.cohort || '').trim()) return;
+            }else{
+              if (s.cohort !== cohortVal) return;
+            }
+          }
           if (q && !`${s.name} ${s.sid} ${s.email}`.toLowerCase().includes(q)) return;
 
           const list = currentRange === 'past' ? listPast(s.id) : listCurrentUpcoming(s.id);

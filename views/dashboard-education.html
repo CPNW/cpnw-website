@@ -184,6 +184,9 @@
                 <h2 class="h5 fw-bold mb-0">Cohorts</h2>
                 <p class="text-body-secondary small mb-0">Filter by program, term, or academic year.</p>
               </div>
+              <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" id="createCohortBtn">
+                Create cohort
+              </button>
             </div>
             <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
               <input type="search" class="form-control form-control-sm" placeholder="Search cohorts or AY" id="cohortSearch" style="max-width: 260px;">
@@ -228,6 +231,52 @@
       </div>
     </div>
   </main>
+
+  <div class="modal fade" id="createCohortModal" tabindex="-1" aria-labelledby="createCohortModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createCohortModalLabel">Create cohort</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label" for="createCohortProgram">Program</label>
+            <select class="form-select" id="createCohortProgram"></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" for="createCohortName">Cohort name</label>
+            <input class="form-control" id="createCohortName" type="text" maxlength="75" placeholder="e.g., Evening Cohort — Tacoma" />
+            <div class="form-text d-flex justify-content-between">
+              <span>Max 75 characters.</span>
+              <span><span id="createCohortRemaining">75</span> remaining</span>
+            </div>
+          </div>
+          <div class="alert alert-warning d-none" role="alert" id="createCohortCollision"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-cpnw" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary" id="createCohortConfirm" disabled>Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
 
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
@@ -360,10 +409,30 @@
         const customDash = cohortAPI.listCustomCohortsDashboard({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX });
         customDash.forEach(c => cohorts.push(c));
       }
+      // Always include an "Unassigned" cohort option for filtering across pages.
+      const unassignedCount = cohortAPI ? cohortAPI.getUnassignedCount() : (membershipCounts.unassigned || 0);
+      cohorts.push({
+        programId: 'unassigned',
+        programName: 'Unassigned',
+        term: 'Unassigned',
+        startYear: CURRENT_AY_START,
+        ayStart: CURRENT_AY_START,
+        ayEnd: CURRENT_AY_START + 1,
+        ayLabel: `${CURRENT_AY_START}–${CURRENT_AY_START + 1}`,
+        label: 'Unassigned',
+        archived: false,
+        visibleByDefault: true,
+        students: unassignedCount,
+        approvedAssignments: 0,
+        requirementsReview: unassignedCount,
+        expiringStudents: 0,
+        custom: true
+      });
 
       function aggregateProgramsFromCohorts(list){
         const map = new Map();
         list.forEach(c => {
+          if (c.programId === 'unassigned') return;
           const key = c.programId;
           if (!map.has(key)){
             map.set(key, { id: c.programId, name: c.programName, students: 0, approvedAssignments: 0, requirementsReview: 0, expiringStudents: 0 });
@@ -380,7 +449,7 @@
       function filterCohorts({ search = '', showArchived = false, programIds = [] } = {}){
         const q = search.trim().toLowerCase();
         return cohorts.filter(c => {
-          if (programIds.length && !programIds.includes(c.programId)) return false;
+          if (programIds.length && c.programId !== 'unassigned' && !programIds.includes(c.programId)) return false;
           const withinWindow = c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX;
           const isArchived = !!c.archived;
           const inView = showArchived ? true : (!isArchived && withinWindow);
@@ -421,8 +490,83 @@
       const cohortSelectAll = document.getElementById('cohortSelectAll');
       const cohortClear = document.getElementById('cohortClear');
       const cohortList = document.getElementById('cohortList');
+      const createCohortBtn = document.getElementById('createCohortBtn');
+      const createCohortModalEl = document.getElementById('createCohortModal');
+      const createCohortProgram = document.getElementById('createCohortProgram');
+      const createCohortName = document.getElementById('createCohortName');
+      const createCohortRemaining = document.getElementById('createCohortRemaining');
+      const createCohortCollision = document.getElementById('createCohortCollision');
+      const createCohortConfirm = document.getElementById('createCohortConfirm');
 
       if (!filters) return;
+
+      const createCohortModal = createCohortModalEl ? new bootstrap.Modal(createCohortModalEl) : null;
+
+      function setCreateCollision(message){
+        if (!createCohortCollision) return;
+        if (!message){
+          createCohortCollision.classList.add('d-none');
+          createCohortCollision.textContent = '';
+          return;
+        }
+        createCohortCollision.classList.remove('d-none');
+        createCohortCollision.textContent = message;
+      }
+
+      function setCreateRemaining(){
+        if (!createCohortName || !createCohortRemaining) return;
+        const max = 75;
+        createCohortRemaining.textContent = String(Math.max(0, max - (createCohortName.value || '').length));
+      }
+
+      function programNameForId(programId){
+        const entry = programs.find(p => p.id === programId);
+        return entry ? entry.name : (programId || '').toUpperCase();
+      }
+
+      function validateCreate(){
+        if (!createCohortConfirm || !createCohortProgram || !createCohortName){
+          return false;
+        }
+        const programId = createCohortProgram.value || '';
+        const programName = programNameForId(programId);
+        const name = (createCohortName.value || '').trim();
+        if (!programId || !name){
+          setCreateCollision('');
+          createCohortConfirm.disabled = true;
+          return false;
+        }
+        const fullLabel = `${programName} – ${name}`;
+        const existsInList = cohorts.some(c => (c.label || '').toLowerCase() === fullLabel.toLowerCase());
+        const customCollision = cohortAPI?.findCustomCohortCollision(programName, name);
+        if (existsInList || customCollision){
+          setCreateCollision(`A cohort named "${fullLabel}" already exists. Please choose a unique name.`);
+          createCohortConfirm.disabled = true;
+          return false;
+        }
+        setCreateCollision('');
+        createCohortConfirm.disabled = false;
+        return true;
+      }
+
+      function refreshPrograms(){
+        programs = aggregateProgramsFromCohorts(cohorts);
+      }
+
+      function openCreateCohort(){
+        if (!createCohortModal) return;
+        setCreateCollision('');
+        if (createCohortName) createCohortName.value = '';
+        setCreateRemaining();
+        if (createCohortProgram){
+          createCohortProgram.innerHTML = programs
+            .filter(p => p.id !== 'unassigned')
+            .map(p => `<option value="${p.id}">${p.name}</option>`)
+            .join('');
+        }
+        validateCreate();
+        createCohortModal.show();
+      }
 
       function renderFilters(filterText = ''){
         filters.innerHTML = '';
@@ -480,7 +624,9 @@
           input.checked = preserveSelection ? existingSelection.has(c.label) || existingSelection.size === 0 : true;
 
           const textSpan = document.createElement('span');
-          textSpan.textContent = `${c.label} • AY ${c.ayLabel}`;
+          textSpan.textContent = c.programId === 'unassigned'
+            ? 'Unassigned • No cohort assigned'
+            : `${c.label} • AY ${c.ayLabel}`;
 
           label.appendChild(input);
           label.appendChild(textSpan);
@@ -504,7 +650,7 @@
         const activeCohorts = visibleCohorts.filter(c => !c.archived);
         const selectedCohorts = getSelectedCohorts()
           .filter(c => !c.archived)
-          .filter(c => !selectedProgramIds.length || selectedProgramIds.includes(c.programId));
+          .filter(c => !selectedProgramIds.length || c.programId === 'unassigned' || selectedProgramIds.includes(c.programId));
         const cohortsForTotals = selectedCohorts.length ? selectedCohorts : activeCohorts;
         const cohortCountSelected = cohortsForTotals.length;
         if (programCount){
@@ -558,20 +704,24 @@
           const li = document.createElement('li');
           li.className = 'cpnw-shell p-2 d-flex justify-content-between align-items-center';
           const left = document.createElement('div');
-          left.innerHTML = `<div class="fw-semibold">${c.label}</div><div class="small text-body-secondary">AY ${c.ayLabel}</div>`;
+          left.innerHTML = c.programId === 'unassigned'
+            ? `<div class="fw-semibold">Unassigned</div><div class="small text-body-secondary">No cohort assigned</div>`
+            : `<div class="fw-semibold">${c.label}</div><div class="small text-body-secondary">AY ${c.ayLabel}</div>`;
           const actions = document.createElement('div');
           actions.className = 'd-flex align-items-center gap-2';
           const badge = document.createElement('span');
           badge.className = `badge ${c.archived ? 'text-bg-secondary' : 'text-bg-success'}`;
           badge.textContent = c.archived ? 'Archived' : 'Active';
-          const toggleBtn = document.createElement('button');
-          toggleBtn.type = 'button';
-          toggleBtn.className = 'btn btn-outline-secondary btn-sm';
-          toggleBtn.textContent = c.archived ? 'Restore' : 'Archive';
-          toggleBtn.dataset.cohortAction = c.archived ? 'restore' : 'archive';
-          toggleBtn.dataset.cohortLabel = c.label;
           actions.appendChild(badge);
-          actions.appendChild(toggleBtn);
+          if (c.programId !== 'unassigned'){
+            const toggleBtn = document.createElement('button');
+            toggleBtn.type = 'button';
+            toggleBtn.className = 'btn btn-outline-secondary btn-sm';
+            toggleBtn.textContent = c.archived ? 'Restore' : 'Archive';
+            toggleBtn.dataset.cohortAction = c.archived ? 'restore' : 'archive';
+            toggleBtn.dataset.cohortLabel = c.label;
+            actions.appendChild(toggleBtn);
+          }
           li.appendChild(left);
           li.appendChild(actions);
           cohortList.appendChild(li);
@@ -667,6 +817,7 @@
           const action = btn.dataset.cohortAction;
           const cohort = cohorts.find(c => c.label === label);
           if (!cohort) return;
+          if (cohort.programId === 'unassigned') return;
           const confirmMsg = action === 'archive'
             ? `Archive cohort "${label}"? It will be hidden from active views unless you show archived.`
             : `Restore cohort "${label}" to active views?`;
@@ -687,6 +838,56 @@
           readinessToggle.textContent = expanded ? 'View all' : 'Collapse';
         });
       }
+
+      if (createCohortBtn){
+        createCohortBtn.addEventListener('click', openCreateCohort);
+      }
+      createCohortName?.addEventListener('input', () => {
+        setCreateRemaining();
+        validateCreate();
+      });
+      createCohortProgram?.addEventListener('change', validateCreate);
+      createCohortModalEl?.addEventListener('shown.bs.modal', () => {
+        createCohortName?.focus();
+      });
+      createCohortConfirm?.addEventListener('click', () => {
+        if (!validateCreate()) return;
+        if (!cohortAPI) return;
+        const programId = createCohortProgram.value || '';
+        const programName = programNameForId(programId);
+        const name = (createCohortName.value || '').trim();
+        const record = cohortAPI.addCustomCohort({ name, program: programName, ayStart: CURRENT_AY_START });
+        if (!record){
+          setCreateCollision('Unable to create cohort. Please choose a different name.');
+          return;
+        }
+        const ayStart = record.ayStart;
+        const ayEnd = ayStart + 1;
+        cohorts.push({
+          programId,
+          programName: record.program,
+          term: 'Custom',
+          startYear: ayStart,
+          ayStart,
+          ayEnd,
+          ayLabel: `${ayStart}–${ayEnd}`,
+          label: `${record.program} – ${record.name}`,
+          archived: false,
+          visibleByDefault: true,
+          students: 0,
+          approvedAssignments: 0,
+          requirementsReview: 0,
+          expiringStudents: 0,
+          custom: true,
+          cohortId: record.id
+        });
+        refreshPrograms();
+        renderFilters(programSearch ? programSearch.value : '');
+        const selectedIds = getSelectedPrograms().map(p => p.id);
+        renderCohortFilters(cohortSearch ? cohortSearch.value : '', cohortShowArchived && cohortShowArchived.checked, selectedIds, true);
+        summarize();
+        createCohortModal.hide();
+      });
 
       renderCohorts();
     })();

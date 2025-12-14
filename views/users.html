@@ -145,6 +145,22 @@
     </div>
   </main>
 
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -201,6 +217,14 @@
                 <span>Max 75 characters.</span>
                 <span><span id="newCohortRemaining">75</span> remaining</span>
               </div>
+              <div class="alert alert-warning mt-2 d-none" role="alert" id="newCohortCollision"></div>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="assignMode" id="assignUnassigned" value="unassigned" />
+              <label class="form-check-label fw-semibold" for="assignUnassigned">Leave unassigned (no cohort)</label>
             </div>
           </div>
 
@@ -251,14 +275,17 @@
 
       // Modal refs
       const assignModalEl = document.getElementById('assignCohortModal');
+      const assignCohortModalLabel = document.getElementById('assignCohortModalLabel');
       const assignUserSummary = document.getElementById('assignUserSummary');
       const assignProgramEl = document.getElementById('assignProgram');
       const assignCohortSelect = document.getElementById('assignCohortSelect');
       const assignExisting = document.getElementById('assignExisting');
       const assignNew = document.getElementById('assignNew');
+      const assignUnassigned = document.getElementById('assignUnassigned');
       const newCohortWrap = document.getElementById('newCohortWrap');
       const newCohortName = document.getElementById('newCohortName');
       const newCohortRemaining = document.getElementById('newCohortRemaining');
+      const newCohortCollision = document.getElementById('newCohortCollision');
       const assignApproveBtn = document.getElementById('assignApproveBtn');
       const assignError = document.getElementById('assignError');
 
@@ -303,14 +330,23 @@
         }))
         .concat(customCohorts);
 
-      const activeStudentsCount = Math.max(30, activeCohorts.reduce((acc, c) => acc + c.students, 0));
+      function applyStoredCohort(item){
+        if (!cohortAPI) return item;
+        const override = cohortAPI.getUserCohortLabel(item.email);
+        if (override === null || override === undefined) return item;
+        return { ...item, cohortLabel: override };
+      }
 
       // Build cohort filter options
       if (cohortFilter){
-        const opts = [''];
+        const opts = ['', '__unassigned__'];
         activeCohorts.forEach(c => opts.push(c.cohortLabel));
         const unique = Array.from(new Set(opts));
-        cohortFilter.innerHTML = unique.map(val => `<option value="${val}">${val || 'All cohorts'}</option>`).join('');
+        cohortFilter.innerHTML = unique.map(val => {
+          if (!val) return `<option value="">All cohorts</option>`;
+          if (val === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
+          return `<option value="${val}">${val}</option>`;
+        }).join('');
       }
 
       const data = [];
@@ -319,27 +355,27 @@
         { name: 'Alex Educator', email: 'alex@cpnw.org', program: 'BSN', role: 'education', status: 'active', date: '2025-02-15' },
         { name: 'Fran Faculty', email: 'fran.faculty@cpnw.org', program: 'BSN', role: 'faculty', status: 'active', date: '2025-02-10' }
       );
-      // Generate active students to match dashboard totals
-      const programsCycle = programDefs.map(p => p.name);
-      const cohortsCycle = activeCohorts.map(c => c.cohortLabel);
-      for (let i = 0; i < activeStudentsCount; i++){
-        const prog = programsCycle[i % programsCycle.length];
-        const coh = cohortsCycle[i % cohortsCycle.length] || '';
-        data.push({
-          name: `Student ${i+1}`,
-          email: `student${i+1}@demo.cpnw.org`,
-          program: prog,
-          role: 'student',
-          status: 'active',
-          date: '2025-02-20',
-          cohortLabel: coh
-        });
-      }
+      // Generate active students from the same cohort-based roster used across pages
+      activeCohorts.forEach((c, idx) => {
+        const count = Math.min(12, Math.max(0, Number(c.students) || 0));
+        for (let i = 0; i < count; i++){
+          data.push(applyStoredCohort({
+            name: `Student ${idx+1}-${i+1}`,
+            email: `student${idx+1}${i+1}@demo.cpnw.org`,
+            program: c.program || c.programName || 'BSN',
+            role: 'student',
+            status: 'active',
+            date: '2025-02-20',
+            cohortLabel: c.cohortLabel
+          }));
+        }
+      });
       // Requests, inactive samples
+      const cohortLabelsCycle = activeCohorts.map(c => c.cohortLabel);
       data.push(
-        { name: 'Riley Request', email: 'riley.req@cpnw.org', program: 'Surg Tech', role: 'student', status: 'request-new', date: '2025-02-16', cohortLabel: cohortsCycle[0] || '' },
-        { name: 'Casey Return', email: 'casey.ret@cpnw.org', program: 'BSN', role: 'faculty', status: 'request-returned', date: '2025-02-12', cohortLabel: cohortsCycle[1] || '' },
-        { name: 'Taylor Inactive', email: 'taylor.inactive@cpnw.org', program: 'ADN', role: 'student', status: 'inactive', date: '2025-01-20', cohortLabel: cohortsCycle[2] || '' }
+        applyStoredCohort({ name: 'Riley Request', email: 'riley.req@cpnw.org', program: 'Surg Tech', role: 'student', status: 'request-new', date: '2025-02-16', cohortLabel: cohortLabelsCycle[0] || '' }),
+        applyStoredCohort({ name: 'Casey Return', email: 'casey.ret@cpnw.org', program: 'BSN', role: 'faculty', status: 'request-returned', date: '2025-02-12', cohortLabel: cohortLabelsCycle[1] || '' }),
+        applyStoredCohort({ name: 'Taylor Inactive', email: 'taylor.inactive@cpnw.org', program: 'ADN', role: 'student', status: 'inactive', date: '2025-01-20', cohortLabel: cohortLabelsCycle[2] || '' })
       );
 
       let currentStatus = 'active';
@@ -358,7 +394,7 @@
 
       function actionsFor(item){
         if (item.status === 'active'){
-          return ['Deactivate'];
+          return ['Reassign', 'Deactivate'];
         }
         if (item.status.startsWith('request')){
           return ['Approve','Return','Decline'];
@@ -384,7 +420,13 @@
           }
           if (role && item.role !== role) return false;
           if (program && item.program !== program) return false;
-          if (cohort && !item.cohortLabel?.includes(cohort)) return false;
+          if (cohort){
+            if (cohort === '__unassigned__'){
+              if (item.cohortLabel && item.cohortLabel.trim()) return false;
+            }else{
+              if (!item.cohortLabel?.includes(cohort)) return false;
+            }
+          }
           if (query && !`${item.name} ${item.email}`.toLowerCase().includes(query)) return false;
           return true;
         });
@@ -498,6 +540,40 @@
         newCohortRemaining.textContent = String(remaining);
       }
 
+      function setCollision(message){
+        if (!newCohortCollision) return;
+        if (!message){
+          newCohortCollision.classList.add('d-none');
+          newCohortCollision.textContent = '';
+          return;
+        }
+        newCohortCollision.classList.remove('d-none');
+        newCohortCollision.textContent = message;
+      }
+
+      function validateNewCohortName(){
+        if (!assignApproveBtn) return true;
+        if (!assignNew?.checked) return true;
+        const programName = assignProgramEl?.value || '';
+        const name = (newCohortName?.value || '').trim();
+        if (!name){
+          setCollision('');
+          assignApproveBtn.disabled = false;
+          return true;
+        }
+        const fullLabel = `${programName} – ${name}`;
+        const existsInList = activeCohorts.some(c => (c.cohortLabel || '').toLowerCase() === fullLabel.toLowerCase());
+        const customCollision = cohortAPI?.findCustomCohortCollision(programName, name);
+        if (existsInList || customCollision){
+          setCollision(`A cohort named "${fullLabel}" already exists. Please choose a unique name.`);
+          assignApproveBtn.disabled = true;
+          return false;
+        }
+        setCollision('');
+        assignApproveBtn.disabled = false;
+        return true;
+      }
+
       function buildAssignableCohorts(programName){
         const list = activeCohorts.filter(c => (c.program || '').toLowerCase() === String(programName || '').toLowerCase());
         // If program has no active cohorts, fall back to all active cohorts.
@@ -514,24 +590,23 @@
         assignCohortSelect.innerHTML = options.join('') || '<option value="">No cohorts available</option>';
       }
 
-      function bumpCohortMembershipFromSelection(selectionValue, selectedLabel){
+      function bumpCohortMembershipFromSelection(selectionValue, selectedLabel, delta){
         if (!cohortAPI) return;
         if (!selectionValue) return;
         if (selectionValue.startsWith('custom:')){
-          cohortAPI.bumpMembership(selectionValue.slice('custom:'.length), 1);
+          cohortAPI.bumpMembership(selectionValue.slice('custom:'.length), delta);
           return;
         }
         if (selectionValue.startsWith('seed:')){
           const label = selectedLabel || selectionValue.slice('seed:'.length);
-          cohortAPI.bumpMembership(cohortAPI.seedKeyForLabel(label), 1);
+          cohortAPI.bumpMembership(cohortAPI.seedKeyForLabel(label), delta);
         }
       }
 
-      function addCustomCohortAndReturnLabel(programName, cohortName){
+      function createCustomCohort(programName, cohortName){
         if (!cohortAPI) return null;
         const record = cohortAPI.addCustomCohort({ name: cohortName, program: programName, ayStart: CURRENT_AY_START });
         if (!record) return null;
-        cohortAPI.bumpMembership(record.id, 1);
         const cohortLabel = `${record.program} – ${record.name}`;
         // Update in-memory cohort list so it immediately appears in dropdowns for this page session.
         activeCohorts.push({
@@ -539,10 +614,10 @@
           cohortLabel,
           program: record.program,
           ayStart: record.ayStart,
-          students: 1,
+          students: 0,
           custom: true
         });
-        return cohortLabel;
+        return { record, cohortLabel };
       }
 
       let pendingUser = null;
@@ -551,9 +626,11 @@
         assignModal = new bootstrap.Modal(assignModalEl);
       }
 
-      function openAssignModalFor(user){
+      function openAssignModalFor(user, { title = 'Approve request' } = {}){
         pendingUser = user;
         setAssignError('');
+        setCollision('');
+        if (assignCohortModalLabel) assignCohortModalLabel.textContent = title;
         if (assignUserSummary){
           assignUserSummary.textContent = `${user.name} • ${user.email}`;
         }
@@ -562,62 +639,122 @@
         }
         if (assignExisting) assignExisting.checked = true;
         if (assignNew) assignNew.checked = false;
+        if (assignUnassigned) assignUnassigned.checked = false;
         if (newCohortWrap) newCohortWrap.hidden = true;
         if (newCohortName) newCohortName.value = '';
         setRemaining();
+        validateNewCohortName();
         populateAssignSelect(user.program);
+        // Preselect current cohort if assigned.
+        const currentLabel = (user.cohortLabel || '').trim();
+        if (!currentLabel && assignUnassigned){
+          assignUnassigned.checked = true;
+          setAssignMode();
+        }else if (currentLabel && assignCohortSelect){
+          const match = Array.from(assignCohortSelect.options).find(o => (o.textContent || '').trim() === currentLabel);
+          if (match){
+            assignCohortSelect.value = match.value;
+          }
+        }
         assignModal?.show();
       }
 
       function setAssignMode(){
         const isNew = !!assignNew?.checked;
+        const isUnassigned = !!assignUnassigned?.checked;
         if (newCohortWrap) newCohortWrap.hidden = !isNew;
+        if (assignCohortSelect) assignCohortSelect.disabled = isUnassigned;
         if (!isNew) setAssignError('');
+        if (!isNew) setCollision('');
         setRemaining();
+        validateNewCohortName();
       }
 
       assignExisting?.addEventListener('change', setAssignMode);
       assignNew?.addEventListener('change', setAssignMode);
-      newCohortName?.addEventListener('input', setRemaining);
+      assignUnassigned?.addEventListener('change', setAssignMode);
+      newCohortName?.addEventListener('input', () => {
+        setRemaining();
+        validateNewCohortName();
+      });
 
       userTableBody?.addEventListener('click', (event) => {
         const btn = event.target.closest('button[data-row-action]');
         if (!btn) return;
         const action = (btn.dataset.rowAction || '').trim();
-        if (action !== 'Approve') return;
         const email = btn.dataset.userEmail;
         const user = data.find(u => u.email === email);
         if (!user) return;
-        openAssignModalFor(user);
+        if (action === 'Approve'){
+          openAssignModalFor(user, { title: 'Approve request' });
+        }
+        if (action === 'Reassign'){
+          openAssignModalFor(user, { title: 'Reassign cohort' });
+        }
       });
 
       assignApproveBtn?.addEventListener('click', () => {
         if (!pendingUser) return;
         const programName = pendingUser.program || '';
         const isNew = !!assignNew?.checked;
+        const isUnassigned = !!assignUnassigned?.checked;
 
-        if (isNew){
+        // Previous assignment
+        const prevLabel = (pendingUser.cohortLabel || '').trim();
+        let prevKey = 'unassigned';
+        if (prevLabel && cohortAPI){
+          const match = activeCohorts.find(c => c.cohortLabel === prevLabel);
+          prevKey = match?.custom ? match.cohortId : cohortAPI.seedKeyForLabel(prevLabel);
+        }
+
+        // New assignment
+        let newKey = 'unassigned';
+        let newLabel = '';
+        let newEntry = { type: 'unassigned' };
+
+        if (isUnassigned){
+          newKey = 'unassigned';
+          newLabel = '';
+          newEntry = { type: 'unassigned' };
+        }else if (isNew){
           const name = (newCohortName?.value || '').trim();
           if (!name){
             setAssignError('Enter a cohort name.');
             return;
           }
-          const label = addCustomCohortAndReturnLabel(programName, name);
-          if (!label){
+          const created = createCustomCohort(programName, name);
+          if (!created){
             setAssignError('Unable to create cohort. Please try again.');
             return;
           }
-          pendingUser.cohortLabel = label;
+          newKey = created.record.id;
+          newLabel = created.cohortLabel;
+          newEntry = { type: 'custom', cohortId: created.record.id };
         }else{
           const selection = assignCohortSelect?.value || '';
-          const selectedLabel = assignCohortSelect?.selectedOptions?.[0]?.textContent || '';
+          const selectedLabel = (assignCohortSelect?.selectedOptions?.[0]?.textContent || '').trim();
           if (!selection || !selectedLabel){
             setAssignError('Select a cohort.');
             return;
           }
-          bumpCohortMembershipFromSelection(selection, selectedLabel);
-          pendingUser.cohortLabel = selectedLabel;
+          newLabel = selectedLabel;
+          if (selection.startsWith('custom:')){
+            newKey = selection.slice('custom:'.length);
+            newEntry = { type: 'custom', cohortId: newKey };
+          }else{
+            newKey = cohortAPI ? cohortAPI.seedKeyForLabel(newLabel) : `seed:${newLabel}`;
+            newEntry = { type: 'seed', label: newLabel };
+          }
         }
+
+        if (cohortAPI && prevKey !== newKey){
+          cohortAPI.bumpMembership(prevKey, -1);
+          cohortAPI.bumpMembership(newKey, 1);
+        }
+        if (cohortAPI){
+          cohortAPI.setUserCohort(pendingUser.email, newEntry);
+        }
+        pendingUser.cohortLabel = newLabel;
 
         pendingUser.status = 'active';
         pendingUser.date = new Date().toISOString().slice(0, 10);
@@ -625,10 +762,14 @@
 
         // Rebuild cohort filter options so the new custom cohort can be selected immediately.
         if (cohortFilter){
-          const opts = [''];
+          const opts = ['', '__unassigned__'];
           activeCohorts.forEach(c => opts.push(c.cohortLabel));
           const unique = Array.from(new Set(opts));
-          cohortFilter.innerHTML = unique.map(val => `<option value="${val}">${val || 'All cohorts'}</option>`).join('');
+          cohortFilter.innerHTML = unique.map(val => {
+            if (!val) return `<option value="">All cohorts</option>`;
+            if (val === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
+            return `<option value="${val}">${val}</option>`;
+          }).join('');
         }
 
         updateTable();
