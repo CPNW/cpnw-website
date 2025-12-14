@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Users</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button data-theme-toggle type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" aria-label="Toggle dark and light mode">
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="dashboard-education.html">Back to dashboard</a>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="dashboard-education.html">Requirements</a>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#">My Profile</a></li>
+              <li><a class="dropdown-item" href="#">Security Settings</a></li>
+              <li><a class="dropdown-item" href="#">My Demographics</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="review-education.html">Review</a></li>
+              <li><a class="dropdown-item" href="assignments-education.html">Assignments</a></li>
+              <li><a class="dropdown-item" href="reports-education.html">Education Reports</a></li>
+              <li><a class="dropdown-item" href="users.html">Users</a></li>
+              <li><a class="dropdown-item" href="#">Background + WATCH Reports</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Admin</p>
+          <h1 class="h3 fw-semibold mb-1">Users</h1>
+          <p class="text-body-secondary mb-0">Manage active users, requests, and inactive accounts in one place.</p>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <div class="d-flex gap-1">
+          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status-chip="active">Active</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="requests">Requests</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="inactive">Inactive</button>
+          <!-- Archived view removed; handled by support -->
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+          <input type="search" class="form-control form-control-sm" placeholder="Search name, email" id="userSearch" style="min-width: 200px;">
+          <select class="form-select form-select-sm" id="roleFilter" style="min-width: 150px;">
+            <option value="">All roles</option>
+            <option value="education">Education</option>
+            <option value="faculty">Faculty</option>
+            <option value="student">Student</option>
+          </select>
+          <select class="form-select form-select-sm" id="programFilter" style="min-width: 150px;">
+            <option value="">All programs</option>
+            <option value="BSN">BSN</option>
+            <option value="ADN">ADN</option>
+            <option value="Surg Tech">Surg Tech</option>
+            <option value="Allied">Allied</option>
+          </select>
+          <select class="form-select form-select-sm" id="cohortFilter" style="min-width: 160px;">
+            <option value="">All cohorts</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cpnw-shell p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h2 class="h6 fw-bold mb-1" id="tableTitle">Active users</h2>
+            <p class="small text-body-secondary mb-0" id="tableSubtitle">All active accounts across your programs.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="bulkAction">Bulk actions</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 cpnw-table">
+            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+              <tr>
+                <th scope="col"><input type="checkbox" id="selectAll"></th>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Program</th>
+                <th scope="col">Role</th>
+                <th scope="col">Status</th>
+                <th scope="col">Submitted/Updated</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+          </table>
+        </div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="pageSize">Show</label>
+            <select class="form-select form-select-sm" id="pageSize" style="width: auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span class="small text-body-secondary">entries</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="prevPage">Prev</button>
+            <div class="small text-body-secondary" id="pageInfo">Page 1</div>
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="nextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (function(){
+      // Mirror cohort logic to keep student counts in sync with dashboard
+      const TODAY = new Date();
+      const FALL_START_MONTH = 7;
+      const THIS_YEAR = TODAY.getFullYear();
+      const CURRENT_AY_START = TODAY.getMonth() >= FALL_START_MONTH ? THIS_YEAR : THIS_YEAR - 1;
+      const AY_VISIBLE_MIN = CURRENT_AY_START - 3;
+      const AY_VISIBLE_MAX = CURRENT_AY_START + 1;
+      const TERMS = ['Fall', 'Winter', 'Spring', 'Summer'];
+      const termAdjust = { Fall: 3, Winter: 1, Spring: 0, Summer: -2 };
+      const programDefs = [
+        { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
+        { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
+        { id: 'surg', name: 'Surg Tech', base: 8, aySpan: 2 }
+      ];
+
+      // DOM refs
+      const statusChips = document.querySelectorAll('[data-status-chip]');
+      const userSearch = document.getElementById('userSearch');
+      const roleFilter = document.getElementById('roleFilter');
+      const programFilter = document.getElementById('programFilter');
+      const cohortFilter = document.getElementById('cohortFilter');
+      const userTableBody = document.getElementById('userTableBody');
+      const tableTitle = document.getElementById('tableTitle');
+      const tableSubtitle = document.getElementById('tableSubtitle');
+      const selectAll = document.getElementById('selectAll');
+      const bulkAction = document.getElementById('bulkAction');
+      const pageSizeSelect = document.getElementById('pageSize');
+      const prevPageBtn = document.getElementById('prevPage');
+      const nextPageBtn = document.getElementById('nextPage');
+      const pageInfo = document.getElementById('pageInfo');
+
+      function deriveAY(term, startYear){
+        const year = Number(startYear);
+        const isFall = term.toLowerCase() === 'fall';
+        const ayStart = isFall ? year : year - 1;
+        const ayEnd = ayStart + 1;
+        return { ayStart, ayEnd };
+      }
+
+      const cohortSeeds = [];
+      programDefs.forEach(p => {
+        const ayStarts = Array.from({length: p.aySpan}, (_, i) => CURRENT_AY_START - i);
+        ayStarts.forEach(ay => {
+          TERMS.forEach(term => {
+            const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
+            cohortSeeds.push({
+              programId: p.id,
+              programName: p.name,
+              term,
+              year: term === 'Fall' ? ay : ay + 1,
+              students,
+              ayStart: deriveAY(term, term === 'Fall' ? ay : ay + 1).ayStart
+            });
+          });
+        });
+      });
+
+      const activeCohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+      const activeStudentsCount = Math.max(30, activeCohorts.reduce((acc, c) => acc + c.students, 0));
+      // Build cohort filter options
+      if (cohortFilter){
+        const opts = [''];
+        activeCohorts.forEach(c => {
+          const label = `${c.programName} – ${c.term} ${c.year}`;
+          opts.push(label);
+        });
+        const unique = Array.from(new Set(opts));
+        cohortFilter.innerHTML = unique.map(val => `<option value="${val}">${val || 'All cohorts'}</option>`).join('');
+      }
+
+      const data = [];
+      // Seed some staff/faculty actives
+      data.push(
+        { name: 'Alex Educator', email: 'alex@cpnw.org', program: 'BSN', role: 'education', status: 'active', date: '2025-02-15' },
+        { name: 'Fran Faculty', email: 'fran.faculty@cpnw.org', program: 'BSN', role: 'faculty', status: 'active', date: '2025-02-10' }
+      );
+      // Generate active students to match dashboard totals
+      const programsCycle = programDefs.map(p => p.name);
+      const cohortsCycle = activeCohorts.map(c => `${c.programName} – ${c.term} ${c.year}`);
+      for (let i = 0; i < activeStudentsCount; i++){
+        const prog = programsCycle[i % programsCycle.length];
+        const coh = cohortsCycle[i % cohortsCycle.length] || '';
+        data.push({
+          name: `Student ${i+1}`,
+          email: `student${i+1}@demo.cpnw.org`,
+          program: prog,
+          role: 'student',
+          status: 'active',
+          date: '2025-02-20',
+          cohortLabel: coh
+        });
+      }
+      // Requests, inactive samples
+      data.push(
+        { name: 'Riley Request', email: 'riley.req@cpnw.org', program: 'Surg Tech', role: 'student', status: 'request-new', date: '2025-02-16', cohortLabel: cohortsCycle[0] || '' },
+        { name: 'Casey Return', email: 'casey.ret@cpnw.org', program: 'BSN', role: 'faculty', status: 'request-returned', date: '2025-02-12', cohortLabel: cohortsCycle[1] || '' },
+        { name: 'Taylor Inactive', email: 'taylor.inactive@cpnw.org', program: 'ADN', role: 'student', status: 'inactive', date: '2025-01-20', cohortLabel: cohortsCycle[2] || '' }
+      );
+
+      let currentStatus = 'active';
+      let currentPage = 1;
+      let pageSize = Number(pageSizeSelect?.value || 10);
+
+      function statusLabel(item){
+        switch(item.status){
+          case 'active': return 'Active';
+          case 'request-new': return 'Request: New';
+          case 'request-returned': return 'Request: Returned';
+          case 'inactive': return 'Inactive';
+          default: return item.status;
+        }
+      }
+
+      function actionsFor(item){
+        if (item.status === 'active'){
+          return ['Deactivate'];
+        }
+        if (item.status.startsWith('request')){
+          return ['Approve','Return','Decline'];
+        }
+        if (item.status === 'inactive'){
+          return ['Reactivate'];
+        }
+        return [];
+      }
+
+      function updateTable(){
+        const query = (userSearch?.value || '').toLowerCase();
+        const role = roleFilter?.value || '';
+        const program = programFilter?.value || '';
+        const cohort = cohortFilter?.value || '';
+
+        const filtered = data.filter(item => {
+          if (currentStatus === 'requests'){
+            if (!(item.status === 'request-new' || item.status === 'request-returned')) return false;
+          } else {
+            if (currentStatus === 'active' && item.status !== 'active') return false;
+            if (currentStatus === 'inactive' && item.status !== 'inactive') return false;
+          }
+          if (role && item.role !== role) return false;
+          if (program && item.program !== program) return false;
+          if (cohort && !item.cohortLabel?.includes(cohort)) return false;
+          if (query && !`${item.name} ${item.email}`.toLowerCase().includes(query)) return false;
+          return true;
+        });
+
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * pageSize;
+        const end = Math.min(start + pageSize, total);
+        const pageItems = filtered.slice(start, end);
+
+        userTableBody.innerHTML = '';
+        pageItems.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><input type="checkbox" class="form-check-input" /></td>
+            <td class="fw-semibold">${item.name}</td>
+            <td>${item.email}</td>
+            <td>${item.program}</td>
+            <td class="text-capitalize">${item.role}</td>
+            <td><span class="badge ${item.status === 'archived' ? 'text-bg-secondary' : item.status.startsWith('request') ? 'text-bg-warning text-dark' : 'text-bg-success'}">${statusLabel(item)}</span></td>
+            <td>${item.status.startsWith('request') ? 'Submitted' : 'Updated'} ${item.date}</td>
+            <td class="text-end">
+              ${actionsFor(item).map(a => `<button class="btn btn-outline-secondary btn-sm me-1">${a}</button>`).join('')}
+            </td>
+          `;
+          userTableBody.appendChild(tr);
+        });
+
+        tableTitle.textContent =
+          currentStatus === 'requests' ? 'Account requests' :
+          currentStatus === 'inactive' ? 'Inactive users' :
+          'Active users';
+
+        tableSubtitle.textContent =
+          currentStatus === 'requests'
+            ? 'New and returned account requests'
+            : currentStatus === 'inactive'
+              ? 'Deactivate/reactivate accounts'
+              : 'All active accounts across your programs.';
+
+        if (pageInfo){
+          pageInfo.textContent = total ? `Showing ${start + 1}–${end} of ${total}` : 'No results';
+        }
+        if (prevPageBtn && nextPageBtn){
+          prevPageBtn.disabled = currentPage <= 1;
+          nextPageBtn.disabled = end >= total;
+        }
+      }
+
+      statusChips.forEach(btn => {
+        btn.addEventListener('click', () => {
+          statusChips.forEach(b => b.classList.remove('btn-cpnw-primary','btn-cpnw','btn-outline-secondary'));
+          statusChips.forEach(b => b.classList.add('btn-outline-secondary'));
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-cpnw','btn-cpnw-primary');
+          currentStatus = btn.dataset.statusChip;
+          selectAll.checked = false;
+          currentPage = 1;
+          updateTable();
+        });
+      });
+
+      [userSearch, roleFilter, programFilter, cohortFilter].forEach(el => {
+        if (el) el.addEventListener('input', () => { currentPage = 1; updateTable(); });
+        if (el && el.tagName === 'SELECT') el.addEventListener('change', () => { currentPage = 1; updateTable(); });
+      });
+
+      bulkAction?.addEventListener('click', () => {
+        alert('Bulk action drawer would open here (approve/return/decline/reactivate/archive).');
+      });
+
+      if (pageSizeSelect){
+        pageSizeSelect.addEventListener('change', () => {
+          pageSize = Number(pageSizeSelect.value || 15);
+          currentPage = 1;
+          updateTable();
+        });
+      }
+      if (prevPageBtn){
+        prevPageBtn.addEventListener('click', () => {
+          if (currentPage > 1){
+            currentPage -= 1;
+            updateTable();
+          }
+        });
+      }
+      if (nextPageBtn){
+        nextPageBtn.addEventListener('click', () => {
+          currentPage += 1;
+          updateTable();
+        });
+      }
+
+      updateTable();
+    })();
+  </script>
+</body>
+</html>

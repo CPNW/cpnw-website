@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Education Reports</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button data-theme-toggle type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" aria-label="Toggle dark and light mode">
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container position-relative">
+      <img src="../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="dashboard-education.html">Back to dashboard</a>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="dashboard-education.html">Requirements</a>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#">My Profile</a></li>
+              <li><a class="dropdown-item" href="#">Security Settings</a></li>
+              <li><a class="dropdown-item" href="#">My Demographics</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="review-education.html">Review</a></li>
+              <li><a class="dropdown-item" href="assignments-education.html">Assignments</a></li>
+              <li><a class="dropdown-item" href="reports-education.html">Education Reports</a></li>
+              <li><a class="dropdown-item" href="users.html">Users</a></li>
+              <li><a class="dropdown-item" href="#">Background + WATCH Reports</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Admin</p>
+          <h1 class="h3 fw-semibold mb-1">Education Reports</h1>
+          <p class="text-body-secondary mb-0">Program and cohort compliance for education coordinators.</p>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="locationFilter">
+              <option value="">All locations</option>
+              <option>Seattle</option>
+              <option>Portland</option>
+              <option>Boise</option>
+            </select>
+            <label for="locationFilter">Locations</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="programFilter">
+              <option value="">All programs</option>
+              <option value="BSN">BSN</option>
+              <option value="ADN">ADN</option>
+              <option value="Surg Tech">Surg Tech</option>
+            </select>
+            <label for="programFilter">Programs</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="cohortFilter">
+              <option value="">All cohorts</option>
+            </select>
+            <label for="cohortFilter">Cohorts</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <input type="search" class="form-control" id="reportSearch" placeholder="Search..." />
+            <label for="reportSearch">Search name/email</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <div class="d-flex gap-2">
+          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status="all">All</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status="complete">Complete</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status="incomplete">Incomplete</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status="expiring">Expiring</button>
+        </div>
+        <div class="d-flex gap-2 ms-auto">
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="showSelected">Show selected</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="exportBtn">Export</button>
+        </div>
+      </div>
+
+      <div class="cpnw-shell p-3 p-md-4">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 cpnw-table">
+            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+              <tr>
+                <th scope="col"><input type="checkbox" id="selectAllReports" /></th>
+                <th scope="col">Name</th>
+                <th scope="col">Program</th>
+                <th scope="col">Cohort</th>
+            <th scope="col">CPNW</th>
+            <th scope="col">ED</th>
+            <th scope="col">HC</th>
+            <th scope="col">OIG</th>
+            <th scope="col">SAM</th>
+                <th scope="col">Docs</th>
+                <th scope="col">Start</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reportTableBody"></tbody>
+          </table>
+        </div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="reportPageSize">Show</label>
+            <select class="form-select form-select-sm" id="reportPageSize" style="width: auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span class="small text-body-secondary">entries</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="reportPrevPage">Prev</button>
+            <div class="small text-body-secondary" id="reportPageInfo">Page 1</div>
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="reportNextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Docs modal -->
+  <div class="modal fade" id="reqModal" tabindex="-1" aria-labelledby="reqModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title" id="reqModalLabel">Requirements</h5>
+            <p class="small text-body-secondary mb-0" id="reqModalSub"></p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+            <table class="table align-middle mb-0">
+              <thead class="text-body-secondary small">
+                <tr>
+                  <th scope="col">Requirement</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody id="reqModalBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-cpnw btn-cpnw-primary" data-bs-dismiss="modal" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="docsModal" tabindex="-1" aria-labelledby="docsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title" id="docsModalLabel">Passport File Management</h5>
+            <p class="small text-body-secondary mb-0">Includes requirement uploads and direct folder uploads.</p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3">
+            Please avoid commas in file names. Recommended: Location_FileName_IndividualName.pdf
+          </div>
+          <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+            <table class="table align-middle mb-0">
+              <thead class="text-body-secondary small">
+                <tr>
+                  <th scope="col"><input type="checkbox" id="selectAllDocs" /></th>
+                  <th scope="col">File name</th>
+                  <th scope="col">Requirement</th>
+                  <th scope="col">Upload date</th>
+                  <th scope="col" class="text-end">Remove</th>
+                </tr>
+              </thead>
+              <tbody id="docsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button class="btn btn-outline-secondary btn-cpnw" type="button" id="downloadSelectedDocs">Download selected</button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-cpnw" type="button">Upload files</button>
+            <button class="btn btn-cpnw btn-cpnw-primary" type="button">Download all</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (function(){
+      const TODAY = new Date();
+      const FALL_START_MONTH = 7;
+      const CURRENT_AY_START = TODAY.getMonth() >= FALL_START_MONTH ? TODAY.getFullYear() : TODAY.getFullYear() - 1;
+      const AY_VISIBLE_MIN = CURRENT_AY_START - 3;
+      const AY_VISIBLE_MAX = CURRENT_AY_START + 1;
+      const TERMS = ['Fall','Winter','Spring','Summer'];
+
+      const programDefs = [
+        { id:'BSN', base: 12, aySpan: 2 },
+        { id:'ADN', base: 10, aySpan: 2 },
+        { id:'Surg Tech', base: 8, aySpan: 2 }
+      ];
+      const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
+      const cohortSeeds = [];
+      programDefs.forEach(p => {
+        Array.from({length:p.aySpan},(_,i)=>CURRENT_AY_START - i).forEach(ay=>{
+          TERMS.forEach(term=>{
+            const year = term === 'Fall' ? ay : ay + 1;
+            const ayStart = term === 'Fall' ? ay : ay - 1;
+            const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
+            const statusPool = ['complete','incomplete','expiring'];
+            cohortSeeds.push({
+              cohortLabel: `${p.id} – ${term} ${year}`,
+              program: p.id,
+              ayStart,
+              students,
+              status: statusPool[(students + ayStart) % statusPool.length],
+              start: `${term} ${year}`
+            });
+          });
+        });
+      });
+      const cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+
+      // Populate cohort filter
+      const cohortFilter = document.getElementById('cohortFilter');
+      if (cohortFilter){
+        const opts = [''];
+        cohorts.forEach(c => opts.push(c.cohortLabel));
+        const unique = Array.from(new Set(opts));
+        cohortFilter.innerHTML = unique.map(val => `<option value="${val}">${val || 'All cohorts'}</option>`).join('');
+      }
+
+      // Build people data
+      const users = [];
+      cohorts.forEach((c, idx) => {
+        const base = Math.min(12, c.students);
+        for (let i=0; i<base; i++){
+          users.push({
+            name: `Student ${idx+1}-${i+1}`,
+            email: `student${idx+1}${i+1}@demo.cpnw.org`,
+            program: c.program,
+            cohort: c.cohortLabel,
+            role: 'student',
+            status: c.status,
+            start: c.start,
+            reqs: {
+              cpnw: (i % 3) ? 'complete' : 'incomplete',
+              ed: (i % 4) ? 'complete' : 'incomplete',
+              hc: (i % 5) ? 'complete' : 'incomplete',
+              oig: (i % 2) ? 'pass' : 'fail',
+              sam: (i % 3) ? 'pass' : 'fail'
+            },
+            docs: Math.max(1, (i % 4)),
+            docItems: [
+              { file:'Immunization.pdf', req:'Immunization', date:'2025-02-10' },
+              { file:'BLS.pdf', req:'BLS', date:'2025-02-08' }
+            ]
+          });
+        }
+        // Add a few faculty and faculty-admin tied to this program
+        users.push({
+          name: `Faculty ${c.program} ${idx+1}`,
+          email: `faculty${idx+1}@demo.cpnw.org`,
+          program: c.program,
+          cohort: c.cohortLabel,
+          role: 'faculty',
+          status: c.status,
+          start: c.start,
+          reqs: {
+            cpnw: 'complete',
+            ed: 'complete',
+            hc: 'complete',
+            oig: 'pass',
+            sam: 'pass'
+          },
+          docs: 1,
+          docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
+        });
+        users.push({
+          name: `Faculty Admin ${c.program} ${idx+1}`,
+          email: `facadmin${idx+1}@demo.cpnw.org`,
+          program: c.program,
+          cohort: c.cohortLabel,
+          role: 'faculty-admin',
+          status: c.status,
+          start: c.start,
+          reqs: {
+            cpnw: 'complete',
+            ed: 'complete',
+            hc: 'complete',
+            oig: (idx % 2) ? 'pass' : 'fail',
+            sam: (idx % 3) ? 'pass' : 'fail'
+          },
+          docs: 1,
+          docItems: [{ file:'AdminAccess.pdf', req:'Admin Approval', date:'2025-02-11' }]
+        });
+      });
+
+      const statusButtons = document.querySelectorAll('[data-status]');
+      const reportSearch = document.getElementById('reportSearch');
+      const locationFilter = document.getElementById('locationFilter'); // placeholder, not applied to sample data
+      const programFilterSelect = document.getElementById('programFilter');
+      const reportTableBody = document.getElementById('reportTableBody');
+      const selectAllReports = document.getElementById('selectAllReports');
+      const showSelectedBtn = document.getElementById('showSelected');
+      const exportBtn = document.getElementById('exportBtn');
+      const reportPageSizeSelect = document.getElementById('reportPageSize');
+      const reportPrevPage = document.getElementById('reportPrevPage');
+      const reportNextPage = document.getElementById('reportNextPage');
+      const reportPageInfo = document.getElementById('reportPageInfo');
+      const reqModalBody = document.getElementById('reqModalBody');
+      const reqModalLabel = document.getElementById('reqModalLabel');
+      const reqModalSub = document.getElementById('reqModalSub');
+      let currentStatus = 'all';
+      let reportPage = 1;
+      let reportPageSize = Number(reportPageSizeSelect?.value || 10);
+      const selectedIds = new Set();
+
+      function statusBadge(val){
+        if (!val) return '<span class="text-body-secondary">—</span>';
+        const normalized = val.toLowerCase();
+        let cls = 'text-bg-secondary';
+        if (normalized === 'complete' || normalized === 'pass') cls = 'text-bg-success';
+        else if (normalized === 'expiring') cls = 'text-bg-warning text-dark';
+        else cls = 'text-bg-danger';
+        const label = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+        return `<span class="badge ${cls}">${label}</span>`;
+      }
+
+      const reqCounts = { cpnw:20, ed:4, hc:6 };
+      const reqLabels = { cpnw:'CPNW', ed:'Education', hc:'Healthcare' };
+
+      function buildReqList(type, overallStatus){
+        const total = reqCounts[type] || 0;
+        const list = [];
+        for (let i=1;i<=total;i++){
+          let itemStatus = 'complete';
+          if (overallStatus !== 'complete'){
+            itemStatus = (i % 4 === 0) ? 'incomplete' : 'complete';
+          }
+          list.push({ name: `${reqLabels[type] || type.toUpperCase()} Req ${i}`, status: itemStatus });
+        }
+        return list;
+      }
+
+      function renderReports(showOnlySelected = false){
+        const q = (reportSearch?.value || '').toLowerCase();
+        const program = programFilterSelect?.value || '';
+        const cohort = cohortFilter?.value || '';
+        const filtered = users.filter(u=>{
+          if (currentStatus !== 'all' && u.status !== currentStatus) return false;
+          if (program && u.program !== program) return false;
+          if (cohort && u.cohort !== cohort) return false;
+          if (showOnlySelected && !selectedIds.has(u.email)) return false;
+          if (q && !`${u.name} ${u.email}`.toLowerCase().includes(q)) return false;
+          return true;
+        });
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / reportPageSize));
+        if (reportPage > totalPages) reportPage = totalPages;
+        const start = (reportPage - 1) * reportPageSize;
+        const end = Math.min(start + reportPageSize, total);
+        const pageItems = filtered.slice(start, end);
+
+        reportTableBody.innerHTML = '';
+        pageItems.forEach(u=>{
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><input type="checkbox" class="form-check-input report-row" data-id="${u.email}" ${selectedIds.has(u.email) ? 'checked' : ''}></td>
+            <td class="fw-semibold">${u.name}</td>
+            <td>${u.program}</td>
+            <td>${u.cohort}</td>
+            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="cpnw" data-user="${u.email}">${statusBadge(u.reqs?.cpnw)}</button></td>
+            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="ed" data-user="${u.email}">${statusBadge(u.reqs?.ed)}</button></td>
+            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="hc" data-user="${u.email}">${statusBadge(u.reqs?.hc)}</button></td>
+            <td>${statusBadge(u.reqs?.oig)}</td>
+            <td>${statusBadge(u.reqs?.sam)}</td>
+            <td><button class="btn btn-outline-secondary btn-sm" data-docs="${u.name}">Open</button></td>
+            <td>${u.start}</td>
+            <td class="text-end"><button class="btn btn-outline-secondary btn-sm">Show</button></td>
+          `;
+          reportTableBody.appendChild(tr);
+        });
+
+        if (reportPageInfo){
+          reportPageInfo.textContent = total ? `Showing ${start + 1}–${end} of ${total}` : 'No results';
+        }
+        if (reportPrevPage && reportNextPage){
+          reportPrevPage.disabled = reportPage <= 1;
+          reportNextPage.disabled = end >= total;
+        }
+      }
+
+      statusButtons.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          statusButtons.forEach(b=>{
+            b.classList.remove('btn-cpnw','btn-cpnw-primary');
+            b.classList.add('btn-outline-secondary');
+          });
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-cpnw','btn-cpnw-primary');
+          currentStatus = btn.dataset.status;
+          reportPage = 1;
+          renderReports();
+        });
+      });
+
+      [reportSearch, programFilterSelect, cohortFilter].forEach(el=>{
+        if (el){
+          el.addEventListener('input', () => { reportPage = 1; renderReports(); });
+          if (el.tagName === 'SELECT') el.addEventListener('change', () => { reportPage = 1; renderReports(); });
+        }
+      });
+
+      if (reportPageSizeSelect){
+        reportPageSizeSelect.addEventListener('change', () => {
+          reportPageSize = Number(reportPageSizeSelect.value || 10);
+          reportPage = 1;
+          renderReports();
+        });
+      }
+      if (reportPrevPage){
+        reportPrevPage.addEventListener('click', () => {
+          if (reportPage > 1){
+            reportPage -= 1;
+            renderReports();
+          }
+        });
+      }
+      if (reportNextPage){
+        reportNextPage.addEventListener('click', () => {
+          reportPage += 1;
+          renderReports();
+        });
+      }
+
+      document.addEventListener('click', (e)=>{
+        if (e.target.matches('.report-row')){
+          const id = e.target.dataset.id;
+          if (id){
+            if (e.target.checked){ selectedIds.add(id); }
+            else{ selectedIds.delete(id); }
+          }
+        }
+
+        const reqBtn = e.target.closest('.req-cell');
+        if (reqBtn){
+          const type = reqBtn.dataset.reqType;
+          const userId = reqBtn.dataset.user;
+          const person = users.find(u=>u.email === userId);
+          if (person && reqCounts[type]){
+            const list = buildReqList(type, person.reqs?.[type]);
+            reqModalLabel.textContent = `${reqLabels[type] || type.toUpperCase()} requirements`;
+            reqModalSub.textContent = person.name;
+            reqModalBody.innerHTML = list.map(item=>`
+              <tr>
+                <td>${item.name}</td>
+                <td>${statusBadge(item.status)}</td>
+              </tr>
+            `).join('');
+            const modal = new bootstrap.Modal(document.getElementById('reqModal'));
+            modal.show();
+          }
+        }
+
+        const btn = e.target.closest('[data-docs]');
+        if (!btn) return;
+        const name = btn.dataset.docs;
+        const person = users.find(u=>u.name === name);
+        if (!person) return;
+        const tbody = document.getElementById('docsTableBody');
+        tbody.innerHTML = (person.docItems || []).map(d=>`
+          <tr>
+            <td><input type="checkbox" class="form-check-input"></td>
+            <td>${d.file}</td>
+            <td>${d.req}</td>
+            <td>${d.date}</td>
+            <td class="text-end"><button class="btn btn-link text-danger p-0">🗑</button></td>
+          </tr>
+        `).join('');
+        const modal = new bootstrap.Modal(document.getElementById('docsModal'));
+        modal.show();
+      });
+
+      if (selectAllReports){
+        selectAllReports.addEventListener('change', () => {
+          const check = selectAllReports.checked;
+          document.querySelectorAll('.report-row').forEach(cb => {
+            cb.checked = check;
+            const id = cb.dataset.id;
+            if (id){
+              if (check) selectedIds.add(id);
+              else selectedIds.delete(id);
+            }
+          });
+        });
+      }
+
+      showSelectedBtn?.addEventListener('click', () => {
+        renderReports(true);
+      });
+
+      exportBtn?.addEventListener('click', () => {
+        alert(`Exporting ${selectedIds.size} selected records (demo).`);
+      });
+
+      renderReports();
+    })();
+  </script>
+</body>
+</html>

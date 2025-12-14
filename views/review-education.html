@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Review Submissions</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button data-theme-toggle type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" aria-label="Toggle dark and light mode">
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container position-relative">
+      <img src="../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="dashboard-education.html">Back to dashboard</a>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="dashboard-education.html">Requirements</a>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#">My Profile</a></li>
+              <li><a class="dropdown-item" href="#">Security Settings</a></li>
+              <li><a class="dropdown-item" href="#">My Demographics</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="review-education.html">Review</a></li>
+              <li><a class="dropdown-item" href="assignments-education.html">Assignments</a></li>
+              <li><a class="dropdown-item" href="reports-education.html">Education Reports</a></li>
+              <li><a class="dropdown-item" href="users.html">Users</a></li>
+              <li><a class="dropdown-item" href="#">Background + WATCH Reports</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Admin</p>
+          <h1 class="h3 fw-semibold mb-1">Review Submissions</h1>
+          <p class="text-body-secondary mb-0">Verify student submissions by school, program, and status.</p>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="schoolFilter">
+              <option value="">All schools</option>
+              <option>CPNW Education</option>
+              <option>CPNW University</option>
+              <option>Evergreen College</option>
+            </select>
+            <label for="schoolFilter">School</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="programFilter">
+              <option value="">All programs</option>
+              <option value="BSN">BSN</option>
+              <option value="ADN">ADN</option>
+              <option value="Surg Tech">Surg Tech</option>
+            </select>
+            <label for="programFilter">Program</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="cohortFilter">
+              <option value="">All cohorts</option>
+            </select>
+            <label for="cohortFilter">Cohorts</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <input type="search" class="form-control" id="reviewSearch" placeholder="Search name" />
+            <label for="reviewSearch">Search by name</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <div class="d-flex gap-2">
+          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status-chip="all">All</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="needs-review">Needs review</button>
+        </div>
+      </div>
+
+      <div class="cpnw-shell p-3 p-md-4">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 cpnw-table">
+            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+              <tr>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="name">Name</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="verified">Verified</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="status">Status</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="program">Program</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="school">School</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="cohort">Cohort</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="sid">SID/EID</button></th>
+                <th scope="col" class="text-end">View</th>
+              </tr>
+            </thead>
+            <tbody id="reviewTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="reviewPageSize">Show</label>
+            <select class="form-select form-select-sm" id="reviewPageSize" style="width: auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span class="small text-body-secondary">entries</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="reviewPrevPage">Prev</button>
+            <div class="small text-body-secondary" id="reviewPageInfo">Page 1</div>
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="reviewNextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header sticky-top" style="background: var(--bs-body-bg); z-index: 5;">
+          <div>
+            <h5 class="modal-title" id="reviewModalLabel">Submission details</h5>
+            <p class="small text-body-secondary mb-0" id="reviewModalSub"></p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3 mb-3 align-items-center">
+            <div class="col-12 col-md-9">
+              <div class="row g-3">
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">School</div>
+                  <div id="modalSchool" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Program</div>
+                  <div id="modalProgram" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Cohort</div>
+                  <div id="modalCohort" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">SID/EID</div>
+                  <div id="modalSid" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Email</div>
+                  <div id="modalEmail" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Contact phone</div>
+                  <div id="modalPhone" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Emergency contact name</div>
+                  <div id="modalEmergName" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Emergency contact phone</div>
+                  <div id="modalEmergPhone" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">DOB</div>
+                  <div id="modalDob" class="fw-semibold"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3 text-center">
+              <div class="border rounded p-2 d-inline-flex flex-column align-items-center">
+                <div class="text-body-secondary small mb-1">Profile photo</div>
+                <div class="bg-light-subtle border rounded" style="width:120px; height:140px; background:url('../images/spores-watermark.png') center/60% no-repeat;"></div>
+              </div>
+            </div>
+          </div>
+          <hr class="my-3">
+          <h6 class="fw-bold mb-2">Clinical assignments</h6>
+          <div class="table-responsive mb-4">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="text-body-secondary small">
+                <tr>
+                  <th>Location</th>
+                  <th>Start date</th>
+                  <th>End date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="assignTableBody"></tbody>
+            </table>
+          </div>
+
+          <hr class="my-3">
+          <h6 class="fw-bold mb-2">Requirements</h6>
+          <div class="table-responsive" style="max-height: 360px; overflow: auto;">
+            <table class="table align-middle mb-0">
+              <thead class="text-body-secondary small">
+                <tr>
+                  <th>Requirement Name</th>
+                  <th>Status</th>
+                  <th>Expiration</th>
+                  <th>Due Date</th>
+                  <th>Score</th>
+                  <th>Type</th>
+                  <th>Frequency</th>
+                  <th>Category</th>
+                  <th>Reviewer</th>
+                </tr>
+              </thead>
+              <tbody id="reqTableBody"></tbody>
+            </table>
+          </div>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2">
+            <label class="small text-body-secondary mb-0" for="reqPageSize">Show</label>
+            <select class="form-select form-select-sm" id="reqPageSize" style="width:auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span class="small text-body-secondary">requirements</span>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <button class="btn btn-outline-secondary btn-sm" type="button" id="reqPrev">Prev</button>
+              <div class="small text-body-secondary" id="reqPageInfo">Page 1</div>
+              <button class="btn btn-outline-secondary btn-sm" type="button" id="reqNext">Next</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary btn-cpnw" type="button" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="reqDetailModal" tabindex="-1" aria-labelledby="reqDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="w-100">
+            <div class="position-sticky top-0 bg-body border rounded px-3 py-2 mb-2" style="z-index:5;">
+              <div class="text-body-secondary small">Student</div>
+              <div class="fw-semibold" id="reqDetailStudent"></div>
+            </div>
+            <h5 class="modal-title" id="reqDetailModalLabel"></h5>
+            <p class="small text-body-secondary mb-0" id="reqDetailMeta"></p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <div class="text-body-secondary small mb-1">Instructions</div>
+            <p class="mb-0" id="reqDetailInstructions"></p>
+          </div>
+
+          <div class="row g-4">
+            <div class="col-12 col-lg-8 border-end">
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Submission</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input req-submission" type="radio" name="submission" id="subVaccinated" data-target="subVaccinatedFields">
+                    <label class="form-check-label" for="subVaccinated">Vaccinated / Completed</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input req-submission" type="radio" name="submission" id="subSeries" data-target="subSeriesFields">
+                    <label class="form-check-label" for="subSeries">Series in progress</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input req-submission" type="radio" name="submission" id="subOther" data-target="subOtherFields">
+                    <label class="form-check-label" for="subOther">Other</label>
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <div class="req-submission-fields d-none" id="subVaccinatedFields">
+                    <label class="form-label small mb-1" for="vaccDate">Vaccination / completion date</label>
+                    <input type="date" class="form-control form-control-sm" id="vaccDate">
+                  </div>
+                  <div class="req-submission-fields d-none" id="subSeriesFields">
+                    <div class="row g-2">
+                      <div class="col-6">
+                        <label class="form-label small mb-1" for="seriesStart">Series start</label>
+                        <input type="date" class="form-control form-control-sm" id="seriesStart">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small mb-1" for="seriesDue">Next dose due</label>
+                        <input type="date" class="form-control form-control-sm" id="seriesDue">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="req-submission-fields d-none" id="subOtherFields">
+                    <label class="form-label small mb-1" for="otherNotes">Notes</label>
+                    <textarea class="form-control form-control-sm" id="otherNotes" rows="2" placeholder="Describe submission..."></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Declination reasons</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="declEgg">
+                    <label class="form-check-label" for="declEgg">Egg allergy</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="declIngredient">
+                    <label class="form-check-label" for="declIngredient">Ingredient allergy</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="declGB">
+                    <label class="form-check-label" for="declGB">Guillain Barre</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="declOther">
+                    <label class="form-check-label" for="declOther">Other</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Upload document</div>
+                <input class="form-control" type="file" id="reqUpload">
+              </div>
+
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Decision</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decApprove">
+                    <label class="form-check-label" for="decApprove">Approve</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decConditional" data-requires-reason>
+                    <label class="form-check-label" for="decConditional">Conditionally approve</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decReject" data-requires-reason>
+                    <label class="form-check-label" for="decReject">Reject</label>
+                  </div>
+                </div>
+                <div class="mt-2 d-none" id="decisionReasonWrap">
+                  <label class="form-label small mb-1" for="decisionReason">Reason</label>
+                  <textarea class="form-control form-control-sm" id="decisionReason" rows="2" placeholder="Enter reason for conditional approval or rejection"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+              <div class="fw-semibold mb-1">Message</div>
+              <div class="border rounded p-2 mb-2" style="max-height: 220px; overflow: auto; background: color-mix(in srgb, var(--bs-body-bg) 80%, transparent);">
+                <div class="text-body-secondary small mb-1">Thread</div>
+                <div class="d-flex flex-column gap-2" id="msgThread"></div>
+              </div>
+              <div class="mb-2">
+                <div class="text-body-secondary small mb-1">Send to (select one or more)</div>
+                <div class="d-flex flex-column gap-1" id="msgRecipient"></div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-1" for="msgBody">Message</label>
+                <textarea class="form-control form-control-sm" id="msgBody" rows="6" placeholder="Leave a note..."></textarea>
+              </div>
+              <button class="btn btn-outline-secondary btn-cpnw btn-sm" type="button" id="msgSend">Send message</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary btn-cpnw" type="button" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../js/main.js"></script>
+  <script>
+    (function(){
+      const TODAY = new Date();
+      const FALL_START_MONTH = 7;
+      const CURRENT_AY_START = TODAY.getMonth() >= FALL_START_MONTH ? TODAY.getFullYear() : TODAY.getFullYear() - 1;
+      const AY_VISIBLE_MIN = CURRENT_AY_START - 3;
+      const AY_VISIBLE_MAX = CURRENT_AY_START + 1;
+      const TERMS = ['Fall','Winter','Spring','Summer'];
+
+      const programDefs = [
+        { id:'BSN', base: 12, aySpan: 2 },
+        { id:'ADN', base: 10, aySpan: 2 },
+        { id:'Surg Tech', base: 8, aySpan: 2 }
+      ];
+      const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
+      const cohortSeeds = [];
+      programDefs.forEach(p => {
+        Array.from({length:p.aySpan},(_,i)=>CURRENT_AY_START - i).forEach(ay=>{
+          TERMS.forEach(term=>{
+            const year = term === 'Fall' ? ay : ay + 1;
+            const ayStart = term === 'Fall' ? ay : ay - 1;
+            const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
+            cohortSeeds.push({
+              cohortLabel: `${p.id} – ${term} ${year}`,
+              program: p.id,
+              ayStart,
+              students,
+              school: (p.id === 'BSN' ? 'CPNW Education' : p.id === 'ADN' ? 'CPNW University' : 'CPNW Education')
+            });
+          });
+        });
+      });
+      const cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+      const cohortFilterEl = document.getElementById('cohortFilter');
+      if (cohortFilterEl){
+        const options = [''];
+        cohorts.forEach(c => options.push(c.cohortLabel));
+        cohortFilterEl.innerHTML = options.map(opt => `<option value="${opt}">${opt || 'All cohorts'}</option>`).join('');
+      }
+
+      const people = [];
+      const statusPool = ['needs-review','']; // blank = no outstanding review
+      cohorts.forEach((c, idx) => {
+        const count = Math.min(10, c.students);
+        for (let i=0; i<count; i++){
+          const dob = new Date(1995 + (i % 10), i % 12, (i % 27) + 1);
+          people.push({
+            name: `Student ${idx+1}-${i+1}`,
+            email: `student${idx+1}${i+1}@demo.cpnw.org`,
+            program: c.program,
+            school: c.school,
+            cohort: c.cohortLabel,
+            sid: String(1000 + idx * 50 + i),
+            verified: (i + idx) % 3 === 0,
+            status: statusPool[(i + idx) % statusPool.length],
+            phone: `(555) 01${i}${idx}-${1000 + i}`,
+            emergName: `Emergency Contact ${i+1}`,
+            emergPhone: `(555) 77${idx}-${2000 + i}`,
+            dob
+          });
+        }
+      });
+
+      const statusChipButtons = document.querySelectorAll('[data-status-chip]');
+      const reviewTableBody = document.getElementById('reviewTableBody');
+      const reviewSearch = document.getElementById('reviewSearch');
+      const schoolFilter = document.getElementById('schoolFilter');
+      const programFilter = document.getElementById('programFilter');
+      const reviewPageSizeSelect = document.getElementById('reviewPageSize');
+      const reviewPrevPage = document.getElementById('reviewPrevPage');
+      const reviewNextPage = document.getElementById('reviewNextPage');
+      const reviewPageInfo = document.getElementById('reviewPageInfo');
+      const reviewTotal = document.getElementById('reviewTotal');
+      const sortButtons = document.querySelectorAll('.sort');
+      let currentStatusChip = 'all';
+      let reviewPage = 1;
+      let reviewPageSize = Number(reviewPageSizeSelect?.value || 10);
+      let sortState = { field:'', dir:'asc' };
+
+      const reqCounts = { cpnw:20, ed:4, hc:6 };
+      const reqLabels = { cpnw:'CPNW', ed:'Education', hc:'Healthcare' };
+      const freqOptions = ['Annual','Once','Seasonal'];
+      const typePool = ['Immunization','Forms','Certs','Insurance','Licenses','Site Orientations'];
+      const reviewerPool = ['Alexis Key', 'Jordan Price', 'Sam Patel'];
+      const reqStatusPool = [
+        'Not Submitted',
+        'Submitted',
+        'In Review',
+        'Approved',
+        'Conditionally Approved',
+        'Rejected',
+        'Declination',
+        'Expired',
+        'Expiring'
+      ];
+
+      function buildReqs(overallStatus){
+        const rows = [];
+        Object.entries(reqCounts).forEach(([key,count])=>{
+          for(let i=1;i<=count;i++){
+            const isCPNW = key === 'cpnw';
+            const isElearning = isCPNW && i <= 10;
+            const type = isElearning ? 'eLearning' : typePool[(i + count) % typePool.length];
+            const frequency = freqOptions[i % freqOptions.length];
+            const category = key === 'cpnw' ? 'CPNW Clinical Passport' : key === 'ed' ? 'Education' : 'Healthcare';
+            const reviewer = reviewerPool[i % reviewerPool.length];
+            let status = reqStatusPool[(i + (overallStatus === 'needs-review' ? 1 : 3) + key.length) % reqStatusPool.length];
+            // Submitted is not used for eLearning; convert to Not Submitted.
+            if (isElearning && status === 'Submitted') status = 'Not Submitted';
+            const hasScore = isElearning && status !== 'Not Submitted';
+            const scoreVal = hasScore ? 80 + (i % 21) : '';
+            const exp = frequency === 'Once' ? null : new Date(TODAY.getFullYear(), TODAY.getMonth() + (6 + i), TODAY.getDate());
+            const due = new Date(TODAY.getFullYear(), TODAY.getMonth() + (2 + i%3), TODAY.getDate());
+            rows.push({
+              name: `${reqLabels[key]} Req ${i}`,
+              status,
+              expiration: exp,
+              dueDate: status === 'Approved' || status === 'Conditionally Approved' || status === 'Submitted' ? exp || due : due,
+              score: scoreVal,
+              type,
+              frequency,
+              category,
+              reviewer
+            });
+          }
+        });
+        return rows;
+      }
+
+      const messageThreads = {
+        'CPNW Req 1': [
+          [
+            { from:'Student', to:['Education'], body:'I just uploaded my proof for Hep B.', at:'2025-02-01' },
+            { from:'Education', to:['Student'], body:'Got it—please confirm the date on page 2 is signed.', at:'2025-02-02' }
+          ]
+        ],
+        'CPNW Req 2': [
+          [
+            { from:'Student', to:['Healthcare'], body:'Need clarification on site orientation steps.', at:'2025-02-03' },
+            { from:'Healthcare', to:['Student'], body:'Please complete module 1 before Friday.', at:'2025-02-03' }
+          ]
+        ]
+      };
+      let currentReqThreadKey = '';
+      let currentReplyThreadIndex = null;
+
+      function statusBadge(val){
+        if (!val) return '<span class="text-body-secondary">—</span>';
+        const map = {
+          'needs-review': { text:'Needs review', cls:'text-bg-warning text-dark' },
+          'approved': { text:'Approved', cls:'text-bg-success' },
+          'returned': { text:'Returned', cls:'text-bg-danger' }
+        };
+        const info = map[val] || { text: val, cls:'text-bg-secondary' };
+        return `<span class="badge ${info.cls}">${info.text}</span>`;
+      }
+
+      function renderReviews(){
+        const q = (reviewSearch?.value || '').toLowerCase();
+        const school = schoolFilter?.value || '';
+        const program = programFilter?.value || '';
+        const validCohorts = new Set(cohorts.map(c=>c.cohortLabel));
+        const cohortSel = cohortFilterEl && cohortFilterEl.value && validCohorts.has(cohortFilterEl.value) ? cohortFilterEl.value : '';
+
+        const filtered = people.filter(p=>{
+          if (currentStatusChip !== 'all' && p.status !== currentStatusChip) return false;
+          if (cohortSel && p.cohort !== cohortSel) return false;
+          if (school && p.school !== school) return false;
+          if (program && p.program !== program) return false;
+          if (q && !`${p.name} ${p.sid} ${p.email}`.toLowerCase().includes(q)) return false;
+          return true;
+        });
+
+        // Needs review first, then blanks
+        filtered.sort((a,b)=>{
+          const aNeeds = a.status === 'needs-review' ? 0 : 1;
+          const bNeeds = b.status === 'needs-review' ? 0 : 1;
+          if (aNeeds !== bNeeds) return aNeeds - bNeeds;
+
+          const field = sortState.field;
+          const dir = sortState.dir === 'desc' ? -1 : 1;
+          if (!field){
+            return a.name.localeCompare(b.name);
+          }
+          const valA = (a[field] ?? '').toString().toLowerCase();
+          const valB = (b[field] ?? '').toString().toLowerCase();
+          if (valA < valB) return -1 * dir;
+          if (valA > valB) return 1 * dir;
+          return a.name.localeCompare(b.name);
+        });
+
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / reviewPageSize));
+        if (reviewPage > totalPages) reviewPage = totalPages;
+        const startIdx = (reviewPage - 1) * reviewPageSize;
+        const endIdx = Math.min(startIdx + reviewPageSize, total);
+        const pageItems = filtered.slice(startIdx, endIdx);
+
+        reviewTableBody.innerHTML = pageItems.map(p=>`
+          <tr>
+            <td class="fw-semibold">${p.name}</td>
+            <td>${p.verified ? '✓' : ''}</td>
+            <td>${statusBadge(p.status)}</td>
+            <td>${p.program}</td>
+            <td>${p.school}</td>
+            <td>${p.cohort}</td>
+            <td>${p.sid}</td>
+            <td class="text-end"><button class="btn btn-outline-secondary btn-sm" data-review="${p.sid}">View</button></td>
+          </tr>
+        `).join('');
+
+        if (reviewPageInfo){
+          reviewPageInfo.textContent = total ? `Showing ${startIdx + 1}–${endIdx} of ${total}` : 'No results';
+        }
+        if (reviewPrevPage && reviewNextPage){
+          reviewPrevPage.disabled = reviewPage <= 1;
+          reviewNextPage.disabled = endIdx >= total;
+        }
+      }
+
+      statusChipButtons.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          statusChipButtons.forEach(b=>{
+            b.classList.remove('btn-cpnw','btn-cpnw-primary');
+            b.classList.add('btn-outline-secondary');
+          });
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-cpnw','btn-cpnw-primary');
+          currentStatusChip = btn.dataset.statusChip;
+          reviewPage = 1;
+          renderReviews();
+        });
+      });
+
+      [reviewSearch, schoolFilter, programFilter, cohortFilterEl].forEach(el=>{
+        if (!el) return;
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', ()=>{
+          reviewPage = 1;
+          renderReviews();
+        });
+      });
+
+      reviewPageSizeSelect?.addEventListener('change', ()=>{
+        reviewPageSize = Number(reviewPageSizeSelect.value || 10);
+        reviewPage = 1;
+        renderReviews();
+      });
+
+      reviewPrevPage?.addEventListener('click', ()=>{
+        if (reviewPage > 1){
+          reviewPage -= 1;
+          renderReviews();
+        }
+      });
+      reviewNextPage?.addEventListener('click', ()=>{
+        reviewPage += 1;
+        renderReviews();
+      });
+
+      // initialize status buttons (set "All" active)
+      statusChipButtons.forEach(btn=>{
+        if (btn.dataset.statusChip === 'all'){
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-cpnw','btn-cpnw-primary');
+        }
+      });
+
+      sortButtons.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const field = btn.dataset.sort;
+          if (!field) return;
+          if (sortState.field === field){
+            sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+          }else{
+            sortState = { field, dir:'asc' };
+          }
+          renderReviews();
+        });
+      });
+
+      document.addEventListener('click', (e)=>{
+        const btn = e.target.closest('[data-review]');
+        if (!btn) return;
+        const sid = btn.dataset.review;
+        const person = people.find(p=>p.sid === sid);
+        if (!person) return;
+        document.getElementById('reviewModalLabel').textContent = person.name;
+        document.getElementById('reviewModalSub').textContent = person.email;
+        document.getElementById('modalSchool').textContent = person.school;
+        document.getElementById('modalProgram').textContent = person.program;
+        document.getElementById('modalCohort').textContent = person.cohort;
+        document.getElementById('modalSid').textContent = person.sid;
+        document.getElementById('modalEmail').textContent = person.email;
+        document.getElementById('modalPhone').textContent = person.phone || '—';
+        document.getElementById('modalEmergName').textContent = person.emergName || '—';
+        document.getElementById('modalEmergPhone').textContent = person.emergPhone || '—';
+        document.getElementById('modalDob').textContent = person.dob ? person.dob.toLocaleDateString() : '—';
+
+        // Clinical assignments (sample)
+        const assignBody = document.getElementById('assignTableBody');
+        const assignStatuses = ['Approved','Rejected',''];
+        const assignRows = Array.from({length:3},(_,i)=>{
+          const start = new Date(TODAY);
+          start.setDate(start.getDate() - (60 - i*10));
+          const end = new Date(start);
+          end.setDate(end.getDate() + 60);
+          return {
+            location: i % 2 === 0 ? 'CPNW Medical Center' : 'CPNW Healthcare Facility',
+            start,
+            end,
+            status: assignStatuses[(i + person.sid.length) % assignStatuses.length]
+          };
+        });
+        assignBody.innerHTML = assignRows.map(a=>`
+          <tr>
+            <td>${a.location}</td>
+            <td>${a.start.toLocaleDateString()}</td>
+            <td>${a.end.toLocaleDateString()}</td>
+            <td>${a.status || '—'}</td>
+          </tr>
+        `).join('');
+
+        // Requirements with pagination within modal
+        let reqPageSize = Number(document.getElementById('reqPageSize')?.value || 10);
+        let reqPage = 1;
+      const reqRows = buildReqs(person.status === 'needs-review' ? 'needs-review' : 'complete');
+        const orderedReqs = [
+          ...reqRows.filter(r=>r.type !== 'eLearning'),
+          ...reqRows.filter(r=>r.type === 'eLearning')
+        ];
+        const reqBody = document.getElementById('reqTableBody');
+        const fmt = (d) => d instanceof Date ? d.toLocaleDateString() : '—';
+        const reqPrev = document.getElementById('reqPrev');
+        const reqNext = document.getElementById('reqNext');
+        const reqPageInfo = document.getElementById('reqPageInfo');
+
+        function renderReqs(){
+          const total = orderedReqs.length;
+          const totalPages = Math.max(1, Math.ceil(total / reqPageSize));
+          if (reqPage > totalPages) reqPage = totalPages;
+          const start = (reqPage - 1) * reqPageSize;
+          const end = Math.min(start + reqPageSize, total);
+          const pageItems = orderedReqs.slice(start, end);
+        reqBody.innerHTML = pageItems.map((r, idx)=>{
+          let statusBadge = '<span class="badge text-bg-secondary">Not Submitted</span>';
+          const statusMap = {
+            'Not Submitted':'text-bg-secondary',
+            'Submitted':'text-bg-info text-dark',
+            'In Review':'text-bg-warning text-dark',
+              'Approved':'text-bg-success',
+              'Conditionally Approved':'text-bg-primary',
+              'Rejected':'text-bg-danger',
+              'Declination':'text-bg-danger-subtle text-danger',
+              'Expired':'text-bg-dark',
+              'Expiring':'text-bg-warning text-dark'
+            };
+            if (r.status && statusMap[r.status]){
+              statusBadge = `<span class="badge ${statusMap[r.status]}">${r.status}</span>`;
+            }
+            const scoreCell = r.type === 'eLearning' ? (r.score || '—') : '—';
+          const abbr = r.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,6);
+          const requiredBy = r.category === 'CPNW Clinical Passport' ? 'CPNW' : r.category === 'Education' ? 'Education' : 'CPNW Healthcare Facility';
+          const nameCell = r.type === 'eLearning'
+            ? `<span class="text-body-secondary">${r.name}</span>`
+            : `<button class="btn btn-link p-0 text-decoration-none req-detail-btn" data-req-detail="1" data-req-index="${start + idx}" data-req-name="${r.name}" data-req-abbr="${abbr}" data-req-requiredby="${requiredBy}" data-req-instructions="Follow the instructions to submit required proof for ${r.name}." data-req-category="${r.category}">${r.name}</button>`;
+          return `
+            <tr>
+              <td>${nameCell}</td>
+              <td>${statusBadge}</td>
+              <td>${fmt(r.expiration)}</td>
+              <td>${fmt(r.dueDate)}</td>
+              <td>${scoreCell}</td>
+              <td>${r.type}</td>
+              <td>${r.frequency}</td>
+              <td>${r.category}</td>
+              <td>${r.reviewer}</td>
+            </tr>
+          `;
+          }).join('');
+
+          if (reqPageInfo){
+            reqPageInfo.textContent = total ? `Showing ${start + 1}–${end} of ${total}` : 'No results';
+          }
+          if (reqPrev && reqNext){
+            reqPrev.disabled = reqPage <= 1;
+            reqNext.disabled = end >= total;
+          }
+        }
+
+        const reqPageSizeSelect = document.getElementById('reqPageSize');
+        if (reqPageSizeSelect){
+          reqPageSizeSelect.onchange = () => {
+            reqPageSize = Number(reqPageSizeSelect.value || 10);
+            reqPage = 1;
+            renderReqs();
+          };
+        }
+
+        reqPrev?.addEventListener('click', ()=>{
+          if (reqPage > 1){
+            reqPage -= 1;
+            renderReqs();
+          }
+        });
+        reqNext?.addEventListener('click', ()=>{
+          reqPage += 1;
+          renderReqs();
+        });
+
+        renderReqs();
+        const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+        modal.show();
+        document.getElementById('reviewModal').dataset.studentName = person.name;
+      });
+
+      function renderThread(){
+        const threadWrap = document.getElementById('msgThread');
+        if (!threadWrap) return;
+        let threads = messageThreads[currentReqThreadKey] || [];
+        // Backward compatibility: if stored as flat array, wrap as single thread
+        if (threads.length && !Array.isArray(threads[0])){
+          threads = [threads];
+          messageThreads[currentReqThreadKey] = threads;
+        }
+        if (!threads.length){
+          threadWrap.innerHTML = '<div class="text-body-secondary small">No messages yet.</div>';
+          return;
+        }
+        threadWrap.innerHTML = threads.map((msgs, threadIdx)=>`
+          <div class="border rounded p-2">
+            <div class="small fw-semibold mb-1">Thread ${threadIdx + 1}</div>
+            ${msgs.map(m=>`
+              <div class="border rounded p-2 mb-2">
+                <div class="small fw-semibold">${m.from} → ${m.to.join(', ')}</div>
+                <div class="small text-body-secondary">${m.at || ''}</div>
+                <div class="small mb-1">${m.body}</div>
+                <button class="btn btn-link p-0 small msg-reply" type="button" data-reply-thread="${threadIdx}" data-reply-to="${m.from}" data-reply-recipients="${m.to.join('|')}">Reply</button>
+              </div>
+            `).join('')}
+          </div>
+        `).join('');
+      }
+
+      // requirement detail click (delegate)
+      document.addEventListener('click', (ev)=>{
+        const btn = ev.target.closest('.req-detail-btn');
+        if (!btn) return;
+        const name = btn.dataset.reqName || '';
+        const abbr = btn.dataset.reqAbbr || '';
+        const requiredBy = btn.dataset.reqRequiredby || '';
+        const instructions = btn.dataset.reqInstructions || '';
+        const category = btn.dataset.reqCategory || '';
+        const student = btn.closest('#reviewModal')?.dataset?.studentName || document.getElementById('reqDetailStudent')?.textContent || '';
+        document.getElementById('reqDetailStudent').textContent = student;
+        document.getElementById('reqDetailModalLabel').textContent = name;
+        document.getElementById('reqDetailMeta').textContent = `Abbreviation: ${abbr} • Required by: ${requiredBy}`;
+        document.getElementById('reqDetailInstructions').textContent = instructions;
+        const msgRecipient = document.getElementById('msgRecipient');
+        if (msgRecipient){
+          const options = [
+            { value:'Student', label:'Student' },
+            { value:'Healthcare', label:'Healthcare' }
+          ];
+          if (category === 'CPNW Clinical Passport'){
+            options.splice(1,0,{ value:'CPNW Reviewer', label:'CPNW Reviewer' });
+          }
+          msgRecipient.innerHTML = options.map(opt=>`
+            <label class="form-check d-flex align-items-center gap-2">
+              <input class="form-check-input" type="checkbox" value="${opt.value}">
+              <span>${opt.label}</span>
+            </label>
+          `).join('');
+        }
+        // reset decision/notes
+        document.querySelectorAll('.req-submission').forEach(r=>r.checked=false);
+        document.querySelectorAll('.req-submission-fields').forEach(el=>el.classList.add('d-none'));
+        document.querySelectorAll('.decision-radio').forEach(r=>r.checked=false);
+        document.getElementById('decisionReasonWrap').classList.add('d-none');
+        const reasonEl = document.getElementById('decisionReason');
+        if (reasonEl) reasonEl.value = '';
+        const uploadEl = document.getElementById('reqUpload');
+        if (uploadEl) uploadEl.value = '';
+        const reviewModalEl = document.getElementById('reviewModal');
+        const reviewModalInstance = reviewModalEl ? bootstrap.Modal.getInstance(reviewModalEl) || new bootstrap.Modal(reviewModalEl) : null;
+        const reqModalEl = document.getElementById('reqDetailModal');
+        const reqModal = new bootstrap.Modal(reqModalEl);
+
+        window.__reviewWasOpen = reviewModalEl?.classList.contains('show');
+        if (window.__reviewWasOpen && reviewModalInstance){
+          reviewModalInstance.hide();
+        }
+        currentReqThreadKey = name;
+        currentReplyThreadIndex = null;
+        renderThread();
+        reqModal.show();
+      });
+
+      // submission radio toggle
+      document.addEventListener('change', (e)=>{
+        if (!e.target.classList.contains('req-submission')) return;
+        document.querySelectorAll('.req-submission-fields').forEach(el=>el.classList.add('d-none'));
+        const targetId = e.target.dataset.target;
+        if (targetId){
+          const tgt = document.getElementById(targetId);
+          if (tgt) tgt.classList.remove('d-none');
+        }
+      });
+
+      // decision reason toggle
+      document.addEventListener('change', (e)=>{
+        if (!e.target.classList.contains('decision-radio')) return;
+        const requires = e.target.hasAttribute('data-requires-reason');
+        const wrap = document.getElementById('decisionReasonWrap');
+        if (wrap){
+          wrap.classList.toggle('d-none', !requires);
+        }
+      });
+
+      // send message
+      document.addEventListener('click', (e)=>{
+        if (e.target.id !== 'msgSend') return;
+        const recipients = Array.from(document.querySelectorAll('#msgRecipient input:checked')).map(i=>i.value);
+        const body = document.getElementById('msgBody')?.value.trim() || '';
+        if (!recipients.length || !body){
+          alert('Please select at least one recipient and enter a message.');
+          return;
+        }
+        const thread = messageThreads[currentReqThreadKey] || [];
+        // Ensure thread structure
+        let threads = thread;
+        if (threads.length && !Array.isArray(threads[0])) threads = [threads];
+        if (!threads.length) threads = [];
+        if (currentReplyThreadIndex === null){
+          // new thread
+          threads.push([{ from:'Education', to: recipients, body, at: new Date().toLocaleString() }]);
+        }else{
+          const target = threads[currentReplyThreadIndex] || [];
+          target.push({ from:'Education', to: recipients, body, at: new Date().toLocaleString() });
+          threads[currentReplyThreadIndex] = target;
+        }
+        messageThreads[currentReqThreadKey] = threads;
+        document.getElementById('msgBody').value = '';
+        currentReplyThreadIndex = null;
+        renderThread();
+      });
+
+      // reply button populate recipients and hint
+      document.addEventListener('click', (e)=>{
+        const replyBtn = e.target.closest('.msg-reply');
+        if (!replyBtn) return;
+        const recips = (replyBtn.dataset.replyRecipients || '').split('|').filter(Boolean);
+        document.querySelectorAll('#msgRecipient input').forEach(cb=>{
+          cb.checked = recips.includes(cb.value);
+        });
+        const body = document.getElementById('msgBody');
+        if (body){
+          const to = replyBtn.dataset.replyTo ? `@${replyBtn.dataset.replyTo}: ` : '';
+          body.value = to;
+          body.focus();
+        }
+        const threadIdx = replyBtn.dataset.replyThread;
+        currentReplyThreadIndex = threadIdx ? Number(threadIdx) : null;
+      });
+
+      // When req detail closes, re-show review modal if it was open
+      const reqDetailModalEl = document.getElementById('reqDetailModal');
+      if (reqDetailModalEl){
+        reqDetailModalEl.addEventListener('hidden.bs.modal', ()=>{
+          if (window.__reviewWasOpen){
+            const reviewModalEl = document.getElementById('reviewModal');
+            const reviewModalInstance = reviewModalEl ? bootstrap.Modal.getInstance(reviewModalEl) || new bootstrap.Modal(reviewModalEl) : null;
+            reviewModalInstance?.show();
+            window.__reviewWasOpen = false;
+          }
+        });
+      }
+
+      renderReviews();
+    })();
+  </script>
+</body>
+</html>
