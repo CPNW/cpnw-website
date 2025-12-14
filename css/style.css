@@ -190,6 +190,18 @@ body{
 .cpnw-accordion .accordion-body{
   padding: 0 1rem 1rem;
 }
+[data-bs-theme="light"] .cpnw-accordion .accordion-item{
+  border: 1px solid rgba(11,18,32,.12);
+  background:
+    radial-gradient(140% 110% at 18% 15%, rgba(20,184,166,.14), transparent 55%),
+    radial-gradient(120% 100% at 85% 0%, rgba(34,197,94,.10), transparent 50%),
+    linear-gradient(165deg, rgba(244,248,255,.92) 0%, rgba(223,233,245,.96) 70%);
+  background-blend-mode: screen, screen, normal;
+  box-shadow: 0 10px 22px rgba(11,18,32,.08), inset 0 1px 0 rgba(255,255,255,.75);
+}
+[data-bs-theme="light"] .cpnw-accordion .accordion-button:focus{
+  box-shadow: 0 0 0 .2rem rgba(20,184,166,.28);
+}
 @media (prefers-reduced-motion: reduce){
   .cpnw-services-spores{
     animation: none;
