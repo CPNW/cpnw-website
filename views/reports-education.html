@@ -242,7 +242,7 @@
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"
   ></script>
-  <script src="../js/main.js"></script>
+  <script src="../js/main.js?v=20251214"></script>
   <script>
     (function(){
       const TODAY = new Date();
@@ -277,7 +277,21 @@
           });
         });
       });
-      const cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+      let cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+
+      // Merge custom cohorts + membership deltas (stored in localStorage via main.js)
+      const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
+      const membershipCounts = cohortAPI ? cohortAPI.getMembershipCounts() : {};
+      if (cohortAPI){
+        cohorts = cohorts.map(c => {
+          const delta = membershipCounts[cohortAPI.seedKeyForLabel(c.cohortLabel)] || 0;
+          return { ...c, students: c.students + delta };
+        });
+        const custom = cohortAPI
+          .listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX })
+          .map(c => ({ ...c, status: 'incomplete', start: 'Custom' }));
+        cohorts = cohorts.concat(custom);
+      }
 
       // Populate cohort filter
       const cohortFilter = document.getElementById('cohortFilter');

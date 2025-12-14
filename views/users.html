@@ -150,7 +150,69 @@
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"
   ></script>
-  <script src="../js/main.js"></script>
+  <script src="../js/main.js?v=20251214"></script>
+  <!-- Approve request / assign cohort modal -->
+  <div
+    class="modal fade"
+    id="assignCohortModal"
+    tabindex="-1"
+    aria-labelledby="assignCohortModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="assignCohortModalLabel">Approve request</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2 text-body-secondary small" id="assignUserSummary"></div>
+
+          <div class="mb-3">
+            <label class="form-label" for="assignProgram">Program</label>
+            <input class="form-control" id="assignProgram" type="text" readonly />
+          </div>
+
+          <div class="cpnw-shell p-3 mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="assignMode" id="assignExisting" value="existing" checked />
+              <label class="form-check-label fw-semibold" for="assignExisting">Assign to an existing cohort</label>
+            </div>
+            <div class="mt-2">
+              <label class="form-label" for="assignCohortSelect">Cohort</label>
+              <select class="form-select" id="assignCohortSelect"></select>
+            </div>
+          </div>
+
+          <div class="cpnw-shell p-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="assignMode" id="assignNew" value="new" />
+              <label class="form-check-label fw-semibold" for="assignNew">Create a new custom cohort</label>
+            </div>
+            <div class="mt-2" id="newCohortWrap" hidden>
+              <label class="form-label" for="newCohortName">Cohort name</label>
+              <input class="form-control" id="newCohortName" type="text" maxlength="75" placeholder="e.g., Evening Cohort — Tacoma" />
+              <div class="form-text d-flex justify-content-between">
+                <span>Max 75 characters.</span>
+                <span><span id="newCohortRemaining">75</span> remaining</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-danger mt-3 d-none" role="alert" id="assignError"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-cpnw" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary" id="assignApproveBtn">Approve</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
     (function(){
       // Mirror cohort logic to keep student counts in sync with dashboard
@@ -168,6 +230,9 @@
         { id: 'surg', name: 'Surg Tech', base: 8, aySpan: 2 }
       ];
 
+      const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
+      const membershipCounts = cohortAPI ? cohortAPI.getMembershipCounts() : {};
+
       // DOM refs
       const statusChips = document.querySelectorAll('[data-status-chip]');
       const userSearch = document.getElementById('userSearch');
@@ -184,6 +249,19 @@
       const nextPageBtn = document.getElementById('nextPage');
       const pageInfo = document.getElementById('pageInfo');
 
+      // Modal refs
+      const assignModalEl = document.getElementById('assignCohortModal');
+      const assignUserSummary = document.getElementById('assignUserSummary');
+      const assignProgramEl = document.getElementById('assignProgram');
+      const assignCohortSelect = document.getElementById('assignCohortSelect');
+      const assignExisting = document.getElementById('assignExisting');
+      const assignNew = document.getElementById('assignNew');
+      const newCohortWrap = document.getElementById('newCohortWrap');
+      const newCohortName = document.getElementById('newCohortName');
+      const newCohortRemaining = document.getElementById('newCohortRemaining');
+      const assignApproveBtn = document.getElementById('assignApproveBtn');
+      const assignError = document.getElementById('assignError');
+
       function deriveAY(term, startYear){
         const year = Number(startYear);
         const isFall = term.toLowerCase() === 'fall';
@@ -198,27 +276,39 @@
         ayStarts.forEach(ay => {
           TERMS.forEach(term => {
             const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
+            const cohortLabel = `${p.name} – ${term} ${term === 'Fall' ? ay : ay + 1}`;
+            const seedKey = cohortAPI ? cohortAPI.seedKeyForLabel(cohortLabel) : `seed:${cohortLabel}`;
+            const delta = membershipCounts[seedKey] || 0;
             cohortSeeds.push({
               programId: p.id,
               programName: p.name,
               term,
               year: term === 'Fall' ? ay : ay + 1,
-              students,
+              students: students + delta,
               ayStart: deriveAY(term, term === 'Fall' ? ay : ay + 1).ayStart
             });
           });
         });
       });
 
-      const activeCohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+      const seedActiveCohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+      const customCohorts = cohortAPI ? cohortAPI.listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX }) : [];
+      const activeCohorts = seedActiveCohorts
+        .map(c => ({
+          cohortLabel: `${c.programName} – ${c.term} ${c.year}`,
+          program: c.programName,
+          ayStart: c.ayStart,
+          students: c.students,
+          seed: true
+        }))
+        .concat(customCohorts);
+
       const activeStudentsCount = Math.max(30, activeCohorts.reduce((acc, c) => acc + c.students, 0));
+
       // Build cohort filter options
       if (cohortFilter){
         const opts = [''];
-        activeCohorts.forEach(c => {
-          const label = `${c.programName} – ${c.term} ${c.year}`;
-          opts.push(label);
-        });
+        activeCohorts.forEach(c => opts.push(c.cohortLabel));
         const unique = Array.from(new Set(opts));
         cohortFilter.innerHTML = unique.map(val => `<option value="${val}">${val || 'All cohorts'}</option>`).join('');
       }
@@ -231,7 +321,7 @@
       );
       // Generate active students to match dashboard totals
       const programsCycle = programDefs.map(p => p.name);
-      const cohortsCycle = activeCohorts.map(c => `${c.programName} – ${c.term} ${c.year}`);
+      const cohortsCycle = activeCohorts.map(c => c.cohortLabel);
       for (let i = 0; i < activeStudentsCount; i++){
         const prog = programsCycle[i % programsCycle.length];
         const coh = cohortsCycle[i % cohortsCycle.length] || '';
@@ -309,6 +399,7 @@
         userTableBody.innerHTML = '';
         pageItems.forEach(item => {
           const tr = document.createElement('tr');
+          tr.dataset.userEmail = item.email;
           tr.innerHTML = `
             <td><input type="checkbox" class="form-check-input" /></td>
             <td class="fw-semibold">${item.name}</td>
@@ -318,7 +409,7 @@
             <td><span class="badge ${item.status === 'archived' ? 'text-bg-secondary' : item.status.startsWith('request') ? 'text-bg-warning text-dark' : 'text-bg-success'}">${statusLabel(item)}</span></td>
             <td>${item.status.startsWith('request') ? 'Submitted' : 'Updated'} ${item.date}</td>
             <td class="text-end">
-              ${actionsFor(item).map(a => `<button class="btn btn-outline-secondary btn-sm me-1">${a}</button>`).join('')}
+              ${actionsFor(item).map(a => `<button class="btn btn-outline-secondary btn-sm me-1" type="button" data-row-action="${a}" data-user-email="${item.email}">${a}</button>`).join('')}
             </td>
           `;
           userTableBody.appendChild(tr);
@@ -388,6 +479,160 @@
           updateTable();
         });
       }
+
+      function setAssignError(message){
+        if (!assignError) return;
+        if (!message){
+          assignError.classList.add('d-none');
+          assignError.textContent = '';
+          return;
+        }
+        assignError.classList.remove('d-none');
+        assignError.textContent = message;
+      }
+
+      function setRemaining(){
+        if (!newCohortName || !newCohortRemaining) return;
+        const max = 75;
+        const remaining = Math.max(0, max - (newCohortName.value || '').length);
+        newCohortRemaining.textContent = String(remaining);
+      }
+
+      function buildAssignableCohorts(programName){
+        const list = activeCohorts.filter(c => (c.program || '').toLowerCase() === String(programName || '').toLowerCase());
+        // If program has no active cohorts, fall back to all active cohorts.
+        return list.length ? list : activeCohorts;
+      }
+
+      function populateAssignSelect(programName){
+        if (!assignCohortSelect) return;
+        const items = buildAssignableCohorts(programName);
+        const options = items.map(c => {
+          const value = c.custom ? `custom:${c.cohortId}` : `seed:${c.cohortLabel}`;
+          return `<option value="${value}">${c.cohortLabel}</option>`;
+        });
+        assignCohortSelect.innerHTML = options.join('') || '<option value="">No cohorts available</option>';
+      }
+
+      function bumpCohortMembershipFromSelection(selectionValue, selectedLabel){
+        if (!cohortAPI) return;
+        if (!selectionValue) return;
+        if (selectionValue.startsWith('custom:')){
+          cohortAPI.bumpMembership(selectionValue.slice('custom:'.length), 1);
+          return;
+        }
+        if (selectionValue.startsWith('seed:')){
+          const label = selectedLabel || selectionValue.slice('seed:'.length);
+          cohortAPI.bumpMembership(cohortAPI.seedKeyForLabel(label), 1);
+        }
+      }
+
+      function addCustomCohortAndReturnLabel(programName, cohortName){
+        if (!cohortAPI) return null;
+        const record = cohortAPI.addCustomCohort({ name: cohortName, program: programName, ayStart: CURRENT_AY_START });
+        if (!record) return null;
+        cohortAPI.bumpMembership(record.id, 1);
+        const cohortLabel = `${record.program} – ${record.name}`;
+        // Update in-memory cohort list so it immediately appears in dropdowns for this page session.
+        activeCohorts.push({
+          cohortId: record.id,
+          cohortLabel,
+          program: record.program,
+          ayStart: record.ayStart,
+          students: 1,
+          custom: true
+        });
+        return cohortLabel;
+      }
+
+      let pendingUser = null;
+      let assignModal = null;
+      if (assignModalEl){
+        assignModal = new bootstrap.Modal(assignModalEl);
+      }
+
+      function openAssignModalFor(user){
+        pendingUser = user;
+        setAssignError('');
+        if (assignUserSummary){
+          assignUserSummary.textContent = `${user.name} • ${user.email}`;
+        }
+        if (assignProgramEl){
+          assignProgramEl.value = user.program || '';
+        }
+        if (assignExisting) assignExisting.checked = true;
+        if (assignNew) assignNew.checked = false;
+        if (newCohortWrap) newCohortWrap.hidden = true;
+        if (newCohortName) newCohortName.value = '';
+        setRemaining();
+        populateAssignSelect(user.program);
+        assignModal?.show();
+      }
+
+      function setAssignMode(){
+        const isNew = !!assignNew?.checked;
+        if (newCohortWrap) newCohortWrap.hidden = !isNew;
+        if (!isNew) setAssignError('');
+        setRemaining();
+      }
+
+      assignExisting?.addEventListener('change', setAssignMode);
+      assignNew?.addEventListener('change', setAssignMode);
+      newCohortName?.addEventListener('input', setRemaining);
+
+      userTableBody?.addEventListener('click', (event) => {
+        const btn = event.target.closest('button[data-row-action]');
+        if (!btn) return;
+        const action = (btn.dataset.rowAction || '').trim();
+        if (action !== 'Approve') return;
+        const email = btn.dataset.userEmail;
+        const user = data.find(u => u.email === email);
+        if (!user) return;
+        openAssignModalFor(user);
+      });
+
+      assignApproveBtn?.addEventListener('click', () => {
+        if (!pendingUser) return;
+        const programName = pendingUser.program || '';
+        const isNew = !!assignNew?.checked;
+
+        if (isNew){
+          const name = (newCohortName?.value || '').trim();
+          if (!name){
+            setAssignError('Enter a cohort name.');
+            return;
+          }
+          const label = addCustomCohortAndReturnLabel(programName, name);
+          if (!label){
+            setAssignError('Unable to create cohort. Please try again.');
+            return;
+          }
+          pendingUser.cohortLabel = label;
+        }else{
+          const selection = assignCohortSelect?.value || '';
+          const selectedLabel = assignCohortSelect?.selectedOptions?.[0]?.textContent || '';
+          if (!selection || !selectedLabel){
+            setAssignError('Select a cohort.');
+            return;
+          }
+          bumpCohortMembershipFromSelection(selection, selectedLabel);
+          pendingUser.cohortLabel = selectedLabel;
+        }
+
+        pendingUser.status = 'active';
+        pendingUser.date = new Date().toISOString().slice(0, 10);
+        assignModal?.hide();
+
+        // Rebuild cohort filter options so the new custom cohort can be selected immediately.
+        if (cohortFilter){
+          const opts = [''];
+          activeCohorts.forEach(c => opts.push(c.cohortLabel));
+          const unique = Array.from(new Set(opts));
+          cohortFilter.innerHTML = unique.map(val => `<option value="${val}">${val || 'All cohorts'}</option>`).join('');
+        }
+
+        updateTable();
+      });
 
       updateTable();
     })();

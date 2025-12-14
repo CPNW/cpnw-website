@@ -234,6 +234,7 @@
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"
   ></script>
+  <script src="../js/main.js?v=20251214"></script>
   <script>
     (() => {
       // Cohort / academic year helpers
@@ -344,6 +345,21 @@
       });
 
       const cohorts = cohortSeeds.map(buildCohort);
+
+      // Merge in custom cohorts + membership deltas (stored in localStorage via main.js)
+      const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
+      const membershipCounts = cohortAPI ? cohortAPI.getMembershipCounts() : {};
+      if (cohortAPI){
+        cohorts.forEach(c => {
+          const delta = membershipCounts[cohortAPI.seedKeyForLabel(c.label)] || 0;
+          if (!delta) return;
+          c.students += delta;
+          // Assume newly added students start "pending" until reviewed.
+          c.requirementsReview += delta;
+        });
+        const customDash = cohortAPI.listCustomCohortsDashboard({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX });
+        customDash.forEach(c => cohorts.push(c));
+      }
 
       function aggregateProgramsFromCohorts(list){
         const map = new Map();
@@ -675,6 +691,5 @@
       renderCohorts();
     })();
   </script>
-  <script src="../js/main.js"></script>
 </body>
 </html>

@@ -39,6 +39,179 @@
   });
 })();
 
+// Cohort storage helpers (custom cohorts + membership counts)
+(function(){
+  const COHORTS_KEY = 'cpnw-custom-cohorts-v1';
+  const MEMBERS_KEY = 'cpnw-cohort-members-v1';
+
+  function loadJSON(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      return JSON.parse(raw);
+    }catch(e){
+      return fallback;
+    }
+  }
+
+  function saveJSON(key, value){
+    try{
+      localStorage.setItem(key, JSON.stringify(value));
+    }catch(e){}
+  }
+
+  function toProgramId(programName){
+    const n = String(programName || '').toLowerCase();
+    if (n.includes('bsn')) return 'bsn';
+    if (n.includes('adn')) return 'adn';
+    if (n.includes('surg')) return 'surg';
+    return 'custom';
+  }
+
+  function uid(){
+    // Not cryptographic; good enough for demo IDs.
+    return `coh_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function getAyContext(){
+    const today = new Date();
+    const FALL_START_MONTH = 7; // August (0-based)
+    const thisYear = today.getFullYear();
+    const currentAyStart = today.getMonth() >= FALL_START_MONTH ? thisYear : thisYear - 1;
+    return {
+      currentAyStart,
+      ayMin: currentAyStart - 3,
+      ayMax: currentAyStart + 1
+    };
+  }
+
+  function listCustomCohortsRaw(){
+    const raw = loadJSON(COHORTS_KEY, []);
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter(c => c && typeof c === 'object')
+      .map(c => ({
+        id: String(c.id || ''),
+        name: String(c.name || '').slice(0, 75),
+        program: String(c.program || ''),
+        ayStart: Number.isFinite(Number(c.ayStart)) ? Number(c.ayStart) : null,
+        createdAt: String(c.createdAt || '')
+      }))
+      .filter(c => c.id && c.name && c.program && Number.isFinite(c.ayStart));
+  }
+
+  function getMembershipCounts(){
+    const raw = loadJSON(MEMBERS_KEY, {});
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const out = {};
+    Object.entries(raw).forEach(([k, v]) => {
+      const num = Number(v);
+      out[k] = Number.isFinite(num) ? Math.max(0, Math.floor(num)) : 0;
+    });
+    return out;
+  }
+
+  function bumpMembership(cohortKey, delta){
+    if (!cohortKey) return;
+    const counts = getMembershipCounts();
+    const cur = counts[cohortKey] || 0;
+    const next = Math.max(0, cur + delta);
+    counts[cohortKey] = next;
+    saveJSON(MEMBERS_KEY, counts);
+  }
+
+  function seedKeyForLabel(label){
+    return `seed:${String(label || '').trim()}`;
+  }
+
+  function addCustomCohort({ name, program, ayStart }){
+    const trimmedName = String(name || '').trim().slice(0, 75);
+    const trimmedProgram = String(program || '').trim();
+    const start = Number.isFinite(Number(ayStart)) ? Number(ayStart) : null;
+    if (!trimmedName || !trimmedProgram || !Number.isFinite(start)) return null;
+
+    const record = {
+      id: uid(),
+      name: trimmedName,
+      program: trimmedProgram,
+      ayStart: start,
+      createdAt: new Date().toISOString()
+    };
+    const existing = listCustomCohortsRaw();
+    existing.push(record);
+    saveJSON(COHORTS_KEY, existing);
+    return record;
+  }
+
+  function listCustomCohortsLegacy({ ayMin, ayMax } = {}){
+    const { currentAyStart } = getAyContext();
+    const min = Number.isFinite(Number(ayMin)) ? Number(ayMin) : (currentAyStart - 3);
+    const max = Number.isFinite(Number(ayMax)) ? Number(ayMax) : (currentAyStart + 1);
+    const counts = getMembershipCounts();
+    return listCustomCohortsRaw()
+      .filter(c => c.ayStart >= min && c.ayStart <= max)
+      .map(c => {
+        const cohortLabel = `${c.program} – ${c.name}`;
+        return {
+          cohortId: c.id,
+          cohortLabel,
+          program: c.program,
+          ayStart: c.ayStart,
+          students: counts[c.id] || 0,
+          custom: true,
+          start: 'Custom'
+        };
+      });
+  }
+
+  function listCustomCohortsDashboard({ ayMin, ayMax } = {}){
+    const { currentAyStart } = getAyContext();
+    const min = Number.isFinite(Number(ayMin)) ? Number(ayMin) : (currentAyStart - 3);
+    const max = Number.isFinite(Number(ayMax)) ? Number(ayMax) : (currentAyStart + 1);
+    const counts = getMembershipCounts();
+    return listCustomCohortsRaw()
+      .filter(c => c.ayStart >= min && c.ayStart <= max)
+      .map(c => {
+        const students = counts[c.id] || 0;
+        const ayStart = c.ayStart;
+        const ayEnd = ayStart + 1;
+        const approved = Math.min(students, Math.floor(students * 0.65));
+        const pending = Math.max(0, students - approved);
+        const expiring = Math.min(pending, Math.max(0, Math.floor(students * 0.2)));
+        return {
+          programId: toProgramId(c.program),
+          programName: c.program,
+          term: 'Custom',
+          startYear: ayStart,
+          ayStart,
+          ayEnd,
+          ayLabel: `${ayStart}–${ayEnd}`,
+          label: `${c.program} – ${c.name}`,
+          archived: false,
+          visibleByDefault: true,
+          students,
+          approvedAssignments: approved,
+          requirementsReview: pending,
+          expiringStudents: expiring,
+          custom: true,
+          cohortId: c.id
+        };
+      });
+  }
+
+  window.CPNW = window.CPNW || {};
+  window.CPNW.cohorts = {
+    getAyContext,
+    seedKeyForLabel,
+    getMembershipCounts,
+    bumpMembership,
+    addCustomCohort,
+    listCustomCohortsRaw,
+    listCustomCohortsLegacy,
+    listCustomCohortsDashboard
+  };
+})();
+
 // Ad rotator (3 slides, 15s each)
 (function(){
   const slides = Array.from(document.querySelectorAll('.cpnw-ad-slide'));
