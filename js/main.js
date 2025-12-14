@@ -1,18 +1,21 @@
 // Year + theme toggle using Bootstrap 5.3 theme attribute
-document.getElementById('y').textContent = new Date().getFullYear();
-
 (function(){
-  const root = document.documentElement;
-  const toggles = Array.from(document.querySelectorAll('[data-theme-toggle], #themeToggle'));
+  const yearEl = document.getElementById('y');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  const root = document.documentElement;
   const STORAGE_KEY = 'cpnw-theme';
   const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
 
+  function getToggles(){
+    return Array.from(document.querySelectorAll('[data-theme-toggle]'));
+  }
+
   function applyTheme(theme){
     root.setAttribute('data-bs-theme', theme);
-    toggles.forEach(btn => {
-      const icon = btn.querySelector('[data-theme-icon], #themeIcon');
-      const label = btn.querySelector('[data-theme-label], #themeLabel');
+    getToggles().forEach(btn => {
+      const icon = btn.querySelector('[data-theme-icon]');
+      const label = btn.querySelector('[data-theme-label]');
       if (icon && label){
         const isLight = theme === 'light';
         icon.textContent = isLight ? '☀️' : '🌙';
@@ -26,13 +29,13 @@ document.getElementById('y').textContent = new Date().getFullYear();
   const initial = saved || (prefersLight ? 'light' : 'dark');
   applyTheme(initial);
 
-  toggles.forEach(btn => {
-    btn.addEventListener('click', function(){
-      const current = root.getAttribute('data-bs-theme') || 'dark';
-      const next = current === 'light' ? 'dark' : 'light';
-      applyTheme(next);
-      try{ localStorage.setItem(STORAGE_KEY, next); }catch(e){}
-    });
+  document.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-theme-toggle]');
+    if (!btn) return;
+    const current = root.getAttribute('data-bs-theme') || 'dark';
+    const next = current === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    try{ localStorage.setItem(STORAGE_KEY, next); }catch(e){}
   });
 })();
 
