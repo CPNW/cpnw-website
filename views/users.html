@@ -166,7 +166,7 @@
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"
   ></script>
-  <script src="../js/main.js?v=20251214"></script>
+  <script src="../js/main.js?v=20251214-2"></script>
   <!-- Approve request / assign cohort modal -->
   <div
     class="modal fade"
@@ -332,7 +332,9 @@
 
       function applyStoredCohort(item){
         if (!cohortAPI) return item;
-        const override = cohortAPI.getUserCohortLabel(item.email);
+        const override = typeof cohortAPI.getUserCohortLabel === 'function'
+          ? cohortAPI.getUserCohortLabel(item.email)
+          : null;
         if (override === null || override === undefined) return item;
         return { ...item, cohortLabel: override };
       }

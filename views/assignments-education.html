@@ -197,7 +197,7 @@
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
     crossorigin="anonymous"
   ></script>
-  <script src="../js/main.js?v=20251214"></script>
+  <script src="../js/main.js?v=20251214-2"></script>
       <script>
     (function(){
       const TODAY = new Date();
@@ -289,7 +289,9 @@
             cohort: c.cohortLabel,
           };
           if (cohortAPI){
-            const override = cohortAPI.getUserCohortLabel(student.email);
+            const override = typeof cohortAPI.getUserCohortLabel === 'function'
+              ? cohortAPI.getUserCohortLabel(student.email)
+              : null;
             if (override !== null && override !== undefined){
               student.cohort = override;
             }
