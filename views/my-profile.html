@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — My Profile</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button data-theme-toggle type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" aria-label="Toggle dark and light mode">
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container position-relative">
+      <img src="../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="dashboard-education.html">Back to dashboard</a>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="requirements-education.html">Requirements</a>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item active" aria-current="page" href="my-profile.html">My Profile</a></li>
+              <li><a class="dropdown-item" href="security-settings.html">Security Settings</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="review-education.html">Review</a></li>
+              <li><a class="dropdown-item" href="assignments-education.html">Assignments</a></li>
+              <li><a class="dropdown-item" href="reports-education.html">Education Reports</a></li>
+              <li><a class="dropdown-item" href="users.html">Users</a></li>
+              <li><a class="dropdown-item" href="background-watch-reports.html">Background + WATCH Reports</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">My Account</p>
+          <h1 class="h3 fw-semibold mb-1">My Profile</h1>
+          <p class="text-body-secondary mb-0">
+            Clinical placement organizations depend on the information below to meet legal and regulatory requirements.
+          </p>
+        </div>
+      </div>
+
+      <div class="row g-3 g-lg-4">
+        <div class="col-12 col-lg-4">
+          <div class="cpnw-shell p-3 p-md-4 h-100">
+            <h2 class="h6 fw-bold mb-3">Profile photo</h2>
+            <div class="d-flex flex-column align-items-center text-center gap-3">
+              <div
+                class="rounded-3 bg-body-tertiary border d-flex align-items-center justify-content-center overflow-hidden"
+                style="width: 160px; height: 200px;"
+              >
+                <img id="profilePhotoPreview" alt="" class="w-100 h-100 d-none" style="object-fit: cover;" />
+                <span id="profilePhotoFallback" class="fw-semibold text-body-secondary">No photo</span>
+              </div>
+              <div class="w-100">
+                <input
+                  class="form-control"
+                  type="file"
+                  id="profilePhotoInput"
+                  accept="image/jpeg,image/png,image/webp"
+                />
+                <div class="form-text mt-2">
+                  Suggested: portrait 4:5, at least 400×500px (recommended 800×1000px), JPG/PNG/WebP, ≤ 5MB.
+                </div>
+              </div>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" id="removePhotoBtn" disabled>Remove</button>
+              </div>
+              <div class="alert alert-warning d-none w-100 text-start small mb-0" role="alert" id="photoError"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-8">
+          <div class="cpnw-shell p-3 p-md-4">
+            <div class="alert alert-success d-none" role="alert" id="profileSaved">
+              Profile saved (stored locally for this demo).
+            </div>
+
+            <form id="profileForm" novalidate>
+              <p class="small text-body-secondary mb-3">* required</p>
+
+              <div class="row g-3">
+                <div class="col-12 col-md-5">
+                  <label class="form-label" for="firstName">First Name *</label>
+                  <input class="form-control" id="firstName" required />
+                  <div class="invalid-feedback">First name is required.</div>
+                </div>
+                <div class="col-12 col-md-5">
+                  <label class="form-label" for="lastName">Last Name *</label>
+                  <input class="form-control" id="lastName" required />
+                  <div class="invalid-feedback">Last name is required.</div>
+                </div>
+                <div class="col-12 col-md-2">
+                  <label class="form-label" for="middleInitial">Middle Initial</label>
+                  <input class="form-control" id="middleInitial" maxlength="1" />
+                </div>
+
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="emailUsername">Email/Username</label>
+                  <input class="form-control" id="emailUsername" disabled />
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="altEmail">Alternative Email</label>
+                  <input class="form-control" id="altEmail" type="email" placeholder="name@example.com" />
+                </div>
+
+                <div class="col-12 col-lg-4">
+                  <label class="form-label" for="primaryPhone">Primary Phone *</label>
+                  <input class="form-control" id="primaryPhone" required placeholder="(555) 555-5555" />
+                  <div class="invalid-feedback">Primary phone is required.</div>
+                </div>
+                <div class="col-12 col-lg-4">
+                  <label class="form-label" for="school">School</label>
+                  <input class="form-control" id="school" disabled />
+                </div>
+                <div class="col-12 col-lg-4">
+                  <label class="form-label" for="program">Program</label>
+                  <input class="form-control" id="program" disabled />
+                </div>
+
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="emergencyName">Emergency Contact Name *</label>
+                  <input class="form-control" id="emergencyName" required />
+                  <div class="invalid-feedback">Emergency contact name is required.</div>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="emergencyPhone">Emergency Contact Phone *</label>
+                  <input class="form-control" id="emergencyPhone" required placeholder="(555) 555-5555" />
+                  <div class="invalid-feedback">Emergency contact phone is required.</div>
+                </div>
+
+                <hr class="my-2" />
+
+                <div class="col-12">
+                  <label class="form-label" for="address">Permanent Address *</label>
+                  <input class="form-control" id="address" required />
+                  <div class="invalid-feedback">Address is required.</div>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="city">City *</label>
+                  <input class="form-control" id="city" required />
+                  <div class="invalid-feedback">City is required.</div>
+                </div>
+                <div class="col-6 col-lg-3">
+                  <label class="form-label" for="state">State *</label>
+                  <select class="form-select" id="state" required>
+                    <option value="" selected>—</option>
+                    <option value="WA">WA</option>
+                    <option value="OR">OR</option>
+                    <option value="ID">ID</option>
+                    <option value="CA">CA</option>
+                    <option value="AK">AK</option>
+                    <option value="MT">MT</option>
+                    <option value="NV">NV</option>
+                    <option value="UT">UT</option>
+                    <option value="AZ">AZ</option>
+                  </select>
+                  <div class="invalid-feedback">State is required.</div>
+                </div>
+                <div class="col-6 col-lg-3">
+                  <label class="form-label" for="zip">Zipcode *</label>
+                  <input class="form-control" id="zip" required maxlength="10" placeholder="00000" />
+                  <div class="invalid-feedback">Zipcode is required.</div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label d-block mb-1">Previous Name?</label>
+                  <div class="d-flex flex-wrap align-items-center gap-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="prevName" id="prevNameYes" value="yes" />
+                      <label class="form-check-label" for="prevNameYes">Yes</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="prevName" id="prevNameNo" value="no" checked />
+                      <label class="form-check-label" for="prevNameNo">No</label>
+                    </div>
+                    <button type="button" class="btn btn-link p-0 text-decoration-none small" id="addPrevNameBtn" disabled>
+                      + Add Previous Name
+                    </button>
+                  </div>
+                  <div class="mt-2 d-none" id="prevNameWrap">
+                    <input class="form-control" id="prevNameValue" placeholder="Previous legal name" />
+                    <div class="form-text">If applicable, include your previous legal name as it appears on documents.</div>
+                  </div>
+                </div>
+
+                <div class="col-12 pt-2">
+                  <button type="submit" class="btn btn-cpnw btn-cpnw-primary" id="saveProfileBtn">
+                    Update Profile
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../js/main.js?v=20251214-2"></script>
+  <script>
+    (function(){
+      const PROFILE_KEY = 'cpnw-my-profile-v1';
+      const PHOTO_KEY = 'cpnw-my-profile-photo-v1';
+
+      const els = {
+        form: document.getElementById('profileForm'),
+        saved: document.getElementById('profileSaved'),
+        firstName: document.getElementById('firstName'),
+        lastName: document.getElementById('lastName'),
+        middleInitial: document.getElementById('middleInitial'),
+        emailUsername: document.getElementById('emailUsername'),
+        altEmail: document.getElementById('altEmail'),
+        primaryPhone: document.getElementById('primaryPhone'),
+        school: document.getElementById('school'),
+        program: document.getElementById('program'),
+        emergencyName: document.getElementById('emergencyName'),
+        emergencyPhone: document.getElementById('emergencyPhone'),
+        address: document.getElementById('address'),
+        city: document.getElementById('city'),
+        state: document.getElementById('state'),
+        zip: document.getElementById('zip'),
+        prevYes: document.getElementById('prevNameYes'),
+        prevNo: document.getElementById('prevNameNo'),
+        addPrev: document.getElementById('addPrevNameBtn'),
+        prevWrap: document.getElementById('prevNameWrap'),
+        prevValue: document.getElementById('prevNameValue'),
+        photoInput: document.getElementById('profilePhotoInput'),
+        photoPreview: document.getElementById('profilePhotoPreview'),
+        photoFallback: document.getElementById('profilePhotoFallback'),
+        photoError: document.getElementById('photoError'),
+        removePhoto: document.getElementById('removePhotoBtn')
+      };
+
+      function loadJSON(key, fallback){
+        try{
+          const raw = localStorage.getItem(key);
+          if (!raw) return fallback;
+          return JSON.parse(raw) ?? fallback;
+        }catch{
+          return fallback;
+        }
+      }
+
+      function saveJSON(key, value){
+        try{
+          localStorage.setItem(key, JSON.stringify(value));
+        }catch{
+          // ignore
+        }
+      }
+
+      function showSaved(){
+        if (!els.saved) return;
+        els.saved.classList.remove('d-none');
+        window.setTimeout(() => els.saved.classList.add('d-none'), 3500);
+      }
+
+      function setPrevNameUI(){
+        const hasPrev = !!els.prevYes?.checked;
+        if (els.addPrev) els.addPrev.disabled = !hasPrev;
+        if (!hasPrev){
+          if (els.prevWrap) els.prevWrap.classList.add('d-none');
+          if (els.prevValue) els.prevValue.value = '';
+        }
+      }
+
+      function openPrevName(){
+        if (els.prevWrap) els.prevWrap.classList.remove('d-none');
+        els.prevValue?.focus();
+      }
+
+      function setPhotoError(message){
+        if (!els.photoError) return;
+        if (!message){
+          els.photoError.classList.add('d-none');
+          els.photoError.textContent = '';
+          return;
+        }
+        els.photoError.classList.remove('d-none');
+        els.photoError.textContent = message;
+      }
+
+      function setPhotoPreview(dataUrl){
+        if (!els.photoPreview || !els.photoFallback || !els.removePhoto) return;
+        if (!dataUrl){
+          els.photoPreview.classList.add('d-none');
+          els.photoPreview.removeAttribute('src');
+          els.photoPreview.alt = '';
+          els.photoFallback.classList.remove('d-none');
+          els.removePhoto.disabled = true;
+          return;
+        }
+        els.photoPreview.src = dataUrl;
+        els.photoPreview.alt = 'Profile photo preview';
+        els.photoPreview.classList.remove('d-none');
+        els.photoFallback.classList.add('d-none');
+        els.removePhoto.disabled = false;
+      }
+
+      function initDefaults(){
+        // Demo defaults (matches the example screenshot)
+        const defaults = {
+          firstName: 'Alex',
+          lastName: 'Educator',
+          middleInitial: '',
+          emailUsername: 'alex@cpnw.org',
+          altEmail: 'alex.educator@cpnw.org',
+          primaryPhone: '(206) 555-0134',
+          school: 'CPNW EDUCATION',
+          program: 'BSN',
+          emergencyName: 'Jordan Educator',
+          emergencyPhone: '(206) 555-0199',
+          address: '1201 3rd Ave',
+          city: 'Seattle',
+          state: 'WA',
+          zip: '98101',
+          prevName: 'no',
+          prevNameValue: ''
+        };
+
+        const saved = loadJSON(PROFILE_KEY, null);
+        const value = (saved && typeof saved === 'object') ? { ...defaults, ...saved } : defaults;
+
+        els.firstName.value = value.firstName || '';
+        els.lastName.value = value.lastName || '';
+        els.middleInitial.value = value.middleInitial || '';
+        els.emailUsername.value = value.emailUsername || '';
+        els.altEmail.value = value.altEmail || '';
+        els.primaryPhone.value = value.primaryPhone || '';
+        els.school.value = value.school || '';
+        els.program.value = value.program || '';
+        els.emergencyName.value = value.emergencyName || '';
+        els.emergencyPhone.value = value.emergencyPhone || '';
+        els.address.value = value.address || '';
+        els.city.value = value.city || '';
+        els.state.value = value.state || '';
+        els.zip.value = value.zip || '';
+        if (value.prevName === 'yes'){
+          els.prevYes.checked = true;
+          els.prevNo.checked = false;
+          if (els.addPrev) els.addPrev.disabled = false;
+          if (value.prevNameValue){
+            openPrevName();
+            els.prevValue.value = value.prevNameValue;
+          }else{
+            setPrevNameUI();
+          }
+        }else{
+          els.prevNo.checked = true;
+          els.prevYes.checked = false;
+          setPrevNameUI();
+        }
+
+        const savedPhoto = loadJSON(PHOTO_KEY, '');
+        if (typeof savedPhoto === 'string' && savedPhoto){
+          setPhotoPreview(savedPhoto);
+        }else{
+          setPhotoPreview('');
+        }
+      }
+
+      function validate(){
+        if (!els.form) return false;
+        els.form.classList.add('was-validated');
+        return els.form.checkValidity();
+      }
+
+      function currentPayload(){
+        return {
+          firstName: els.firstName.value.trim(),
+          lastName: els.lastName.value.trim(),
+          middleInitial: (els.middleInitial.value || '').trim().slice(0, 1),
+          emailUsername: els.emailUsername.value,
+          altEmail: (els.altEmail.value || '').trim(),
+          primaryPhone: (els.primaryPhone.value || '').trim(),
+          school: els.school.value,
+          program: els.program.value,
+          emergencyName: (els.emergencyName.value || '').trim(),
+          emergencyPhone: (els.emergencyPhone.value || '').trim(),
+          address: (els.address.value || '').trim(),
+          city: (els.city.value || '').trim(),
+          state: els.state.value,
+          zip: (els.zip.value || '').trim(),
+          prevName: els.prevYes.checked ? 'yes' : 'no',
+          prevNameValue: (els.prevValue.value || '').trim()
+        };
+      }
+
+      els.prevYes?.addEventListener('change', () => {
+        setPrevNameUI();
+      });
+      els.prevNo?.addEventListener('change', () => {
+        setPrevNameUI();
+      });
+      els.addPrev?.addEventListener('click', openPrevName);
+
+      els.form?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!validate()) return;
+        saveJSON(PROFILE_KEY, currentPayload());
+        showSaved();
+      });
+
+      els.photoInput?.addEventListener('change', async () => {
+        setPhotoError('');
+        const file = els.photoInput.files && els.photoInput.files[0];
+        if (!file) return;
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        const maxBytes = 5 * 1024 * 1024;
+        if (!allowed.includes(file.type)){
+          setPhotoError('Please upload a JPG, PNG, or WebP image.');
+          els.photoInput.value = '';
+          return;
+        }
+        if (file.size > maxBytes){
+          setPhotoError('Please upload an image that is 5MB or smaller.');
+          els.photoInput.value = '';
+          return;
+        }
+
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(file);
+        });
+        if (!dataUrl){
+          setPhotoError('Unable to read that file. Please try a different image.');
+          els.photoInput.value = '';
+          return;
+        }
+
+        const dims = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ w: img.naturalWidth || 0, h: img.naturalHeight || 0 });
+          img.onerror = () => resolve({ w: 0, h: 0 });
+          img.src = dataUrl;
+        });
+        if ((dims.w || 0) < 400 || (dims.h || 0) < 400){
+          setPhotoError('Image is too small. Please use at least 400×400px (recommended 800×800px).');
+          els.photoInput.value = '';
+          return;
+        }
+
+        saveJSON(PHOTO_KEY, dataUrl);
+        setPhotoPreview(dataUrl);
+        els.photoInput.value = '';
+        showSaved();
+      });
+
+      els.removePhoto?.addEventListener('click', () => {
+        saveJSON(PHOTO_KEY, '');
+        setPhotoPreview('');
+        setPhotoError('');
+      });
+
+      initDefaults();
+    })();
+  </script>
+</body>
+</html>
