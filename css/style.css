@@ -157,6 +157,15 @@ body{
   pointer-events:none;
   user-select:none;
 }
+[data-bs-theme="light"] .cpnw-services-spores{
+  /* Screen blending disappears on light backgrounds; use multiply for a true watermark feel. */
+  mix-blend-mode:multiply;
+  opacity:0.38;
+  filter:
+    drop-shadow(0 10px 18px rgba(11,18,32,.16))
+    saturate(.9)
+    contrast(1.22);
+}
 .cpnw-services-art{
   display:flex;
   justify-content:center;
