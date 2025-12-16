@@ -373,10 +373,15 @@
                 </div>
               </div>
 
-              <div class="mb-3">
-                <div class="fw-semibold mb-1">Upload document</div>
-                <input class="form-control" type="file" id="reqUpload">
-              </div>
+	              <div class="mb-3">
+	                <div class="fw-semibold mb-1">Upload document</div>
+	                <input class="form-control" type="file" id="reqUpload" multiple>
+	                <div class="form-text">Uploads are saved when you click Save (demo stores file names only).</div>
+	                <div class="mt-2 d-none" id="reqUploadedWrap">
+	                  <div class="small text-body-secondary mb-1">Saved uploads</div>
+	                  <ul class="small mb-0" id="reqUploadedList"></ul>
+	                </div>
+	              </div>
 
               <div class="mb-3">
                 <div class="fw-semibold mb-1">Decision</div>
@@ -394,11 +399,15 @@
                     <label class="form-check-label" for="decReject">Reject</label>
                   </div>
                 </div>
-                <div class="mt-2 d-none" id="decisionReasonWrap">
-                  <label class="form-label small mb-1" for="decisionReason">Reason</label>
-                  <textarea class="form-control form-control-sm" id="decisionReason" rows="2" placeholder="Enter reason for conditional approval or rejection"></textarea>
-                </div>
-              </div>
+	                <div class="mt-2 d-none" id="decisionReasonWrap">
+	                  <label class="form-label small mb-1" for="decisionReason">Reason</label>
+	                  <textarea class="form-control form-control-sm" id="decisionReason" rows="2" placeholder="Enter reason for conditional approval or rejection"></textarea>
+	                </div>
+	                <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+	                  <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" id="reqDecisionSave">Save</button>
+	                  <div class="small text-body-secondary d-none" id="reqDecisionSaved">Saved.</div>
+	                </div>
+	              </div>
             </div>
 
             <div class="col-12 col-lg-4">
@@ -433,8 +442,79 @@
   ></script>
   <script src="../js/main.js?v=20251214-2"></script>
   <script>
-    (function(){
-      const TODAY = new Date();
+	    (function(){
+	      const REVIEW_DECISIONS_KEY = 'cpnw-review-decisions-v1';
+	      let currentReqContext = { sid: '', reqName: '', rerenderReqs: null };
+
+	      function loadJSON(key, fallback){
+	        try{
+	          const raw = localStorage.getItem(key);
+	          if (!raw) return fallback;
+	          return JSON.parse(raw) ?? fallback;
+	        }catch{
+	          return fallback;
+	        }
+	      }
+
+	      function saveJSON(key, value){
+	        try{
+	          localStorage.setItem(key, JSON.stringify(value));
+	        }catch{
+	          // ignore
+	        }
+	      }
+
+	      function decisionKey(sid, reqName){
+	        return `${String(sid || '').trim()}|${String(reqName || '').trim()}`.toLowerCase();
+	      }
+
+	      function getDecisionRecord(sid, reqName){
+	        const store = loadJSON(REVIEW_DECISIONS_KEY, {});
+	        if (!store || typeof store !== 'object' || Array.isArray(store)) return null;
+	        return store[decisionKey(sid, reqName)] || null;
+	      }
+
+	      function saveDecisionRecord(sid, reqName, record){
+	        const store = loadJSON(REVIEW_DECISIONS_KEY, {});
+	        const next = (!store || typeof store !== 'object' || Array.isArray(store)) ? {} : store;
+	        next[decisionKey(sid, reqName)] = record;
+	        saveJSON(REVIEW_DECISIONS_KEY, next);
+	      }
+
+	      function decisionToStatus(decision){
+	        const d = String(decision || '').toLowerCase();
+	        if (d === 'approve' || d === 'approved') return 'Approved';
+	        if (d === 'conditional' || d === 'conditionally approved' || d === 'conditionallyapprove' || d === 'conditionally') return 'Conditionally Approved';
+	        if (d === 'reject' || d === 'rejected') return 'Rejected';
+	        return '';
+	      }
+
+	      function setSavedHint(){
+	        const el = document.getElementById('reqDecisionSaved');
+	        if (!el) return;
+	        el.classList.remove('d-none');
+	        window.setTimeout(() => el.classList.add('d-none'), 2200);
+	      }
+
+	      function setUploadedList(files){
+	        const wrap = document.getElementById('reqUploadedWrap');
+	        const list = document.getElementById('reqUploadedList');
+	        if (!wrap || !list) return;
+	        const items = Array.isArray(files) ? files : [];
+	        if (!items.length){
+	          wrap.classList.add('d-none');
+	          list.innerHTML = '';
+	          return;
+	        }
+	        wrap.classList.remove('d-none');
+	        list.innerHTML = items.map(f => {
+	          const name = String(f?.name || 'File');
+	          const at = f?.uploadedAt ? ` • ${String(f.uploadedAt)}` : '';
+	          return `<li>${name}${at}</li>`;
+	        }).join('');
+	      }
+
+	      const TODAY = new Date();
       const FALL_START_MONTH = 7;
       const CURRENT_AY_START = TODAY.getMonth() >= FALL_START_MONTH ? TODAY.getFullYear() : TODAY.getFullYear() - 1;
       const AY_VISIBLE_MIN = CURRENT_AY_START - 3;
@@ -853,22 +933,25 @@
           const start = (reqPage - 1) * reqPageSize;
           const end = Math.min(start + reqPageSize, total);
           const pageItems = orderedReqs.slice(start, end);
-        reqBody.innerHTML = pageItems.map((r, idx)=>{
-          let statusBadge = '<span class="badge text-bg-secondary">Not Submitted</span>';
-          const statusMap = {
-            'Not Submitted':'text-bg-secondary',
-            'Submitted':'text-bg-info text-dark',
-            'In Review':'text-bg-warning text-dark',
-              'Approved':'text-bg-success',
-              'Conditionally Approved':'text-bg-primary',
-              'Rejected':'text-bg-danger',
-              'Declination':'text-bg-danger-subtle text-danger',
-              'Expired':'text-bg-dark',
-              'Expiring':'text-bg-warning text-dark'
-            };
-            if (r.status && statusMap[r.status]){
-              statusBadge = `<span class="badge ${statusMap[r.status]}">${r.status}</span>`;
-            }
+	        reqBody.innerHTML = pageItems.map((r, idx)=>{
+	          const saved = getDecisionRecord(person.sid, r.name);
+	          const savedStatus = decisionToStatus(saved?.decision);
+	          const effectiveStatus = savedStatus || r.status;
+	          let statusBadge = '<span class="badge text-bg-secondary">Not Submitted</span>';
+	          const statusMap = {
+	            'Not Submitted':'text-bg-secondary',
+	            'Submitted':'text-bg-info text-dark',
+	            'In Review':'text-bg-warning text-dark',
+	              'Approved':'text-bg-success',
+	              'Conditionally Approved':'text-bg-primary',
+	              'Rejected':'text-bg-danger',
+	              'Declination':'text-bg-danger-subtle text-danger',
+	              'Expired':'text-bg-dark',
+	              'Expiring':'text-bg-warning text-dark'
+	            };
+	            if (effectiveStatus && statusMap[effectiveStatus]){
+	              statusBadge = `<span class="badge ${statusMap[effectiveStatus]}">${effectiveStatus}</span>`;
+	            }
             const scoreCell = r.type === 'eLearning' ? (r.score || '—') : '—';
           const abbr = r.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,6);
           const requiredBy = r.category === 'CPNW Clinical Passport' ? 'CPNW' : r.category === 'Education' ? 'Education' : 'CPNW Healthcare Facility';
@@ -919,11 +1002,14 @@
           renderReqs();
         });
 
-        renderReqs();
-        const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
-        modal.show();
-        document.getElementById('reviewModal').dataset.studentName = person.name;
-      });
+	        renderReqs();
+	        const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+	        modal.show();
+	        const reviewModalEl = document.getElementById('reviewModal');
+	        reviewModalEl.dataset.studentName = person.name;
+	        reviewModalEl.dataset.studentSid = person.sid;
+	        currentReqContext = { sid: person.sid, reqName: '', rerenderReqs: renderReqs };
+	      });
 
       function renderThread(){
         const threadWrap = document.getElementById('msgThread');
@@ -962,11 +1048,12 @@
         const requiredBy = btn.dataset.reqRequiredby || '';
         const instructions = btn.dataset.reqInstructions || '';
         const category = btn.dataset.reqCategory || '';
-        const student = btn.closest('#reviewModal')?.dataset?.studentName || document.getElementById('reqDetailStudent')?.textContent || '';
-        document.getElementById('reqDetailStudent').textContent = student;
-        document.getElementById('reqDetailModalLabel').textContent = name;
-        document.getElementById('reqDetailMeta').textContent = `Abbreviation: ${abbr} • Required by: ${requiredBy}`;
-        document.getElementById('reqDetailInstructions').textContent = instructions;
+	        const student = btn.closest('#reviewModal')?.dataset?.studentName || document.getElementById('reqDetailStudent')?.textContent || '';
+	        const sid = btn.closest('#reviewModal')?.dataset?.studentSid || '';
+	        document.getElementById('reqDetailStudent').textContent = student;
+	        document.getElementById('reqDetailModalLabel').textContent = name;
+	        document.getElementById('reqDetailMeta').textContent = `Abbreviation: ${abbr} • Required by: ${requiredBy}`;
+	        document.getElementById('reqDetailInstructions').textContent = instructions;
         const msgRecipient = document.getElementById('msgRecipient');
         if (msgRecipient){
           const options = [
@@ -982,22 +1069,85 @@
               <span>${opt.label}</span>
             </label>
           `).join('');
-        }
-        // reset decision/notes
-        document.querySelectorAll('.req-submission').forEach(r=>r.checked=false);
-        document.querySelectorAll('.req-submission-fields').forEach(el=>el.classList.add('d-none'));
-        document.querySelectorAll('.decision-radio').forEach(r=>r.checked=false);
-        document.getElementById('decisionReasonWrap').classList.add('d-none');
-        const reasonEl = document.getElementById('decisionReason');
-        if (reasonEl) reasonEl.value = '';
-        const uploadEl = document.getElementById('reqUpload');
-        if (uploadEl) uploadEl.value = '';
-        const reviewModalEl = document.getElementById('reviewModal');
-        const reviewModalInstance = reviewModalEl ? bootstrap.Modal.getInstance(reviewModalEl) || new bootstrap.Modal(reviewModalEl) : null;
-        const reqModalEl = document.getElementById('reqDetailModal');
-        const reqModal = new bootstrap.Modal(reqModalEl);
+	        }
+	        // reset decision/notes
+	        document.querySelectorAll('.req-submission').forEach(r=>r.checked=false);
+	        document.querySelectorAll('.req-submission-fields').forEach(el=>el.classList.add('d-none'));
+	        document.querySelectorAll('.decision-radio').forEach(r=>r.checked=false);
+	        document.getElementById('decisionReasonWrap').classList.add('d-none');
+	        const reasonEl = document.getElementById('decisionReason');
+	        if (reasonEl) reasonEl.value = '';
+	        const vaccDate = document.getElementById('vaccDate');
+	        const seriesStart = document.getElementById('seriesStart');
+	        const seriesDue = document.getElementById('seriesDue');
+	        const otherNotes = document.getElementById('otherNotes');
+	        if (vaccDate) vaccDate.value = '';
+	        if (seriesStart) seriesStart.value = '';
+	        if (seriesDue) seriesDue.value = '';
+	        if (otherNotes) otherNotes.value = '';
+	        ['declEgg','declIngredient','declGB','declOther'].forEach(id=>{
+	          const el = document.getElementById(id);
+	          if (el) el.checked = false;
+	        });
+	        const uploadEl = document.getElementById('reqUpload');
+	        if (uploadEl) uploadEl.value = '';
+	        setUploadedList([]);
 
-        window.__reviewWasOpen = reviewModalEl?.classList.contains('show');
+	        // Load saved decision if present
+	        if (sid){
+	          const saved = getDecisionRecord(sid, name);
+	          if (saved){
+	            const submission = String(saved.submission?.type || '');
+	            if (submission){
+	              const subEl = document.getElementById(submission);
+	              if (subEl){
+	                subEl.checked = true;
+	                document.querySelectorAll('.req-submission-fields').forEach(el=>el.classList.add('d-none'));
+	                const targetId = subEl.dataset.target;
+	                if (targetId){
+	                  document.getElementById(targetId)?.classList.remove('d-none');
+	                }
+	              }
+	            }
+	            if (vaccDate) vaccDate.value = saved.submission?.vaccDate || '';
+	            if (seriesStart) seriesStart.value = saved.submission?.seriesStart || '';
+	            if (seriesDue) seriesDue.value = saved.submission?.seriesDue || '';
+	            if (otherNotes) otherNotes.value = saved.submission?.otherNotes || '';
+
+	            const decl = saved.declination || {};
+	            const declEgg = document.getElementById('declEgg');
+	            const declIngredient = document.getElementById('declIngredient');
+	            const declGB = document.getElementById('declGB');
+	            const declOther = document.getElementById('declOther');
+	            if (declEgg) declEgg.checked = !!decl.egg;
+	            if (declIngredient) declIngredient.checked = !!decl.ingredient;
+	            if (declGB) declGB.checked = !!decl.gb;
+	            if (declOther) declOther.checked = !!decl.other;
+
+	            const decision = String(saved.decision || '').toLowerCase();
+	            const decApprove = document.getElementById('decApprove');
+	            const decConditional = document.getElementById('decConditional');
+	            const decReject = document.getElementById('decReject');
+	            if (decApprove) decApprove.checked = decision === 'approve' || decision === 'approved';
+	            if (decConditional) decConditional.checked = decision === 'conditional' || decision === 'conditionally approved';
+	            if (decReject) decReject.checked = decision === 'reject' || decision === 'rejected';
+
+	            const needsReason = !!decConditional?.checked || !!decReject?.checked;
+	            document.getElementById('decisionReasonWrap')?.classList.toggle('d-none', !needsReason);
+	            if (reasonEl) reasonEl.value = saved.decisionReason || '';
+	            setUploadedList(saved.uploads || []);
+	          }
+	        }
+
+	        const reviewModalEl = document.getElementById('reviewModal');
+	        const reviewModalInstance = reviewModalEl ? bootstrap.Modal.getInstance(reviewModalEl) || new bootstrap.Modal(reviewModalEl) : null;
+	        const reqModalEl = document.getElementById('reqDetailModal');
+	        const reqModal = new bootstrap.Modal(reqModalEl);
+	        reqModalEl.dataset.reqSid = sid;
+	        reqModalEl.dataset.reqName = name;
+	        currentReqContext = { ...currentReqContext, sid, reqName: name };
+
+	        window.__reviewWasOpen = reviewModalEl?.classList.contains('show');
         if (window.__reviewWasOpen && reviewModalInstance){
           reviewModalInstance.hide();
         }
@@ -1025,6 +1175,74 @@
         const wrap = document.getElementById('decisionReasonWrap');
         if (wrap){
           wrap.classList.toggle('d-none', !requires);
+        }
+      });
+
+      // Save decision + submission/declination + uploads (demo persistence)
+      document.addEventListener('click', (e) => {
+        if (e.target.id !== 'reqDecisionSave') return;
+        const modalEl = document.getElementById('reqDetailModal');
+        const sid = modalEl?.dataset?.reqSid || '';
+        const reqName = modalEl?.dataset?.reqName || document.getElementById('reqDetailModalLabel')?.textContent || '';
+        if (!sid || !reqName){
+          alert('Unable to save: missing student/requirement context.');
+          return;
+        }
+
+        const decision =
+          document.getElementById('decApprove')?.checked ? 'Approved' :
+          document.getElementById('decConditional')?.checked ? 'Conditionally Approved' :
+          document.getElementById('decReject')?.checked ? 'Rejected' :
+          '';
+        const decisionReason = (document.getElementById('decisionReason')?.value || '').trim();
+        if ((decision === 'Conditionally Approved' || decision === 'Rejected') && !decisionReason){
+          alert('Please enter a reason for conditional approval or rejection.');
+          return;
+        }
+
+        const submissionType = document.getElementById('subVaccinated')?.checked ? 'subVaccinated' :
+          document.getElementById('subSeries')?.checked ? 'subSeries' :
+          document.getElementById('subOther')?.checked ? 'subOther' :
+          '';
+
+        const existing = getDecisionRecord(sid, reqName) || {};
+        const existingUploads = Array.isArray(existing.uploads) ? existing.uploads.slice() : [];
+        const files = Array.from(document.getElementById('reqUpload')?.files || []);
+        const newUploads = files.map(f => ({
+          name: f.name,
+          type: f.type,
+          size: f.size,
+          uploadedAt: new Date().toISOString().slice(0, 10)
+        }));
+
+        const record = {
+          savedAt: new Date().toISOString(),
+          decision,
+          decisionReason,
+          submission: {
+            type: submissionType,
+            vaccDate: document.getElementById('vaccDate')?.value || '',
+            seriesStart: document.getElementById('seriesStart')?.value || '',
+            seriesDue: document.getElementById('seriesDue')?.value || '',
+            otherNotes: (document.getElementById('otherNotes')?.value || '').trim()
+          },
+          declination: {
+            egg: !!document.getElementById('declEgg')?.checked,
+            ingredient: !!document.getElementById('declIngredient')?.checked,
+            gb: !!document.getElementById('declGB')?.checked,
+            other: !!document.getElementById('declOther')?.checked
+          },
+          uploads: existingUploads.concat(newUploads)
+        };
+
+        saveDecisionRecord(sid, reqName, record);
+        const uploadEl = document.getElementById('reqUpload');
+        if (uploadEl) uploadEl.value = '';
+        setUploadedList(record.uploads);
+        setSavedHint();
+
+        if (typeof currentReqContext?.rerenderReqs === 'function' && currentReqContext.sid === sid){
+          currentReqContext.rerenderReqs();
         }
       });
 

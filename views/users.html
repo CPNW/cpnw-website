@@ -68,15 +68,14 @@
         </div>
       </div>
 
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <div class="d-flex gap-1">
-          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status-chip="active">Active</button>
-          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="requests">Requests</button>
-          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="inactive">Inactive</button>
-          <!-- Archived view removed; handled by support -->
-        </div>
-        <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
-          <input type="search" class="form-control form-control-sm" placeholder="Search name, email" id="userSearch" style="min-width: 200px;">
+	      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+	        <div class="d-flex gap-1">
+	          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status-chip="active">Active</button>
+	          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="requests">Requests</button>
+	          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="inactive">Inactive</button>
+	        </div>
+	        <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
+	          <input type="search" class="form-control form-control-sm" placeholder="Search name, email" id="userSearch" style="min-width: 200px;">
           <select class="form-select form-select-sm" id="roleFilter" style="min-width: 150px;">
             <option value="">All roles</option>
             <option value="education">Education</option>
@@ -107,19 +106,18 @@
           </div>
         </div>
         <div class="table-responsive">
-          <table class="table align-middle mb-0 cpnw-table">
-            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
-              <tr>
-                <th scope="col"><input type="checkbox" id="selectAll"></th>
-                <th scope="col">Name</th>
-                <th scope="col">Email</th>
-                <th scope="col">Program</th>
-                <th scope="col">Role</th>
-                <th scope="col">Status</th>
-                <th scope="col">Submitted/Updated</th>
-                <th scope="col" class="text-end">Actions</th>
-              </tr>
-            </thead>
+	          <table class="table align-middle mb-0 cpnw-table">
+	            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+	              <tr>
+	                <th scope="col"><input type="checkbox" id="selectAll"></th>
+	                <th scope="col">Name</th>
+	                <th scope="col">Email</th>
+	                <th scope="col">Program</th>
+	                <th scope="col">Role</th>
+	                <th scope="col">Approval Date</th>
+	                <th scope="col" class="text-end">Actions</th>
+	              </tr>
+	            </thead>
             <tbody id="userTableBody"></tbody>
           </table>
         </div>
@@ -383,28 +381,47 @@
       let currentPage = 1;
       let pageSize = Number(pageSizeSelect?.value || 10);
 
-      function statusLabel(item){
-        switch(item.status){
-          case 'active': return 'Active';
-          case 'request-new': return 'Request: New';
-          case 'request-returned': return 'Request: Returned';
-          case 'inactive': return 'Inactive';
-          default: return item.status;
-        }
-      }
+	      function statusLabel(item){
+	        switch(item.status){
+	          case 'active': return 'Active';
+	          case 'request-new': return 'Request: New';
+	          case 'request-returned': return 'Request: Returned';
+	          case 'inactive': return 'Inactive';
+	          default: return item.status;
+	        }
+	      }
 
-      function actionsFor(item){
-        if (item.status === 'active'){
-          return ['Reassign', 'Deactivate'];
-        }
-        if (item.status.startsWith('request')){
-          return ['Approve','Return','Decline'];
-        }
-        if (item.status === 'inactive'){
-          return ['Reactivate'];
-        }
-        return [];
-      }
+	      function cohortActionLabel(item){
+	        const label = (item.cohortLabel || '').trim();
+	        return label ? 'Reassign Cohort' : 'Assign to Cohort';
+	      }
+
+	      function canAssignCohort(item){
+	        // Education coordinators/admin accounts are not assigned to cohorts/facilities.
+	        return String(item?.role || '').toLowerCase() !== 'education';
+	      }
+
+	      function actionsFor(item){
+	        if (item.status === 'active'){
+	          return [
+	            ...(canAssignCohort(item) ? [{ key: 'cohort', label: cohortActionLabel(item) }] : []),
+	            { key: 'deactivate', label: 'Deactivate' },
+	          ];
+	        }
+	        if (item.status.startsWith('request')){
+	          return [
+	            { key: 'approve', label: 'Approve' },
+	            { key: 'return', label: 'Return' },
+	            { key: 'decline', label: 'Decline' }
+	          ];
+	        }
+	        if (item.status === 'inactive'){
+	          return [
+	            { key: 'reactivate', label: 'Reactivate' }
+	          ];
+	        }
+	        return [];
+	      }
 
       function updateTable(){
         const query = (userSearch?.value || '').toLowerCase();
@@ -412,15 +429,15 @@
         const program = programFilter?.value || '';
         const cohort = cohortFilter?.value || '';
 
-        const filtered = data.filter(item => {
-          if (currentStatus === 'requests'){
-            if (!(item.status === 'request-new' || item.status === 'request-returned')) return false;
-          } else {
-            if (currentStatus === 'active' && item.status !== 'active') return false;
-            if (currentStatus === 'inactive' && item.status !== 'inactive') return false;
-          }
-          if (role && item.role !== role) return false;
-          if (program && item.program !== program) return false;
+	        const filtered = data.filter(item => {
+	          if (currentStatus === 'requests'){
+	            if (!(item.status === 'request-new' || item.status === 'request-returned')) return false;
+	          } else {
+	            if (currentStatus === 'active' && item.status !== 'active') return false;
+	            if (currentStatus === 'inactive' && item.status !== 'inactive') return false;
+	          }
+	          if (role && item.role !== role) return false;
+	          if (program && item.program !== program) return false;
           if (cohort){
             if (cohort === '__unassigned__'){
               if (item.cohortLabel && item.cohortLabel.trim()) return false;
@@ -446,29 +463,28 @@
           tr.innerHTML = `
             <td><input type="checkbox" class="form-check-input" /></td>
             <td class="fw-semibold">${item.name}</td>
-            <td>${item.email}</td>
-            <td>${item.program}</td>
-            <td class="text-capitalize">${item.role}</td>
-            <td><span class="badge ${item.status === 'archived' ? 'text-bg-secondary' : item.status.startsWith('request') ? 'text-bg-warning text-dark' : 'text-bg-success'}">${statusLabel(item)}</span></td>
-            <td>${item.status.startsWith('request') ? 'Submitted' : 'Updated'} ${item.date}</td>
-            <td class="text-end">
-              ${actionsFor(item).map(a => `<button class="btn btn-outline-secondary btn-sm me-1" type="button" data-row-action="${a}" data-user-email="${item.email}">${a}</button>`).join('')}
-            </td>
-          `;
-          userTableBody.appendChild(tr);
-        });
+	            <td>${item.email}</td>
+	            <td>${item.program}</td>
+	            <td class="text-capitalize">${item.role}</td>
+	            <td>${item.date}</td>
+	            <td class="text-end">
+	              ${actionsFor(item).map(a => `<button class="btn btn-outline-secondary btn-sm me-1" type="button" data-row-action="${a.key}" data-user-email="${item.email}">${a.label}</button>`).join('')}
+	            </td>
+	          `;
+	          userTableBody.appendChild(tr);
+	        });
 
-        tableTitle.textContent =
-          currentStatus === 'requests' ? 'Account requests' :
-          currentStatus === 'inactive' ? 'Inactive users' :
-          'Active users';
+	        tableTitle.textContent =
+	          currentStatus === 'requests' ? 'Account requests' :
+	          currentStatus === 'inactive' ? 'Inactive users' :
+	          'Active users';
 
-        tableSubtitle.textContent =
-          currentStatus === 'requests'
-            ? 'New and returned account requests'
-            : currentStatus === 'inactive'
-              ? 'Deactivate/reactivate accounts'
-              : 'All active accounts across your programs.';
+	        tableSubtitle.textContent =
+	          currentStatus === 'requests'
+	            ? 'New and returned account requests'
+	            : currentStatus === 'inactive'
+	              ? 'Deactivate/reactivate accounts'
+	              : 'All active accounts across your programs.';
 
         if (pageInfo){
           pageInfo.textContent = total ? `Showing ${start + 1}–${end} of ${total}` : 'No results';
@@ -497,9 +513,9 @@
         if (el && el.tagName === 'SELECT') el.addEventListener('change', () => { currentPage = 1; updateTable(); });
       });
 
-      bulkAction?.addEventListener('click', () => {
-        alert('Bulk action drawer would open here (approve/return/decline/reactivate/archive).');
-      });
+	      bulkAction?.addEventListener('click', () => {
+	        alert('Bulk action drawer would open here (approve/return/decline/reactivate/deactivate).');
+	      });
 
       if (pageSizeSelect){
         pageSizeSelect.addEventListener('change', () => {
@@ -679,26 +695,71 @@
         validateNewCohortName();
       });
 
-      userTableBody?.addEventListener('click', (event) => {
-        const btn = event.target.closest('button[data-row-action]');
-        if (!btn) return;
-        const action = (btn.dataset.rowAction || '').trim();
-        const email = btn.dataset.userEmail;
-        const user = data.find(u => u.email === email);
-        if (!user) return;
-        if (action === 'Approve'){
-          openAssignModalFor(user, { title: 'Approve request' });
-        }
-        if (action === 'Reassign'){
-          openAssignModalFor(user, { title: 'Reassign cohort' });
-        }
-      });
+	      userTableBody?.addEventListener('click', (event) => {
+	        const btn = event.target.closest('button[data-row-action]');
+	        if (!btn) return;
+	        const action = (btn.dataset.rowAction || '').trim();
+	        const email = btn.dataset.userEmail;
+	        const user = data.find(u => u.email === email);
+	        if (!user) return;
+	        if (action === 'approve'){
+	          if (!canAssignCohort(user)){
+	            if (!window.confirm(`Approve ${user.name}? (No cohort assignment for Education accounts)`)) return;
+	            if (cohortAPI){
+	              // Ensure no cohort mapping exists for education accounts.
+	              cohortAPI.setUserCohort(user.email, null);
+	            }
+	            user.cohortLabel = '';
+	            user.status = 'active';
+	            user.date = new Date().toISOString().slice(0, 10);
+	            updateTable();
+	            return;
+	          }
+	          openAssignModalFor(user, { title: 'Approve request' });
+	          return;
+	        }
+	        if (action === 'cohort'){
+	          if (!canAssignCohort(user)){
+	            alert('Education accounts cannot be assigned to cohorts.');
+	            return;
+	          }
+	          const label = cohortActionLabel(user);
+	          openAssignModalFor(user, { title: label });
+	          return;
+	        }
+	        if (action === 'deactivate'){
+	          if (!window.confirm(`Deactivate ${user.name}?`)) return;
+	          user.status = 'inactive';
+	          user.date = new Date().toISOString().slice(0, 10);
+	          updateTable();
+	          return;
+	        }
+	        if (action === 'reactivate'){
+	          if (!window.confirm(`Reactivate ${user.name}?`)) return;
+	          user.status = 'active';
+	          user.date = new Date().toISOString().slice(0, 10);
+	          updateTable();
+	          return;
+	        }
+	      });
 
-      assignApproveBtn?.addEventListener('click', () => {
-        if (!pendingUser) return;
-        const programName = pendingUser.program || '';
-        const isNew = !!assignNew?.checked;
-        const isUnassigned = !!assignUnassigned?.checked;
+	      assignApproveBtn?.addEventListener('click', () => {
+	        if (!pendingUser) return;
+	        if (!canAssignCohort(pendingUser)){
+	          // Defensive: if an education account reaches this modal, force unassigned and clear mapping.
+	          if (cohortAPI){
+	            cohortAPI.setUserCohort(pendingUser.email, null);
+	          }
+	          pendingUser.cohortLabel = '';
+	          pendingUser.status = 'active';
+	          pendingUser.date = new Date().toISOString().slice(0, 10);
+	          assignModal?.hide();
+	          updateTable();
+	          return;
+	        }
+	        const programName = pendingUser.program || '';
+	        const isNew = !!assignNew?.checked;
+	        const isUnassigned = !!assignUnassigned?.checked;
 
         // Previous assignment
         const prevLabel = (pendingUser.cohortLabel || '').trim();

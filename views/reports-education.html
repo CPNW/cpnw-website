@@ -343,8 +343,7 @@
 	        const hasExpiring = ['cpnw','ed','hc'].some(k => String(req[k] || '').toLowerCase() === 'expiring');
 	        if (hasExpiring) return 'expiring';
 	        const hasIncomplete = ['cpnw','ed','hc'].some(k => String(req[k] || '').toLowerCase() === 'incomplete');
-	        const hasFailedScreen = ['oig','sam'].some(k => String(req[k] || '').toLowerCase() === 'fail');
-	        if (hasIncomplete || hasFailedScreen) return 'incomplete';
+	        if (hasIncomplete) return 'incomplete';
 	        return 'complete';
 	      }
 	      cohorts.forEach((c, idx) => {
@@ -352,6 +351,17 @@
 	        for (let i=0; i<base; i++){
 	          const expiresInDays = (i % 9 === 0) ? (7 + (idx % 24)) : (i % 11 === 0) ? (14 + (idx % 16)) : (i % 13 === 0) ? (22 + (idx % 8)) : null;
 	          const expDate = expiresInDays ? asISODate(addDays(expiresInDays)) : '';
+	          // OIG/SAM are run bi-monthly (1st/15th). Newer students may be blank; most results are Pass.
+	          let oig = 'pass';
+	          let sam = 'pass';
+	          const screenSeed = (idx * 97 + i * 131) % 1000; // stable demo distribution
+	          if (screenSeed < 80){
+	            oig = '';
+	            sam = '';
+	          }else if (screenSeed === 999){
+	            oig = 'fail';
+	            sam = 'pass';
+	          }
 	          const person = {
 	            name: `Student ${idx+1}-${i+1}`,
 	            email: `student${idx+1}${i+1}@demo.cpnw.org`,
@@ -362,8 +372,8 @@
 	              cpnw: (i % 3) ? 'complete' : 'incomplete',
 	              ed: (i % 4) ? 'complete' : 'incomplete',
 	              hc: (i % 5) ? 'complete' : 'incomplete',
-	              oig: (i % 2) ? 'pass' : 'fail',
-	              sam: (i % 3) ? 'pass' : 'fail'
+	              oig,
+	              sam
 	            },
 	            reqMeta: {
 	              expiringAt: expDate,
