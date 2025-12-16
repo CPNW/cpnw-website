@@ -125,25 +125,23 @@
       <div class="cpnw-shell p-3 p-md-4">
         <div class="table-responsive">
           <table class="table align-middle mb-0 cpnw-table">
-            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
-              <tr>
-                <th scope="col"><input type="checkbox" id="selectAllReports" /></th>
-                <th scope="col">Name</th>
-                <th scope="col">Program</th>
-                <th scope="col">Cohort</th>
-            <th scope="col">CPNW</th>
-            <th scope="col">ED</th>
-            <th scope="col">HC</th>
-            <th scope="col">OIG</th>
-            <th scope="col">SAM</th>
-                <th scope="col">Docs</th>
-                <th scope="col">Start</th>
-                <th scope="col" class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="reportTableBody"></tbody>
-          </table>
-        </div>
+	            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+	              <tr>
+	                <th scope="col"><input type="checkbox" id="selectAllReports" /></th>
+	                <th scope="col">Name</th>
+	                <th scope="col">Program</th>
+	                <th scope="col">Cohort</th>
+	            <th scope="col">CPNW</th>
+	            <th scope="col">ED</th>
+	            <th scope="col">HC</th>
+	            <th scope="col">OIG</th>
+	            <th scope="col">SAM</th>
+	                <th scope="col">Docs</th>
+	              </tr>
+	            </thead>
+	            <tbody id="reportTableBody"></tbody>
+	          </table>
+	        </div>
         <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
           <div class="d-flex align-items-center gap-2">
             <label class="small text-body-secondary mb-0" for="reportPageSize">Show</label>
@@ -272,41 +270,48 @@
         { id:'ADN', base: 10, aySpan: 2 },
         { id:'Surg Tech', base: 8, aySpan: 2 }
       ];
-      const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
-      const cohortSeeds = [];
-      programDefs.forEach(p => {
-        Array.from({length:p.aySpan},(_,i)=>CURRENT_AY_START - i).forEach(ay=>{
-          TERMS.forEach(term=>{
-            const year = term === 'Fall' ? ay : ay + 1;
-            const ayStart = term === 'Fall' ? ay : ay - 1;
-            const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
-            const statusPool = ['complete','incomplete','expiring'];
-            cohortSeeds.push({
-              cohortLabel: `${p.id} – ${term} ${year}`,
-              program: p.id,
-              ayStart,
-              students,
-              status: statusPool[(students + ayStart) % statusPool.length],
-              start: `${term} ${year}`
-            });
-          });
-        });
-      });
-      let cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+	      const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
+	      const asISODate = (date) => {
+	        const d = date instanceof Date ? date : new Date(date);
+	        if (Number.isNaN(d.getTime())) return '';
+	        return d.toISOString().slice(0, 10);
+	      };
+	      const addDays = (days) => {
+	        const d = new Date();
+	        d.setDate(d.getDate() + days);
+	        return d;
+	      };
+	      const cohortSeeds = [];
+	      programDefs.forEach(p => {
+	        Array.from({length:p.aySpan},(_,i)=>CURRENT_AY_START - i).forEach(ay=>{
+	          TERMS.forEach(term=>{
+	            const year = term === 'Fall' ? ay : ay + 1;
+	            const ayStart = term === 'Fall' ? ay : ay - 1;
+	            const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
+	            cohortSeeds.push({
+	              cohortLabel: `${p.id} – ${term} ${year}`,
+	              program: p.id,
+	              ayStart,
+	              students
+	            });
+	          });
+	        });
+	      });
+	      let cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
 
       // Merge custom cohorts + membership deltas (stored in localStorage via main.js)
       const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
       const membershipCounts = cohortAPI ? cohortAPI.getMembershipCounts() : {};
-      if (cohortAPI){
-        cohorts = cohorts.map(c => {
-          const delta = membershipCounts[cohortAPI.seedKeyForLabel(c.cohortLabel)] || 0;
-          return { ...c, students: c.students + delta };
-        });
-        const custom = cohortAPI
-          .listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX })
-          .map(c => ({ ...c, status: 'incomplete', start: 'Custom' }));
-        cohorts = cohorts.concat(custom);
-      }
+	      if (cohortAPI){
+	        cohorts = cohorts.map(c => {
+	          const delta = membershipCounts[cohortAPI.seedKeyForLabel(c.cohortLabel)] || 0;
+	          return { ...c, students: c.students + delta };
+	        });
+	        const custom = cohortAPI
+	          .listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX })
+	          .map(c => ({ ...c }));
+	        cohorts = cohorts.concat(custom);
+	      }
 
       // Populate cohort filter
       const cohortFilter = document.getElementById('cohortFilter');
@@ -321,94 +326,110 @@
         }).join('');
       }
 
-      // Build people data
-      const users = [];
-      function applyCohortOverride(user){
+	      // Build people data
+	      const users = [];
+	      function applyCohortOverride(user){
         if (!cohortAPI) return user;
         const override = typeof cohortAPI.getUserCohortLabel === 'function'
           ? cohortAPI.getUserCohortLabel(user.email)
           : null;
         if (override !== null && override !== undefined){
           user.cohort = override;
-        }
-        return user;
-      }
-      cohorts.forEach((c, idx) => {
-        const base = Math.min(12, c.students);
-        for (let i=0; i<base; i++){
-          const person = {
-            name: `Student ${idx+1}-${i+1}`,
-            email: `student${idx+1}${i+1}@demo.cpnw.org`,
-            program: c.program,
-            cohort: c.cohortLabel,
-            role: 'student',
-            status: c.status,
-            start: c.start,
-            reqs: {
-              cpnw: (i % 3) ? 'complete' : 'incomplete',
-              ed: (i % 4) ? 'complete' : 'incomplete',
-              hc: (i % 5) ? 'complete' : 'incomplete',
-              oig: (i % 2) ? 'pass' : 'fail',
-              sam: (i % 3) ? 'pass' : 'fail'
-            },
-            docs: Math.max(1, (i % 4)),
-            docItems: [
-              { file:'Immunization.pdf', req:'Immunization', date:'2025-02-10' },
-              { file:'BLS.pdf', req:'BLS', date:'2025-02-08' }
-            ]
-          };
-          users.push(applyCohortOverride(person));
-        }
-        // Add a few faculty and faculty-admin tied to this program
-        users.push(applyCohortOverride({
-          name: `Faculty ${c.program} ${idx+1}`,
-          email: `faculty${idx+1}@demo.cpnw.org`,
-          program: c.program,
-          cohort: c.cohortLabel,
-          role: 'faculty',
-          status: c.status,
-          start: c.start,
-          reqs: {
-            cpnw: 'complete',
-            ed: 'complete',
-            hc: 'complete',
-            oig: 'pass',
-            sam: 'pass'
-          },
-          docs: 1,
-          docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
-        }));
-        users.push(applyCohortOverride({
-          name: `Faculty Admin ${c.program} ${idx+1}`,
-          email: `facadmin${idx+1}@demo.cpnw.org`,
-          program: c.program,
-          cohort: c.cohortLabel,
-          role: 'faculty-admin',
-          status: c.status,
-          start: c.start,
-          reqs: {
-            cpnw: 'complete',
-            ed: 'complete',
-            hc: 'complete',
-            oig: (idx % 2) ? 'pass' : 'fail',
-            sam: (idx % 3) ? 'pass' : 'fail'
-          },
-          docs: 1,
-          docItems: [{ file:'AdminAccess.pdf', req:'Admin Approval', date:'2025-02-11' }]
-        }));
-      });
-      users.push(applyCohortOverride({
-        name: 'Fran Faculty',
-        email: 'fran.faculty@cpnw.org',
-        program: 'BSN',
-        cohort: '',
-        role: 'faculty',
-        status: 'complete',
-        start: '—',
-        reqs: {
-          cpnw: 'complete',
-          ed: 'complete',
-          hc: 'complete',
+	        }
+	        return user;
+	      }
+	      function computeComplianceStatus(user){
+	        const req = user.reqs || {};
+	        const hasExpiring = ['cpnw','ed','hc'].some(k => String(req[k] || '').toLowerCase() === 'expiring');
+	        if (hasExpiring) return 'expiring';
+	        const hasIncomplete = ['cpnw','ed','hc'].some(k => String(req[k] || '').toLowerCase() === 'incomplete');
+	        const hasFailedScreen = ['oig','sam'].some(k => String(req[k] || '').toLowerCase() === 'fail');
+	        if (hasIncomplete || hasFailedScreen) return 'incomplete';
+	        return 'complete';
+	      }
+	      cohorts.forEach((c, idx) => {
+	        const base = Math.min(12, c.students);
+	        for (let i=0; i<base; i++){
+	          const expiresInDays = (i % 9 === 0) ? (7 + (idx % 24)) : (i % 11 === 0) ? (14 + (idx % 16)) : (i % 13 === 0) ? (22 + (idx % 8)) : null;
+	          const expDate = expiresInDays ? asISODate(addDays(expiresInDays)) : '';
+	          const person = {
+	            name: `Student ${idx+1}-${i+1}`,
+	            email: `student${idx+1}${i+1}@demo.cpnw.org`,
+	            program: c.program,
+	            cohort: c.cohortLabel,
+	            role: 'student',
+	            reqs: {
+	              cpnw: (i % 3) ? 'complete' : 'incomplete',
+	              ed: (i % 4) ? 'complete' : 'incomplete',
+	              hc: (i % 5) ? 'complete' : 'incomplete',
+	              oig: (i % 2) ? 'pass' : 'fail',
+	              sam: (i % 3) ? 'pass' : 'fail'
+	            },
+	            reqMeta: {
+	              expiringAt: expDate,
+	              expiringDays: expiresInDays
+	            },
+	            docs: Math.max(1, (i % 4)),
+	            docItems: [
+	              { file:'Immunization.pdf', req:'Immunization', date:'2025-02-10' },
+	              { file:'BLS.pdf', req:'BLS', date:'2025-02-08' }
+	            ]
+	          };
+	          // Add some realistic "Expiring" records (expiring within 30 days).
+	          if (expiresInDays && expiresInDays <= 30){
+	            if (i % 9 === 0) person.reqs.cpnw = 'expiring';
+	            else if (i % 11 === 0) person.reqs.ed = 'expiring';
+	            else if (i % 13 === 0) person.reqs.hc = 'expiring';
+	          }
+	          person.status = computeComplianceStatus(person);
+	          users.push(applyCohortOverride(person));
+	        }
+	        // Add a few faculty and faculty-admin tied to this program
+	        users.push(applyCohortOverride({
+	          name: `Faculty ${c.program} ${idx+1}`,
+	          email: `faculty${idx+1}@demo.cpnw.org`,
+	          program: c.program,
+	          cohort: c.cohortLabel,
+	          role: 'faculty',
+	          reqs: {
+	            cpnw: 'complete',
+	            ed: 'complete',
+	            hc: 'complete',
+	            oig: 'pass',
+	            sam: 'pass'
+	          },
+	          docs: 1,
+	          docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
+	        }));
+	        users.push(applyCohortOverride({
+	          name: `Faculty Admin ${c.program} ${idx+1}`,
+	          email: `facadmin${idx+1}@demo.cpnw.org`,
+	          program: c.program,
+	          cohort: c.cohortLabel,
+	          role: 'faculty-admin',
+	          reqs: {
+	            cpnw: 'complete',
+	            ed: 'complete',
+	            hc: 'complete',
+	            oig: (idx % 2) ? 'pass' : 'fail',
+	            sam: (idx % 3) ? 'pass' : 'fail'
+	          },
+	          docs: 1,
+	          docItems: [{ file:'AdminAccess.pdf', req:'Admin Approval', date:'2025-02-11' }]
+	        }));
+	      });
+	      // Ensure any non-student rows still get a computed compliance status.
+	      users.forEach(u => { u.status = u.status || computeComplianceStatus(u); });
+	      users.push(applyCohortOverride({
+	        name: 'Fran Faculty',
+	        email: 'fran.faculty@cpnw.org',
+	        program: 'BSN',
+	        cohort: '',
+	        role: 'faculty',
+	        reqs: {
+	          cpnw: 'complete',
+	          ed: 'complete',
+	          hc: 'complete',
           oig: 'pass',
           sam: 'pass'
         },
@@ -450,26 +471,28 @@
       const reqCounts = { cpnw:20, ed:4, hc:6 };
       const reqLabels = { cpnw:'CPNW', ed:'Education', hc:'Healthcare' };
 
-      function buildReqList(type, overallStatus){
-        const total = reqCounts[type] || 0;
-        const list = [];
-        for (let i=1;i<=total;i++){
-          let itemStatus = 'complete';
-          if (overallStatus !== 'complete'){
-            itemStatus = (i % 4 === 0) ? 'incomplete' : 'complete';
-          }
-          list.push({ name: `${reqLabels[type] || type.toUpperCase()} Req ${i}`, status: itemStatus });
-        }
-        return list;
-      }
+	      function buildReqList(type, overallStatus){
+	        const total = reqCounts[type] || 0;
+	        const list = [];
+	        for (let i=1;i<=total;i++){
+	          let itemStatus = 'complete';
+	          if (overallStatus === 'expiring'){
+	            itemStatus = (i % 5 === 0) ? 'expiring' : 'complete';
+	          }else if (overallStatus !== 'complete'){
+	            itemStatus = (i % 4 === 0) ? 'incomplete' : 'complete';
+	          }
+	          list.push({ name: `${reqLabels[type] || type.toUpperCase()} Req ${i}`, status: itemStatus });
+	        }
+	        return list;
+	      }
 
       function renderReports(showOnlySelected = false){
         const q = (reportSearch?.value || '').toLowerCase();
         const program = programFilterSelect?.value || '';
         const cohort = cohortFilter?.value || '';
-        const filtered = users.filter(u=>{
-          if (currentStatus !== 'all' && u.status !== currentStatus) return false;
-          if (program && u.program !== program) return false;
+	        const filtered = users.filter(u=>{
+	          if (currentStatus !== 'all' && u.status !== currentStatus) return false;
+	          if (program && u.program !== program) return false;
           if (cohort){
             if (cohort === '__unassigned__'){
               if ((u.cohort || '').trim()) return false;
@@ -488,25 +511,23 @@
         const end = Math.min(start + reportPageSize, total);
         const pageItems = filtered.slice(start, end);
 
-        reportTableBody.innerHTML = '';
-        pageItems.forEach(u=>{
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><input type="checkbox" class="form-check-input report-row" data-id="${u.email}" ${selectedIds.has(u.email) ? 'checked' : ''}></td>
-            <td class="fw-semibold">${u.name}</td>
-            <td>${u.program}</td>
-            <td>${u.cohort ? u.cohort : '<span class="text-body-secondary">Unassigned</span>'}</td>
-            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="cpnw" data-user="${u.email}">${statusBadge(u.reqs?.cpnw)}</button></td>
-            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="ed" data-user="${u.email}">${statusBadge(u.reqs?.ed)}</button></td>
-            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="hc" data-user="${u.email}">${statusBadge(u.reqs?.hc)}</button></td>
-            <td>${statusBadge(u.reqs?.oig)}</td>
-            <td>${statusBadge(u.reqs?.sam)}</td>
-            <td><button class="btn btn-outline-secondary btn-sm" data-docs="${u.name}">Open</button></td>
-            <td>${u.start}</td>
-            <td class="text-end"><button class="btn btn-outline-secondary btn-sm">Show</button></td>
-          `;
-          reportTableBody.appendChild(tr);
-        });
+	        reportTableBody.innerHTML = '';
+	        pageItems.forEach(u=>{
+	          const tr = document.createElement('tr');
+	          tr.innerHTML = `
+	            <td><input type="checkbox" class="form-check-input report-row" data-id="${u.email}" ${selectedIds.has(u.email) ? 'checked' : ''}></td>
+	            <td class="fw-semibold">${u.name}</td>
+	            <td>${u.program}</td>
+	            <td>${u.cohort ? u.cohort : '<span class="text-body-secondary">Unassigned</span>'}</td>
+	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="cpnw" data-user="${u.email}">${statusBadge(u.reqs?.cpnw)}</button></td>
+	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="ed" data-user="${u.email}">${statusBadge(u.reqs?.ed)}</button></td>
+	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="hc" data-user="${u.email}">${statusBadge(u.reqs?.hc)}</button></td>
+	            <td>${statusBadge(u.reqs?.oig)}</td>
+	            <td>${statusBadge(u.reqs?.sam)}</td>
+	            <td><button class="btn btn-outline-secondary btn-sm" data-docs="${u.name}">Open</button></td>
+	          `;
+	          reportTableBody.appendChild(tr);
+	        });
 
         if (reportPageInfo){
           reportPageInfo.textContent = total ? `Showing ${start + 1}–${end} of ${total}` : 'No results';
