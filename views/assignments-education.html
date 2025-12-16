@@ -138,15 +138,15 @@
             <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
               <tr>
                 <th scope="col"><input type="checkbox" id="selectAllAssignments" /></th>
-                <th scope="col">Name</th>
-                <th scope="col">SID/EID</th>
-                <th scope="col">Role</th>
-                <th scope="col">Program</th>
-                <th scope="col">Cohort</th>
-                <th scope="col">Location</th>
-                <th scope="col">Start</th>
-                <th scope="col">End</th>
-                <th scope="col">Status</th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="name">Name</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="sid">SID/EID</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="role">Role</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="program">Program</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="cohort">Cohort</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="location">Location</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="start">Start</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="end">End</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="status">Status</button></th>
                 <th scope="col" class="text-end">Add/Edit</th>
               </tr>
             </thead>
@@ -269,6 +269,7 @@
       const showSelectedBtn = document.getElementById('showSelected');
       const exportBtn = document.getElementById('exportAssignments');
       const rangeButtons = document.querySelectorAll('[data-range]');
+      const sortButtons = document.querySelectorAll('.sort');
 
       const locations = ['CPNW Medical Center','CPNW Healthcare Facility','Evergreen Health','Providence NW'];
       const statusPool = ['approved','pending','rejected'];
@@ -339,9 +340,29 @@
       let currentRange = 'current'; // 'current' | 'past'
       let assignmentPage = 1;
       let assignmentPageSize = Number(assignmentPageSizeSelect?.value || 10);
+      let sortState = { field:'', dir:'asc' };
       const selectedIds = new Set();
       let addDraft = null; // { replaceRowId?: string, afterRowId?: string, studentId: string }
       let editDraft = null; // { rowId: string, assignmentId: string }
+
+      function getSortToken(row, field){
+        const student = row.student;
+        const assignment = row.assignment;
+        if (field === 'start' || field === 'end'){
+          const d = assignment?.[field];
+          if (!(d instanceof Date)) return { blank:true, type:'number', value: 0 };
+          return { blank:false, type:'number', value: d.getTime() };
+        }
+        let raw;
+        if (field === 'location' || field === 'status'){
+          raw = assignment?.[field] ?? '';
+        }else{
+          raw = student?.[field] ?? '';
+        }
+        const str = String(raw ?? '').trim();
+        if (!str) return { blank:true, type:'string', value: '' };
+        return { blank:false, type:'string', value: str };
+      }
 
       function statusBadge(val){
         if (!val) return '<span class="text-body-secondary">—</span>';
@@ -435,6 +456,32 @@
             rows.push({ rowId: a.id, student: s, assignment: a, kind: 'assignment' });
           });
         });
+
+        if (sortState.field){
+          const field = sortState.field;
+          const dir = sortState.dir === 'desc' ? -1 : 1;
+          rows.sort((a,b)=>{
+            const tokenA = getSortToken(a, field);
+            const tokenB = getSortToken(b, field);
+            if (tokenA.blank !== tokenB.blank) return tokenA.blank ? 1 : -1;
+
+            let cmp = 0;
+            if (tokenA.type === 'number' && tokenB.type === 'number'){
+              cmp = tokenA.value - tokenB.value;
+            }else{
+              const valA = String(tokenA.value ?? '').toLowerCase();
+              const valB = String(tokenB.value ?? '').toLowerCase();
+              cmp = valA.localeCompare(valB, undefined, { numeric:true, sensitivity:'base' });
+            }
+            if (cmp) return cmp * dir;
+
+            const nameCmp = (a.student?.name || '').localeCompare((b.student?.name || ''), undefined, { sensitivity:'base' });
+            if (nameCmp) return nameCmp;
+            const sidCmp = String(a.student?.sid || '').localeCompare(String(b.student?.sid || ''), undefined, { numeric:true, sensitivity:'base' });
+            if (sidCmp) return sidCmp;
+            return String(a.rowId || '').localeCompare(String(b.rowId || ''));
+          });
+        }
 
         const total = rows.length;
         const totalPages = Math.max(1, Math.ceil(total / assignmentPageSize));
@@ -610,6 +657,22 @@
           btn.classList.remove('btn-outline-secondary');
           btn.classList.add('btn-cpnw','btn-cpnw-primary');
           currentRange = btn.dataset.range;
+          assignmentPage = 1;
+          addDraft = null;
+          editDraft = null;
+          renderAssignments();
+        });
+      });
+
+      sortButtons.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const field = btn.dataset.sort;
+          if (!field) return;
+          if (sortState.field === field){
+            sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+          }else{
+            sortState = { field, dir:'asc' };
+          }
           assignmentPage = 1;
           addDraft = null;
           editDraft = null;
