@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Student Dashboard</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a
+          class="navbar-brand d-flex align-items-center"
+          href="../../index.html"
+          aria-label="CPNW Home"
+        >
+          <img
+            class="cpnw-logo"
+            src="../../images/CPNWLogoo.png"
+            alt="Clinical Placements Northwest"
+          />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button
+            data-theme-toggle
+            type="button"
+            class="btn btn-outline-secondary btn-sm btn-cpnw"
+            aria-label="Toggle dark and light mode"
+          >
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Student Dashboard</p>
+          <h1 class="h3 fw-semibold mb-1">Welcome back, Sam Student</h1>
+          <p class="text-body-secondary mb-0">Track your requirements and upcoming rotations.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="my-profile.html">My Profile</a></li>
+              <li><a class="dropdown-item" href="security-settings.html">My Security Settings</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 g-lg-4 mb-4">
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="cpnw-shell p-3 h-100">
+            <p class="text-body-secondary small mb-1">CPNW eLearning modules completed</p>
+            <div class="h2 mb-0" id="elearningProgress">--/--</div>
+            <p class="small mb-2" id="elearningExpiryInfo"></p>
+            <p class="small text-body-secondary mb-2" id="elearningIncompleteInfo"></p>
+            <button class="btn btn-outline-secondary btn-cpnw btn-sm" type="button" data-open-reqs="elearning">View modules</button>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="cpnw-shell p-3 h-100">
+            <p class="text-body-secondary small mb-1">CPNW requirements completed</p>
+            <div class="h2 mb-0" id="cpnwProgress">--/--</div>
+            <p class="small mb-2" id="cpnwExpiryInfo"></p>
+            <p class="small text-body-secondary mb-2" id="cpnwIncompleteInfo"></p>
+            <button class="btn btn-outline-secondary btn-cpnw btn-sm" type="button" data-open-reqs="cpnw">View requirements</button>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="cpnw-shell p-3 h-100">
+            <p class="text-body-secondary small mb-1">Education requirements completed</p>
+            <div class="h2 mb-0" id="edProgress">--/--</div>
+            <p class="small mb-2" id="edExpiryInfo"></p>
+            <p class="small text-body-secondary mb-2" id="edIncompleteInfo"></p>
+            <button class="btn btn-outline-secondary btn-cpnw btn-sm" type="button" data-open-reqs="ed">View requirements</button>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="cpnw-shell p-3 h-100">
+            <p class="text-body-secondary small mb-1">Healthcare requirements completed</p>
+            <div class="h2 mb-0" id="hcProgress">--/--</div>
+            <p class="small mb-2" id="hcExpiryInfo"></p>
+            <p class="small text-body-secondary mb-2" id="hcIncompleteInfo"></p>
+            <button class="btn btn-outline-secondary btn-cpnw btn-sm" type="button" data-open-reqs="hc">View requirements</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 g-lg-4">
+        <div class="col-12 col-xl-8">
+          <div class="cpnw-shell p-3 p-md-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-0">Clinical assignments</h2>
+                <p class="text-body-secondary small mb-0">Your placements and approval status.</p>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0 cpnw-table">
+                <thead class="text-body-secondary small">
+                  <tr>
+                    <th scope="col">Location</th>
+                    <th scope="col">Start</th>
+                    <th scope="col">End</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="fw-semibold">Providence Medical Center</td>
+                    <td>Mar 04, 2026</td>
+                    <td>May 30, 2026</td>
+                    <td><span class="badge text-bg-secondary">Pending</span></td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">Evergreen Health</td>
+                    <td>Jan 06, 2026</td>
+                    <td>Mar 01, 2026</td>
+                    <td><span class="badge text-bg-success">Approved</span></td>
+                  </tr>
+                  <tr>
+                    <td class="fw-semibold">CPNW Healthcare Facility</td>
+                    <td>Oct 01, 2025</td>
+                    <td>Dec 15, 2025</td>
+                    <td><span class="badge text-bg-danger">Rejected</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-xl-4">
+          <div class="cpnw-shell p-3 p-md-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-0">Notifications</h2>
+                <p class="text-body-secondary small mb-0">Updates about your requirements and placements.</p>
+              </div>
+            </div>
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">BLS expiring soon</div>
+                  <p class="small text-body-secondary mb-0">Expires in 12 days</p>
+                </div>
+                <span class="badge text-bg-warning text-dark">Soon</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">Immunization update required</div>
+                  <p class="small text-body-secondary mb-0">Upload documentation to avoid delays</p>
+                </div>
+                <span class="badge text-bg-danger">Action</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">Clinical assignment pending approval</div>
+                  <p class="small text-body-secondary mb-0">Providence Medical Center • Starts Mar 04</p>
+                </div>
+                <span class="badge text-bg-secondary">Pending</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">eLearning module due</div>
+                  <p class="small text-body-secondary mb-0">Complete “HIPAA Basics” this week</p>
+                </div>
+                <span class="badge text-bg-warning text-dark">Reminder</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal fade" id="studentReqModal" tabindex="-1" aria-labelledby="studentReqModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header sticky-top" style="background: var(--bs-body-bg); z-index: 5;">
+          <div>
+            <h5 class="modal-title" id="studentReqModalLabel">Requirements</h5>
+            <p class="small text-body-secondary mb-0" id="studentReqModalSub">Select a requirement to view details and submit.</p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+            <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+              <label class="small text-body-secondary mb-0" for="studentReqSearch">Search:</label>
+              <input class="form-control form-control-sm" id="studentReqSearch" style="width: min(320px, 70vw);" placeholder="Search requirements…" />
+            </div>
+          </div>
+
+          <div class="table-responsive" style="max-height: 420px; overflow: auto;">
+            <table class="table align-middle mb-0 cpnw-table">
+              <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+                <tr>
+                  <th scope="col">Requirement</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-nowrap">Expiration</th>
+                  <th scope="col" class="text-nowrap">Due</th>
+                  <th scope="col" class="text-end">View</th>
+                </tr>
+              </thead>
+              <tbody id="studentReqTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+            <div class="d-flex align-items-center gap-2">
+              <label class="small text-body-secondary mb-0" for="studentReqPageSize">Show</label>
+              <select class="form-select form-select-sm" id="studentReqPageSize" style="width:auto;">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+              <span class="small text-body-secondary">requirements</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="studentReqPrev">Prev</button>
+              <div class="small text-body-secondary" id="studentReqPageInfo">Page 1</div>
+              <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="studentReqNext">Next</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-cpnw" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="studentReqDetailModal" tabindex="-1" aria-labelledby="studentReqDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header sticky-top" style="background: var(--bs-body-bg); z-index: 5;">
+          <div class="w-100">
+            <div class="small text-body-secondary">Requirement</div>
+            <h5 class="modal-title mb-0" id="studentReqDetailModalLabel"></h5>
+            <p class="small text-body-secondary mb-0" id="studentReqDetailMeta"></p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-success d-none" role="alert" id="studentReqDetailSaved">Submitted.</div>
+          <div class="alert alert-warning d-none" role="alert" id="studentReqDetailError"></div>
+
+          <div class="row g-4">
+            <div class="col-12 col-lg-7 border-end">
+              <div class="border rounded p-3 bg-body-tertiary d-none mb-3" id="elearningStatusWrap">
+                <div class="fw-semibold mb-1">Module status</div>
+                <div class="small text-body-secondary mb-2" id="elearningStatusSummary"></div>
+                <ul class="small mb-0" id="elearningStatusDetails"></ul>
+              </div>
+
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Instructions</div>
+                <div class="text-body-secondary" id="studentReqDetailInstructions"></div>
+                <div class="mt-3 d-none" id="elearningLaunchWrap">
+                  <button type="button" class="btn btn-cpnw btn-cpnw-primary" id="elearningLaunchBtn">
+                    Launch Module
+                  </button>
+                  <div class="form-text">Modules will open in a new tab (demo).</div>
+                </div>
+              </div>
+
+              <div class="mb-3" id="studentReqSubmissionWrap">
+                <div class="fw-semibold mb-1">Submission</div>
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="studentSubmission" id="studentSubCompleted" value="completed" data-submission-target="studentSubCompletedFields">
+                    <label class="form-check-label" for="studentSubCompleted">Vaccinated / Completed</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="studentSubmission" id="studentSubSeries" value="series" data-submission-target="studentSubSeriesFields">
+                    <label class="form-check-label" for="studentSubSeries">Series in progress</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="studentSubmission" id="studentSubOther" value="other" data-submission-target="studentSubOtherFields">
+                    <label class="form-check-label" for="studentSubOther">Other</label>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-12 col-md-6 d-none" id="studentSubCompletedFields">
+                    <label class="form-label small mb-1" for="studentCompletedDate">Vaccination / completion date</label>
+                    <input type="date" class="form-control" id="studentCompletedDate">
+                  </div>
+                  <div class="col-12 d-none" id="studentSubSeriesFields">
+                    <div class="row g-2">
+                      <div class="col-12 col-sm-6">
+                        <label class="form-label small mb-1" for="studentSeriesStart">Series start</label>
+                        <input type="date" class="form-control" id="studentSeriesStart">
+                      </div>
+                      <div class="col-12 col-sm-6">
+                        <label class="form-label small mb-1" for="studentSeriesDue">Next dose due</label>
+                        <input type="date" class="form-control" id="studentSeriesDue">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12 d-none" id="studentSubOtherFields">
+                    <label class="form-label small mb-1" for="studentOtherNotes">Notes</label>
+                    <textarea class="form-control" id="studentOtherNotes" rows="2" placeholder="Add context for your submission…"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div id="studentReqUploadWrap">
+                <div class="fw-semibold mb-1">Upload documents</div>
+                <div class="text-body-secondary small mb-2">Accepted: PDF/JPG/PNG. (Demo only — files are not uploaded anywhere.)</div>
+                <input class="form-control" type="file" id="studentReqFiles" multiple />
+                <div class="mt-3">
+                  <div class="text-body-secondary small mb-1">Selected files</div>
+                  <ul class="small mb-0" id="studentReqFileList"></ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-5">
+              <div class="mb-0">
+                <div class="fw-semibold mb-1">Message</div>
+                <div class="border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;" id="studentReqMessages"></div>
+                <div class="text-body-secondary small mb-1">Send to (select one or more)</div>
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="msgToStudent" checked>
+                    <label class="form-check-label" for="msgToStudent">Student</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="msgToCpnw" checked>
+                    <label class="form-check-label" for="msgToCpnw">CPNW Reviewer</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="msgToHealthcare">
+                    <label class="form-check-label" for="msgToHealthcare">Healthcare</label>
+                  </div>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small mb-1" for="studentReqMessageInput">Message</label>
+                  <textarea class="form-control form-control-sm" id="studentReqMessageInput" rows="3" placeholder="Leave a note..."></textarea>
+                </div>
+                <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" id="studentReqMessageSend">Send message</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary btn-cpnw" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary" id="studentReqSubmitBtn">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../../js/main.js?v=20251214-2"></script>
+  <script>
+    (function(){
+      const EXPIRY_WINDOW_DAYS = 30;
+      const TODAY = new Date();
+      const startOfToday = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+      const addDays = (d) => {
+        const x = new Date(startOfToday);
+        x.setDate(x.getDate() + d);
+        return x;
+      };
+
+      const STUDENT_DATA_KEY = 'cpnw-student-data-v1';
+
+      const reqTypePool = ['Immunization', 'Forms', 'Certs', 'Insurance', 'Licenses', 'Site Orientation'];
+      const cpnwNonELearningCount = 10; // Education pages model: CPNW total 20; first 10 are eLearning
+      const edCount = 6;
+      const hcCount = 7;
+
+      function loadJSON(key, fallback){
+        try{
+          const raw = localStorage.getItem(key);
+          if (!raw) return fallback;
+          return JSON.parse(raw) ?? fallback;
+        }catch{
+          return fallback;
+        }
+      }
+
+      function saveJSON(key, value){
+        try{
+          localStorage.setItem(key, JSON.stringify(value));
+        }catch{
+          // ignore
+        }
+      }
+
+      function loadStudentData(){
+        const raw = loadJSON(STUDENT_DATA_KEY, null);
+        // Back-compat: previous versions stored a flat map of submissions.
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)){
+          return { submissions: {}, elearning: {} };
+        }
+        const submissions = raw.submissions && typeof raw.submissions === 'object' && !Array.isArray(raw.submissions) ? raw.submissions : {};
+        const elearning = raw.elearning && typeof raw.elearning === 'object' && !Array.isArray(raw.elearning) ? raw.elearning : {};
+        return { submissions, elearning };
+      }
+
+      function saveStudentData(next){
+        saveJSON(STUDENT_DATA_KEY, next);
+      }
+
+      function fmtDate(d){
+        if (!(d instanceof Date)) return '';
+        return d.toLocaleDateString(undefined, { month:'short', day:'2-digit', year:'numeric' });
+      }
+
+      function statusBadge(status){
+        const norm = String(status || '').toLowerCase();
+        if (norm === 'complete') return '<span class="badge text-bg-success">Complete</span>';
+        if (norm === 'submitted') return '<span class="badge text-bg-info">Submitted</span>';
+        if (norm === 'expiring') return '<span class="badge text-bg-warning text-dark">Expiring</span>';
+        if (norm === 'expired') return '<span class="badge text-bg-danger">Expired</span>';
+        return '<span class="badge text-bg-secondary">Incomplete</span>';
+      }
+
+      function normalizeDay(d){
+        if (!(d instanceof Date)) return null;
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      }
+
+      function computeExpiryStatus(expiration){
+        const expDay = normalizeDay(expiration);
+        if (!expDay) return { status:'', days:null };
+        const diffDays = Math.round((expDay.getTime() - startOfToday.getTime()) / 86400000);
+        if (diffDays < 0) return { status:'expired', days:diffDays };
+        if (diffDays <= EXPIRY_WINDOW_DAYS) return { status:'expiring', days:diffDays };
+        return { status:'', days:diffDays };
+      }
+
+      function buildRequirements(){
+        const list = [];
+        // eLearning (10)
+        for (let i = 1; i <= 10; i++){
+          const moduleId = `elearn_${i}`;
+          const history = studentData.elearning?.[moduleId] || {};
+          const attempts = Array.isArray(history.attempts) ? history.attempts : [];
+          const passedAt = history.passedAt ? new Date(history.passedAt) : null;
+          const expiresAt = history.expiresAt ? new Date(history.expiresAt) : null;
+          const expiry = computeExpiryStatus(expiresAt instanceof Date && !Number.isNaN(expiresAt.getTime()) ? expiresAt : null);
+          const status = passedAt
+            ? (expiry.status ? expiry.status : 'complete')
+            : 'incomplete';
+
+          const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
+          const lastScore = lastAttempt && Number.isFinite(Number(lastAttempt.score)) ? Number(lastAttempt.score) : null;
+          const bestScore = attempts.reduce((acc, a) => {
+            const s = Number(a?.score);
+            return Number.isFinite(s) ? Math.max(acc, s) : acc;
+          }, -1);
+          const bestScoreVal = bestScore >= 0 ? bestScore : null;
+          const lastAttemptedOn = lastAttempt?.at ? new Date(lastAttempt.at) : null;
+
+          list.push({
+            id: moduleId,
+            group: 'elearning',
+            label: `CPNW eLearning Module ${i}`,
+            type: 'eLearning',
+            status,
+            attempts,
+            lastScore,
+            bestScore: bestScoreVal,
+            attemptedOn: lastAttemptedOn instanceof Date && !Number.isNaN(lastAttemptedOn.getTime()) ? lastAttemptedOn : null,
+            completedOn: passedAt instanceof Date && !Number.isNaN(passedAt.getTime()) ? passedAt : null,
+            expiration: expiresAt instanceof Date && !Number.isNaN(expiresAt.getTime()) ? expiresAt : null,
+            due: addDays(7 + i),
+            instructionsHTML: `<p>Complete module ${i} and pass the knowledge check.</p><ul><li>Passing score is <strong>80+</strong>.</li><li>You can retake the module as many times as needed.</li><li>Modules expire <strong>1 year</strong> after successful completion.</li></ul><p>If you have issues launching the module, contact support.</p>`
+          });
+        }
+        // CPNW non-eLearning (10)
+        for (let i = 1; i <= cpnwNonELearningCount; i++){
+          const expiration = (i % 5 === 0) ? addDays(-10) : (i % 4 === 0) ? addDays(12) : null;
+          const expiry = computeExpiryStatus(expiration);
+          list.push({
+            id: `cpnw_${i}`,
+            group: 'cpnw',
+            label: `CPNW Requirement ${i}`,
+            type: reqTypePool[i % reqTypePool.length],
+            status: expiry.status || ((i % 3) ? 'complete' : 'incomplete'),
+            expiration,
+            due: addDays(14 + i),
+            instructionsHTML: `<p>Upload the required documentation for CPNW Requirement ${i}.</p>`
+          });
+        }
+        // Education (6)
+        for (let i = 1; i <= edCount; i++){
+          const expiration = (i % 6 === 0) ? addDays(9) : null;
+          const expiry = computeExpiryStatus(expiration);
+          list.push({
+            id: `ed_${i}`,
+            group: 'ed',
+            label: `Education Requirement ${i}`,
+            type: reqTypePool[(i + 2) % reqTypePool.length],
+            status: expiry.status || ((i <= 4) ? 'complete' : 'incomplete'),
+            expiration,
+            due: addDays(10 + i),
+            instructionsHTML: `<p>Complete Education Requirement ${i} for your program.</p>`
+          });
+        }
+        // Healthcare (7)
+        for (let i = 1; i <= hcCount; i++){
+          const expiration = (i % 7 === 0) ? addDays(-3) : (i % 4 === 0) ? addDays(22) : null;
+          const expiry = computeExpiryStatus(expiration);
+          list.push({
+            id: `hc_${i}`,
+            group: 'hc',
+            label: `Healthcare Requirement ${i}`,
+            type: reqTypePool[(i + 3) % reqTypePool.length],
+            status: expiry.status || ((i <= 5) ? 'complete' : 'incomplete'),
+            expiration,
+            due: addDays(9 + i),
+            instructionsHTML: `<p>Upload documentation and complete steps for Healthcare Requirement ${i}.</p>`
+          });
+        }
+        return list;
+      }
+
+      // Seed demo history once, if empty, to show a realistic mix.
+      let studentData = loadStudentData();
+      if (!Object.keys(studentData.elearning || {}).length && !Object.keys(studentData.submissions || {}).length){
+        const now = new Date();
+        const daysAgo = (d) => {
+          const x = new Date(now);
+          x.setDate(x.getDate() - d);
+          return x.toISOString();
+        };
+        const expiresInDays = (d) => {
+          const x = new Date(now);
+          x.setDate(x.getDate() + d);
+          return x.toISOString();
+        };
+
+        studentData = {
+          submissions: {},
+          elearning: {
+            // Passed modules (valid)
+            elearn_1: { attempts:[{ at: daysAgo(110), score: 92 }], passedAt: daysAgo(110), expiresAt: expiresInDays(255) },
+            elearn_2: { attempts:[{ at: daysAgo(102), score: 85 }], passedAt: daysAgo(102), expiresAt: expiresInDays(263) },
+            elearn_3: { attempts:[{ at: daysAgo(98), score: 88 }], passedAt: daysAgo(98), expiresAt: expiresInDays(267) },
+            elearn_4: { attempts:[{ at: daysAgo(90), score: 81 }], passedAt: daysAgo(90), expiresAt: expiresInDays(275) },
+            elearn_5: { attempts:[{ at: daysAgo(75), score: 97 }], passedAt: daysAgo(75), expiresAt: expiresInDays(290) },
+            elearn_6: { attempts:[{ at: daysAgo(61), score: 84 }], passedAt: daysAgo(61), expiresAt: expiresInDays(304) },
+            // Expired module (passed >1y ago)
+            elearn_7: { attempts:[{ at: daysAgo(410), score: 86 }], passedAt: daysAgo(410), expiresAt: daysAgo(45) },
+            // Attempted but not passed yet
+            elearn_8: { attempts:[{ at: daysAgo(8), score: 74 }, { at: daysAgo(2), score: 78 }] }
+          }
+        };
+        saveStudentData(studentData);
+      }
+
+      function rebuildRequirements(){
+        // Non-eLearning student submissions (files/notes) count as Submitted.
+        const submissions = studentData.submissions || {};
+        return buildRequirements().map(r => {
+          if (r.group === 'elearning') return r;
+          const sub = submissions[r.id];
+          if (!sub || typeof sub !== 'object') return r;
+          return { ...r, status: 'submitted' };
+        });
+      }
+
+      let requirements = rebuildRequirements();
+
+      function computeProgress(group){
+        const list = requirements.filter(r => r.group === group);
+        const total = list.length;
+        const completed = list.filter(r => {
+          const s = String(r.status || '').toLowerCase();
+          if (group === 'elearning'){
+            // eLearning completion means a passing score (80+) and not expired.
+            return s === 'complete' || s === 'expiring';
+          }
+          return s === 'complete' || s === 'submitted' || s === 'expiring';
+        }).length;
+        return { completed, total };
+      }
+
+      function computeExpiryCounts(group){
+        const list = requirements.filter(r => r.group === group);
+        const expired = list.filter(r => String(r.status || '').toLowerCase() === 'expired').length;
+        const expiring = list.filter(r => String(r.status || '').toLowerCase() === 'expiring').length;
+        return { expired, expiring };
+      }
+
+      function computeIncomplete(group){
+        const list = requirements.filter(r => r.group === group);
+        return list.filter(r => {
+          const s = String(r.status || '').toLowerCase();
+          if (group === 'elearning'){
+            return s === 'incomplete';
+          }
+          return !['complete','submitted','expiring','expired'].includes(s);
+        }).length;
+      }
+
+      function setProgress(id, group){
+        const el = document.getElementById(id);
+        if (!el) return;
+        const { completed, total } = computeProgress(group);
+        el.textContent = `${completed}/${total}`;
+      }
+
+      function setExpiryInfo(id, group){
+        const el = document.getElementById(id);
+        if (!el) return;
+        const { expired, expiring } = computeExpiryCounts(group);
+        if (!expired && !expiring){
+          el.className = 'small text-success mb-2';
+          el.textContent = 'No items expired or expiring soon';
+          return;
+        }
+        const parts = [];
+        if (expired) parts.push(`${expired} expired`);
+        if (expiring) parts.push(`${expiring} expiring`);
+        el.className = 'small text-danger mb-2';
+        el.textContent = parts.join(' • ');
+      }
+
+      function setIncompleteInfo(id, group){
+        const el = document.getElementById(id);
+        if (!el) return;
+        const count = computeIncomplete(group);
+        if (!count){
+          el.className = 'small text-success mb-2';
+          el.textContent = 'All items submitted or complete';
+          return;
+        }
+        el.className = 'small text-danger mb-2';
+        el.textContent = `${count} incomplete`;
+      }
+
+      function renderCards(){
+        setProgress('elearningProgress', 'elearning');
+        setProgress('cpnwProgress', 'cpnw');
+        setProgress('edProgress', 'ed');
+        setProgress('hcProgress', 'hc');
+        setExpiryInfo('elearningExpiryInfo', 'elearning');
+        setExpiryInfo('cpnwExpiryInfo', 'cpnw');
+        setExpiryInfo('edExpiryInfo', 'ed');
+        setExpiryInfo('hcExpiryInfo', 'hc');
+        setIncompleteInfo('elearningIncompleteInfo', 'elearning');
+        setIncompleteInfo('cpnwIncompleteInfo', 'cpnw');
+        setIncompleteInfo('edIncompleteInfo', 'ed');
+        setIncompleteInfo('hcIncompleteInfo', 'hc');
+      }
+
+      renderCards();
+
+      // Modals (list -> detail)
+      const listModalEl = document.getElementById('studentReqModal');
+      const listModal = listModalEl ? new bootstrap.Modal(listModalEl) : null;
+      const listLabel = document.getElementById('studentReqModalLabel');
+      const listSub = document.getElementById('studentReqModalSub');
+      const listBody = document.getElementById('studentReqTableBody');
+      const listSearch = document.getElementById('studentReqSearch');
+      const pageSizeSelect = document.getElementById('studentReqPageSize');
+      const pageInfo = document.getElementById('studentReqPageInfo');
+      const prevBtn = document.getElementById('studentReqPrev');
+      const nextBtn = document.getElementById('studentReqNext');
+
+      const detailModalEl = document.getElementById('studentReqDetailModal');
+      const detailModal = detailModalEl ? new bootstrap.Modal(detailModalEl) : null;
+      const detailLabel = document.getElementById('studentReqDetailModalLabel');
+      const detailMeta = document.getElementById('studentReqDetailMeta');
+      const detailInstructions = document.getElementById('studentReqDetailInstructions');
+      const detailSaved = document.getElementById('studentReqDetailSaved');
+      const detailError = document.getElementById('studentReqDetailError');
+      const submissionWrap = document.getElementById('studentReqSubmissionWrap');
+      const uploadWrap = document.getElementById('studentReqUploadWrap');
+      const elearningLaunchWrap = document.getElementById('elearningLaunchWrap');
+      const elearningLaunchBtn = document.getElementById('elearningLaunchBtn');
+      const elearningStatusWrap = document.getElementById('elearningStatusWrap');
+      const elearningStatusSummary = document.getElementById('elearningStatusSummary');
+      const elearningStatusDetails = document.getElementById('elearningStatusDetails');
+      const subRadios = document.querySelectorAll('input[name="studentSubmission"]');
+      const subCompletedFields = document.getElementById('studentSubCompletedFields');
+      const subSeriesFields = document.getElementById('studentSubSeriesFields');
+      const subOtherFields = document.getElementById('studentSubOtherFields');
+      const subCompletedDate = document.getElementById('studentCompletedDate');
+      const subSeriesStart = document.getElementById('studentSeriesStart');
+      const subSeriesDue = document.getElementById('studentSeriesDue');
+      const subOtherNotes = document.getElementById('studentOtherNotes');
+      const msgList = document.getElementById('studentReqMessages');
+      const msgInput = document.getElementById('studentReqMessageInput');
+      const msgSend = document.getElementById('studentReqMessageSend');
+      const msgToStudent = document.getElementById('msgToStudent');
+      const msgToCpnw = document.getElementById('msgToCpnw');
+      const msgToHealthcare = document.getElementById('msgToHealthcare');
+      const notesEl = document.getElementById('studentReqNotes');
+      const filesEl = document.getElementById('studentReqFiles');
+      const fileListEl = document.getElementById('studentReqFileList');
+      const submitBtn = document.getElementById('studentReqSubmitBtn');
+
+      let currentGroup = 'elearning';
+      let reqPage = 1;
+      let reqPageSize = Number(pageSizeSelect?.value || 10);
+      let currentReqId = '';
+      let currentMessages = [];
+      let currentRecipients = ['Student','CPNW Reviewer'];
+
+      function groupTitle(group){
+        if (group === 'elearning') return 'CPNW eLearning modules';
+        if (group === 'cpnw') return 'CPNW requirements';
+        if (group === 'ed') return 'Education requirements';
+        if (group === 'hc') return 'Healthcare requirements';
+        return 'Requirements';
+      }
+
+      function setAlert(el, message){
+        if (!el) return;
+        if (!message){
+          el.classList.add('d-none');
+          el.textContent = '';
+          return;
+        }
+        el.classList.remove('d-none');
+        el.textContent = message;
+      }
+
+      function resetDetailAlerts(){
+        setAlert(detailSaved, '');
+        setAlert(detailError, '');
+      }
+
+      function renderMessages(){
+        if (!msgList) return;
+        if (!currentMessages.length){
+          msgList.innerHTML = '<div class="text-body-secondary small">No messages yet.</div>';
+          return;
+        }
+        msgList.innerHTML = currentMessages.map(m => `
+          <div class="mb-2">
+            <div class="fw-semibold">${m.from}</div>
+            <div class="small text-body-secondary">${m.at}${m.to ? ` • To: ${m.to.join(', ')}` : ''}</div>
+            <div>${m.body}</div>
+          </div>
+        `).join('');
+      }
+
+      function setSubmissionMode(mode){
+        [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+        if (mode === 'completed') subCompletedFields?.classList.remove('d-none');
+        if (mode === 'series') subSeriesFields?.classList.remove('d-none');
+        if (mode === 'other') subOtherFields?.classList.remove('d-none');
+      }
+
+      function configureRecipients(group){
+        const allowCpnw = group === 'cpnw';
+        if (msgToCpnw){
+          msgToCpnw.disabled = !allowCpnw;
+          msgToCpnw.checked = allowCpnw ? true : false;
+        }
+        if (msgToStudent){
+          msgToStudent.disabled = false;
+          msgToStudent.checked = true;
+        }
+        if (msgToHealthcare){
+          msgToHealthcare.disabled = false;
+          msgToHealthcare.checked = group === 'hc';
+        }
+        currentRecipients = [];
+        if (msgToStudent?.checked) currentRecipients.push('Student');
+        if (allowCpnw && msgToCpnw?.checked) currentRecipients.push('CPNW Reviewer');
+        if (msgToHealthcare?.checked) currentRecipients.push('Healthcare');
+      }
+
+      function openReqList(group){
+        if (!listModal) return;
+        currentGroup = group;
+        reqPage = 1;
+        if (listSearch) listSearch.value = '';
+        renderReqList();
+        listModal.show();
+      }
+
+      function currentRequirements(){
+        return requirements.filter(r => r.group === currentGroup);
+      }
+
+      function openReqDetail(id){
+        if (!detailModal) return;
+        const req = requirements.find(r => r.id === id);
+        if (!req) return;
+        currentReqId = id;
+
+        resetDetailAlerts();
+        if (detailLabel) detailLabel.textContent = req.label;
+        const exp = req.expiration ? fmtDate(req.expiration) : '—';
+        const due = req.due ? fmtDate(req.due) : '—';
+        if (detailMeta){
+          detailMeta.innerHTML = `${groupTitle(req.group)} • <span class="badge text-bg-secondary">${req.type}</span> • ${statusBadge(req.status)} • Exp: ${exp} • Due: ${due}`;
+        }
+        if (detailInstructions) detailInstructions.innerHTML = req.instructionsHTML || '<p class="text-body-secondary">No instructions provided.</p>';
+        if (notesEl) notesEl.value = '';
+        if (filesEl) filesEl.value = '';
+        if (fileListEl) fileListEl.innerHTML = '';
+        subRadios.forEach(r => { r.checked = false; });
+        [subCompletedDate, subSeriesStart, subSeriesDue, subOtherNotes].forEach(el => { if (el) el.value = ''; });
+        [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+
+        const isElearning = req.group === 'elearning';
+        if (submitBtn) submitBtn.classList.toggle('d-none', isElearning);
+        if (submissionWrap) submissionWrap.classList.toggle('d-none', isElearning);
+        if (uploadWrap) uploadWrap.classList.toggle('d-none', isElearning);
+        if (elearningLaunchWrap) elearningLaunchWrap.classList.toggle('d-none', !isElearning);
+        if (elearningStatusWrap) elearningStatusWrap.classList.toggle('d-none', !isElearning);
+        currentMessages = [
+          { from:'Coordinator', at:'2025-02-10', body:'Please upload the latest documentation for this requirement.' },
+          { from:'Student', at:'2025-02-11', body:'Uploaded the file on 2/11. Please confirm receipt.' }
+        ];
+        renderMessages();
+        configureRecipients(req.group);
+
+        if (isElearning){
+          const status = String(req.status || '').toLowerCase();
+          const bestScoreVal = Number(req.bestScore);
+          const lastScoreVal = Number(req.lastScore);
+          const hasAttempts = Array.isArray(req.attempts) && req.attempts.length > 0;
+          const passed = Number.isFinite(bestScoreVal) && bestScoreVal >= 80;
+          const expiresOn = req.expiration instanceof Date ? req.expiration : null;
+          const currentScore = Number.isFinite(bestScoreVal) ? bestScoreVal : (Number.isFinite(lastScoreVal) ? lastScoreVal : null);
+
+          if (elearningStatusSummary){
+            if (!hasAttempts){
+              elearningStatusSummary.textContent = 'No attempts yet. Launch the module to begin.';
+            }else if (!passed){
+              elearningStatusSummary.textContent = 'Attempt recorded. Passing score is 80+.';
+            }else if (status === 'expired'){
+              elearningStatusSummary.textContent = `Previously completed, but expired on ${expiresOn ? fmtDate(expiresOn) : '—'}.`;
+            }else{
+              elearningStatusSummary.textContent = `Completed${expiresOn ? ` • Expires ${fmtDate(expiresOn)}` : ''}`;
+            }
+          }
+
+          if (elearningStatusDetails){
+            const items = [];
+            if (!hasAttempts){
+              items.push('<li class="text-body-secondary">No attempts are on record.</li>');
+            }else{
+              if (currentScore !== null) items.push(`<li><span class="text-body-secondary">Score:</span> <span class="fw-semibold">${currentScore}</span></li>`);
+              items.push(`<li><span class="text-body-secondary">Status:</span> <span class="fw-semibold">${passed ? (status === 'expired' ? 'Expired' : 'Passed') : 'Not passed'}</span></li>`);
+
+              if (passed && expiresOn){
+                items.push(`<li><span class="text-body-secondary">${status === 'expired' ? 'Expired:' : 'Expires:'}</span> <span class="fw-semibold">${fmtDate(expiresOn)}</span></li>`);
+              }else if (passed){
+                items.push('<li class="text-body-secondary">No expiration date on record.</li>');
+              }else{
+                items.push('<li class="text-body-secondary">No expiration until the module is passed with 80+.</li>');
+              }
+            }
+            elearningStatusDetails.innerHTML = items.join('');
+          }
+        }else{
+          if (elearningStatusSummary) elearningStatusSummary.textContent = '';
+          if (elearningStatusDetails) elearningStatusDetails.innerHTML = '';
+        }
+
+        // Close list modal to mimic the review flow (list modal -> detail modal).
+        listModal?.hide();
+        detailModal.show();
+      }
+
+      function renderReqList(){
+        if (!listBody) return;
+        const q = (listSearch?.value || '').toLowerCase().trim();
+        const all = currentRequirements();
+        const filtered = all.filter(r => {
+          if (!q) return true;
+          return `${r.label} ${r.type} ${r.status}`.toLowerCase().includes(q);
+        });
+
+        if (listLabel) listLabel.textContent = groupTitle(currentGroup);
+        if (listSub) listSub.textContent = 'Select a requirement to view details and submit.';
+
+        // Expiring/expired first, then incomplete, then submitted/complete.
+        const order = { expired:0, expiring:1, incomplete:2, submitted:3, complete:4 };
+        filtered.sort((a,b) => {
+          const oa = order[String(a.status || '').toLowerCase()] ?? 99;
+          const ob = order[String(b.status || '').toLowerCase()] ?? 99;
+          if (oa != ob) return oa - ob;
+          return String(a.label || '').localeCompare(String(b.label || ''), undefined, { sensitivity:'base' });
+        });
+
+        const total = filtered.length;
+        reqPageSize = Number(pageSizeSelect?.value || reqPageSize || 10);
+        const totalPages = Math.max(1, Math.ceil(total / reqPageSize));
+        if (reqPage > totalPages) reqPage = totalPages;
+        const start = (reqPage - 1) * reqPageSize;
+        const end = Math.min(start + reqPageSize, total);
+        const pageItems = filtered.slice(start, end);
+
+        listBody.innerHTML = pageItems.map(r => {
+          const exp = r.expiration ? fmtDate(r.expiration) : '—';
+          const due = r.due ? fmtDate(r.due) : '—';
+          return `
+            <tr>
+              <td class="fw-semibold">${r.label}</td>
+              <td>${r.type}</td>
+              <td>${statusBadge(r.status)}</td>
+              <td class="text-nowrap">${exp}</td>
+              <td class="text-nowrap">${due}</td>
+              <td class="text-end"><button class="btn btn-outline-secondary btn-sm" type="button" data-view-req="${r.id}">View</button></td>
+            </tr>
+          `;
+        }).join('') || `<tr><td colspan="6" class="text-body-secondary small">No results.</td></tr>`;
+
+        if (pageInfo){
+          pageInfo.textContent = total ? `Showing ${start + 1}–${end} of ${total}` : 'No results';
+        }
+        if (prevBtn && nextBtn){
+          prevBtn.disabled = reqPage <= 1;
+          nextBtn.disabled = end >= total;
+        }
+      }
+
+      function updateFileList(){
+        if (!fileListEl || !filesEl) return;
+        const names = Array.from(filesEl.files || []).map(f => f.name);
+        fileListEl.innerHTML = names.length ? names.map(n => `<li>${n}</li>`).join('') : '<li class="text-body-secondary">No files selected.</li>';
+      }
+
+      function submitCurrent(){
+        resetDetailAlerts();
+        const req = requirements.find(r => r.id === currentReqId);
+        if (!req){
+          setAlert(detailError, 'Unable to submit: requirement not found.');
+          return;
+        }
+
+        const notes = (notesEl?.value || '').trim();
+        const files = Array.from(filesEl?.files || []).map(f => f.name);
+        const nextStatus = req.group === 'elearning' ? 'complete' : 'submitted';
+        const submissionMode = Array.from(subRadios).find(r => r.checked)?.value || '';
+
+        const submissionPayload = {
+          mode: submissionMode,
+          completedDate: subCompletedDate?.value || '',
+          seriesStart: subSeriesStart?.value || '',
+          seriesDue: subSeriesDue?.value || '',
+          otherNotes: subOtherNotes?.value || ''
+        };
+
+        const nextStudentData = loadStudentData();
+        nextStudentData.submissions = nextStudentData.submissions || {};
+        nextStudentData.submissions[req.id] = {
+          submittedAt: new Date().toISOString(),
+          notes,
+          files,
+          submission: submissionPayload
+        };
+        saveStudentData(nextStudentData);
+        studentData = nextStudentData;
+
+        requirements = requirements.map(r => r.id === req.id ? { ...r, status: nextStatus } : r);
+        renderCards();
+        setAlert(detailSaved, 'Submitted.');
+
+        window.setTimeout(() => {
+          detailModal?.hide();
+          // Re-open the list modal so the student sees their updated status.
+          openReqList(req.group);
+        }, 650);
+      }
+
+      document.addEventListener('click', (e) => {
+        const openBtn = e.target.closest('[data-open-reqs]');
+        if (openBtn){
+          openReqList(openBtn.dataset.openReqs);
+          return;
+        }
+        const viewBtn = e.target.closest('[data-view-req]');
+        if (viewBtn){
+          openReqDetail(viewBtn.dataset.viewReq);
+        }
+      });
+
+      listSearch?.addEventListener('input', () => { reqPage = 1; renderReqList(); });
+      pageSizeSelect?.addEventListener('change', () => { reqPage = 1; renderReqList(); });
+      prevBtn?.addEventListener('click', () => { reqPage = Math.max(1, reqPage - 1); renderReqList(); });
+      nextBtn?.addEventListener('click', () => { reqPage = reqPage + 1; renderReqList(); });
+
+      subRadios.forEach(radio => {
+        radio.addEventListener('change', () => setSubmissionMode(radio.value));
+      });
+
+      filesEl?.addEventListener('change', updateFileList);
+      submitBtn?.addEventListener('click', submitCurrent);
+      elearningLaunchBtn?.addEventListener('click', () => {
+        const req = requirements.find(r => r.id === currentReqId);
+        if (!req) return;
+
+        alert('Modules will open in a new tab (demo).');
+
+        const nextStudentData = loadStudentData();
+        nextStudentData.elearning = nextStudentData.elearning || {};
+        const existing = nextStudentData.elearning[req.id] && typeof nextStudentData.elearning[req.id] === 'object'
+          ? nextStudentData.elearning[req.id]
+          : {};
+
+        const attempts = Array.isArray(existing.attempts) ? existing.attempts.slice() : [];
+        // Demo scoring: random 60–100.
+        const score = 60 + Math.floor(Math.random() * 41);
+        attempts.push({ at: new Date().toISOString(), score });
+
+        const passed = score >= 80;
+        if (passed){
+          const passedAt = new Date();
+          const expiresAt = new Date(passedAt);
+          expiresAt.setDate(expiresAt.getDate() + 365);
+          nextStudentData.elearning[req.id] = { attempts, passedAt: passedAt.toISOString(), expiresAt: expiresAt.toISOString() };
+        }else{
+          nextStudentData.elearning[req.id] = { ...existing, attempts, passedAt: existing.passedAt || '', expiresAt: existing.expiresAt || '' };
+        }
+
+        saveStudentData(nextStudentData);
+        studentData = nextStudentData;
+        requirements = rebuildRequirements();
+        renderCards();
+
+        const updated = requirements.find(r => r.id === req.id);
+        if (updated){
+          // Refresh status panel in-place.
+          openReqDetail(updated.id);
+        }
+
+      });
+
+      msgSend?.addEventListener('click', () => {
+        const body = (msgInput?.value || '').trim();
+        if (!body) return;
+        const to = [];
+        const allowCpnw = currentGroup === 'cpnw';
+        if (msgToStudent?.checked) to.push('Student');
+        if (allowCpnw && msgToCpnw?.checked) to.push('CPNW Reviewer');
+        if (msgToHealthcare?.checked) to.push('Healthcare');
+        if (!to.length) to.push('CPNW Reviewer');
+        currentMessages.push({ from:'Student', at: new Date().toLocaleString(), body, to });
+        if (msgInput) msgInput.value = '';
+        renderMessages();
+      });
+
+      detailModalEl?.addEventListener('hidden.bs.modal', () => {
+        if (notesEl) notesEl.value = '';
+        if (filesEl) filesEl.value = '';
+        if (fileListEl) fileListEl.innerHTML = '';
+        if (elearningStatusSummary) elearningStatusSummary.textContent = '';
+        if (elearningStatusDetails) elearningStatusDetails.innerHTML = '';
+        currentReqId = '';
+        resetDetailAlerts();
+      });
+
+    })();
+  </script>
+</body>
+</html>
