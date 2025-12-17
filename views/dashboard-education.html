@@ -79,7 +79,7 @@
       </div>
 
       <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
-        <div class="dropdown">
+        <div class="dropdown" data-bs-auto-close="outside">
           <button class="btn btn-outline-secondary btn-sm btn-cpnw dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             Programs <span class="badge text-bg-secondary align-middle" id="programCount">All</span>
           </button>
@@ -633,6 +633,8 @@
         });
       }
 
+      let cohortSelectionMode = 'auto'; // 'auto' follows program filters, 'manual' respects explicit cohort picks
+
       function getSelectedCohorts(){
         if (!cohortFilters) return [];
         const selectedLabels = Array.from(cohortFilters.querySelectorAll('input:checked')).map(i => i.value);
@@ -747,32 +749,41 @@
       renderFilters();
       renderCohortFilters('', cohortShowArchived && cohortShowArchived.checked, [], true);
       summarize();
-      filters.addEventListener('change', () => {
+
+      function handleProgramSelectionChanged(){
         const selectedIds = getSelectedPrograms().map(p => p.id);
-        renderCohortFilters(cohortSearch ? cohortSearch.value : '', cohortShowArchived && cohortShowArchived.checked, selectedIds, true);
+        const showArchived = cohortShowArchived && cohortShowArchived.checked;
+        const preserve = cohortSelectionMode === 'manual';
+        renderCohortFilters(cohortSearch ? cohortSearch.value : '', showArchived, selectedIds, preserve);
+        if (!preserve && cohortFilters){
+          cohortFilters.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
+        }
         summarize();
-      });
+      }
+
+      filters.addEventListener('change', handleProgramSelectionChanged);
       if (programSearch){
         programSearch.addEventListener('input', (e) => {
           renderFilters(e.target.value || '');
-          summarize();
+          handleProgramSelectionChanged();
         });
       }
       if (selectAll){
         selectAll.addEventListener('click', () => {
           filters.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
-          summarize();
+          handleProgramSelectionChanged();
         });
       }
       if (clearAll){
         clearAll.addEventListener('click', () => {
           filters.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
-          summarize();
+          handleProgramSelectionChanged();
         });
       }
 
       if (cohortSearch){
         cohortSearch.addEventListener('input', (e) => {
+          cohortSelectionMode = 'manual';
           const selectedIds = getSelectedPrograms().map(p => p.id);
           const term = (e.target.value || '').trim();
           const showArchived = cohortShowArchived && cohortShowArchived.checked;
@@ -787,6 +798,7 @@
       }
       if (cohortShowArchived){
         cohortShowArchived.addEventListener('change', (e) => {
+          cohortSelectionMode = 'manual';
           const selectedIds = getSelectedPrograms().map(p => p.id);
           renderCohortFilters(cohortSearch ? cohortSearch.value : '', e.target.checked, selectedIds, false);
           summarize();
@@ -794,18 +806,23 @@
       }
       if (cohortSelectAll){
         cohortSelectAll.addEventListener('click', () => {
+          cohortSelectionMode = 'manual';
           cohortFilters.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = true);
           summarize();
         });
       }
       if (cohortClear){
         cohortClear.addEventListener('click', () => {
+          cohortSelectionMode = 'manual';
           cohortFilters.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
           summarize();
         });
       }
       if (cohortFilters){
-        cohortFilters.addEventListener('change', summarize);
+        cohortFilters.addEventListener('change', () => {
+          cohortSelectionMode = 'manual';
+          summarize();
+        });
       }
 
       if (cohortList){

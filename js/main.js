@@ -643,7 +643,7 @@
     student: 'views/student-views/dashboard-student.html',
     faculty: 'views/student-views/dashboard-student.html', // same experience as student
     'faculty-admin': 'views/dashboard-faculty-admin.html',
-    healthcare: 'views/dashboard-healthcare.html'
+    healthcare: 'views/healthcare-views/dashboard-healthcare.html'
   };
 
   const fallbackHTML = `

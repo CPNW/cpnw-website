@@ -1,0 +1,1091 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Get Started (Schools)</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a
+          class="navbar-brand d-flex align-items-center"
+          href="../../index.html"
+          aria-label="CPNW Home"
+        >
+          <img
+            class="cpnw-logo"
+            src="../../images/CPNWLogoo.png"
+            alt="Clinical Placements Northwest"
+          />
+        </a>
+
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#nav"
+          aria-controls="nav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav mx-auto gap-md-2">
+            <li class="nav-item"><a class="nav-link" href="../../index.html#faq">FAQ</a></li>
+            <li class="nav-item"><a class="nav-link" href="../../index.html#services">Our Services</a></li>
+          </ul>
+
+          <div class="d-flex align-items-center gap-2">
+            <button
+              data-theme-toggle
+              type="button"
+              class="btn btn-cpnw btn-cpnw-primary btn-sm"
+              aria-label="Toggle dark and light mode"
+            >
+              <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+              <span class="fw-bold" data-theme-label>Dark</span>
+            </button>
+            <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="../../index.html#login" id="loginTrigger">
+              Login
+            </a>
+            <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../../index.html#register">
+              Register
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container position-relative">
+      <img src="../../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+
+      <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Get Started</p>
+          <h1 class="h3 fw-semibold mb-1">Schools</h1>
+          <p class="text-body-secondary mb-0">
+            Tell us about your program so we can help you onboard students and manage requirements.
+          </p>
+        </div>
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="../../index.html">
+          Back to Home
+        </a>
+      </div>
+
+      <div class="cpnw-shell p-3 p-md-4">
+        <h2 class="h5 fw-bold mb-1">Academic Partner Form</h2>
+        <p class="text-body-secondary small mb-4">
+          Demo form modeled after <code>beta.cpnw.org/GetStarted/AcademicForm</code> (Get In Touch section omitted).
+          Fields marked <span class="fw-semibold">**Required</span> are required.
+        </p>
+
+        <form id="academicGetStartedForm" novalidate>
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <h3 class="h6 fw-bold mb-2">Higher Education Institution</h3>
+            <p class="text-body-secondary small mb-3">
+              Please complete the required information for your educational institution below. This information will be used for
+              official correspondence from CPNW. The primary contact should be the individual responsible for oversight of the
+              program accounts you are requesting.
+            </p>
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="instName">Parent Educational Name <span class="text-body-secondary">(**Required)</span></label>
+                <input class="form-control" id="instName" name="instName" required />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="instAddress">Educational Mailing Address <span class="text-body-secondary">(**Required)</span></label>
+                <input class="form-control" id="instAddress" name="instAddress" required />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="instCity">City <span class="text-body-secondary">(**Required)</span></label>
+                <input class="form-control" id="instCity" name="instCity" required />
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label" for="instState">State <span class="text-body-secondary">(**Required)</span></label>
+                <select class="form-select" id="instState" name="instState" required>
+                  <option value="" selected disabled>Select</option>
+                  <option>WA</option>
+                  <option>OR</option>
+                  <option>ID</option>
+                  <option>MT</option>
+                  <option>AK</option>
+                  <option>CA</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label" for="instZip">Zip Code <span class="text-body-secondary">(**Required)</span></label>
+                <input class="form-control" id="instZip" name="instZip" inputmode="numeric" autocomplete="postal-code" required />
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="instPrimaryName">Primary Contact Name <span class="text-body-secondary">(**Required)</span></label>
+                <input class="form-control" id="instPrimaryName" name="instPrimaryName" required />
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="instPrimaryEmail">Primary Contact Email <span class="text-body-secondary">(**Required)</span></label>
+                <input class="form-control" id="instPrimaryEmail" name="instPrimaryEmail" type="email" autocomplete="email" required />
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="instPrimaryPhone">Primary Contact Phone</label>
+                <input class="form-control" id="instPrimaryPhone" name="instPrimaryPhone" type="tel" autocomplete="tel" placeholder="(###) ###-####" />
+              </div>
+            </div>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3" aria-label="Programs">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <h3 class="h6 fw-bold mb-0">Program Information</h3>
+              <button type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" id="addProgramBtn">
+                +Add Program
+              </button>
+            </div>
+            <p class="text-body-secondary small mb-3">
+              CPNW accounts are organized according to degree/program. You must request an account for each degree/program.
+              You must identify an account coordinator and a backup coordinator for each program. Coordinators may manage more than
+              one program. If you don't currently have a backup coordinator, you must specify your primary coordinator as the backup.
+            </p>
+
+            <div class="d-grid gap-3" id="programList"></div>
+
+            <template id="programTemplate">
+              <div class="cpnw-shell p-3">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                  <div class="fw-semibold">Program</div>
+                  <button type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" data-remove-program>
+                    Remove
+                  </button>
+                </div>
+                <p class="small text-body-secondary mb-3">**All fields are required.</p>
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" data-label-for="programName">Educational Program Name</label>
+                    <input class="form-control" data-field="programName" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" data-label-for="degreeAward">Degree Award</label>
+                    <input class="form-control" data-field="degreeAward" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" data-label-for="streetAddress">Program Street Address</label>
+                    <input class="form-control" data-field="streetAddress" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" data-label-for="cityStateZip">City, State, Zip Code</label>
+                    <input class="form-control" data-field="cityStateZip" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" data-label-for="primaryName">Primary Coordinator Name</label>
+                    <input class="form-control" data-field="primaryName" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" data-label-for="primaryEmail">Primary Coordinator Email</label>
+                    <input class="form-control" data-field="primaryEmail" type="email" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" data-label-for="backupName">Backup Coordinator Name</label>
+                    <input class="form-control" data-field="backupName" required />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" data-label-for="backupEmail">Backup Coordinator Email</label>
+                    <input class="form-control" data-field="backupEmail" type="email" required />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <h3 class="h6 fw-bold mb-2">Program Discipline</h3>
+            <p class="text-body-secondary small mb-3">
+              To ensure accurate identification within the CPNW system, please select the program discipline that best represents
+              your program and aligns with the clinical experience expected for your students. This selection helps determine the
+              site-specific onboarding requirements assigned by our healthcare partners.
+            </p>
+            <p class="small mb-2 fw-semibold">**Required</p>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="programDiscipline">Discipline</label>
+                <select
+                  class="form-select"
+                  id="programDiscipline"
+                  name="programDiscipline"
+                  aria-describedby="programDisciplineHelp programDisciplineFeedback"
+                  required
+                >
+                  <option value="" selected disabled>Select</option>
+                  <option value="prelic-clinical">Pre-licensure Nursing (Clinical)</option>
+                  <option value="postlic-clinical">Post-licensure Nursing (Clinical)</option>
+                  <option value="postlic-nonclinical">Post-licensure Nursing (Non-Clinical)</option>
+                  <option value="allied-clinical">Allied Health and Professions (Clinical)</option>
+                  <option value="allied-nonclinical">Allied Health and Professions (Non-Clinical)</option>
+                </select>
+                <div class="invalid-feedback" id="programDisciplineFeedback">**Required</div>
+                <div class="form-text" id="programDisciplineHelp">
+                  Choose the discipline that best matches your students’ anticipated clinical experience.
+                </div>
+                <div class="cpnw-shell p-3 mt-2 d-none" id="programDisciplineDescription" aria-live="polite"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <h3 class="h6 fw-bold mb-2">CPNW Member vs Community Partner</h3>
+            <p class="text-body-secondary small mb-3">
+              Certain CPNW Education Packages are exclusively available to CPNW Members. Multi-year Education Packages, in particular,
+              are accessible only to programs with CPNW Membership. Your program's designation is specified in your CPNW Service Agreement.
+            </p>
+            <div class="d-flex flex-wrap gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="partnerType" id="partnerMember" value="member" required />
+                <label class="form-check-label" for="partnerMember">CPNW Member</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="partnerType" id="partnerCommunity" value="community" required />
+                <label class="form-check-label" for="partnerCommunity">Community Partner</label>
+              </div>
+            </div>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <h3 class="h6 fw-bold mb-2">Select Service Package</h3>
+            <p class="text-body-secondary small mb-3">
+              CPNW offers annual packages designed to meet the needs of education partners. Review the pricing and included services
+              before selecting your package.
+            </p>
+            <p class="small mb-2 fw-semibold">**Required</p>
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <div class="cpnw-shell p-3 h-100" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="annualPackage" id="annualPkg1" value="sp-9" />
+                    <label class="form-check-label fw-semibold" for="annualPkg1">
+                      1. eLearning Module Package <span class="text-body-secondary">($29.60 / year)</span>
+                    </label>
+                  </div>
+                  <ul class="small text-body-secondary mb-0 ps-4 mt-2">
+                    <li>Includes access to CPNW's 10 eLearning Modules that meet regulatory requirements for healthcare partners.</li>
+                    <li>
+                      Module titles:
+                      <ul class="mt-1 mb-0 ps-3">
+                        <li>Patient Safety</li>
+                        <li>Magnetic Resonance Imaging Safety</li>
+                        <li>Emergency Procedures</li>
+                        <li>Fall Risk Prevention</li>
+                        <li>Patient Rights</li>
+                        <li>Infection Prevention and Standard Precautions</li>
+                        <li>Infectious medical Waste</li>
+                        <li>Bloodborne pathogens and Workplace Safety</li>
+                        <li>Chemical Hazard Communication</li>
+                        <li>Compliance</li>
+                      </ul>
+                    </li>
+                    <li>Includes bi-monthly OIG/GSA checks on all account users.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <div class="cpnw-shell p-3 h-100" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="annualPackage" id="annualPkg1a" value="sp-10" />
+                    <label class="form-check-label fw-semibold" for="annualPkg1a">
+                      1a. Placement Coordination Package <span class="text-body-secondary">($85 / year)</span>
+                    </label>
+                  </div>
+                  <p class="small text-body-secondary mb-0 ps-4 mt-2">
+                    Includes Placement Coordination and Shortfall management support services. Suitable for programs with basic needs.
+                  </p>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <div class="cpnw-shell p-3 h-100" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="annualPackage" id="annualPkg1b" value="sp-11" />
+                    <label class="form-check-label fw-semibold" for="annualPkg1b">
+                      1b. Onboarding Package <span class="text-body-secondary">($85 / year)</span>
+                    </label>
+                  </div>
+                  <p class="small text-body-secondary mb-0 ps-4 mt-2">
+                    Includes Onboarding Requirements including, OIG/GSA checks, eLearning Modules, Safety and Health requirements,
+                    primary source document storage.
+                  </p>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <div class="cpnw-shell p-3 h-100" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="annualPackage" id="annualPkg2a" value="sp-12" />
+                    <label class="form-check-label fw-semibold" for="annualPkg2a">
+                      2a. Placement Coordination + Onboarding Package <span class="text-body-secondary">($115 / year)</span>
+                    </label>
+                  </div>
+                  <p class="small text-body-secondary mb-0 ps-4 mt-2">
+                    Includes full onboarding services. And the Placement Coordination and Shortfall management support services. Best
+                    for programs that require extensive coordination.
+                  </p>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <div class="cpnw-shell p-3 h-100" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="annualPackage" id="annualPkg2b" value="sp-13" />
+                    <label class="form-check-label fw-semibold" for="annualPkg2b">
+                      2b. Onboarding + DVS Service Package <span class="text-body-secondary">($115 / year)</span>
+                    </label>
+                  </div>
+                  <p class="small text-body-secondary mb-0 ps-4 mt-2">
+                    Full access to both onboarding and placement support. This package also includes the support of a Documentation
+                    Verification Specialist to ensure accuracy of all safety and health requirement documents.
+                  </p>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <div class="cpnw-shell p-3 h-100" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="annualPackage" id="annualPkg3" value="sp-14" />
+                    <label class="form-check-label fw-semibold" for="annualPkg3">
+                      3. Placement Coordination + Onboarding + DVS Service Package
+                      <span class="text-body-secondary">($150 / year)</span>
+                    </label>
+                  </div>
+                  <p class="small text-body-secondary mb-0 ps-4 mt-2">
+                    Comprehensive package with onboarding services, placement services, and DVS support. This package is designed for
+                    Allied Health programs who need significant support for students in single year programs.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="small text-danger mt-2 d-none" id="packageSelectionError"></div>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <h3 class="h6 fw-bold mb-0">Multi-year Packages</h3>
+              <span class="small text-body-secondary" id="multiYearNote"></span>
+            </div>
+            <p class="text-body-secondary small mb-3">
+              Multi-year packages are designed for long-term program needs. Review the year-by-year pricing and included services.
+            </p>
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="cpnw-shell p-3" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="multiYearPackage" id="multi0" value="" />
+                    <label class="form-check-label fw-semibold" for="multi0">None</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <div class="cpnw-shell p-3 h-100" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="multiYearPackage" id="multi4" value="my-17" />
+                    <label class="form-check-label fw-semibold" for="multi4">
+                      4. Full Service Essentials <span class="text-body-secondary">(Year 1: $185, Year 2+: $55)</span>
+                    </label>
+                  </div>
+                  <p class="small text-body-secondary mb-0 ps-4 mt-2">
+                    First of CPNW's multi-year packages. Year 1 is $185.00/student and includes all onboarding services, OIG/GSA
+                    Checks, eLearning modules, and DVS support. Includes 1 background check and 1 WATCH Report. Year 2+ is
+                    $55.00/student and includes all onboarding services, OIG/GSA Checks, eLearning modules, and DVS support. Second
+                    year also includes a WATCH Report. This is a cost-effective option for long-term program needs who do not require
+                    Clinical Placement services.
+                  </p>
+                </div>
+              </div>
+
+              <div class="col-12 col-lg-6">
+                <div class="cpnw-shell p-3 h-100" data-package-card tabindex="0">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="multiYearPackage" id="multi5" value="my-18" />
+                    <label class="form-check-label fw-semibold" for="multi5">
+                      5. Full Service Plus <span class="text-body-secondary">(Year 1: $205, Year 2+: $80)</span>
+                    </label>
+                  </div>
+                  <p class="small text-body-secondary mb-0 ps-4 mt-2">
+                    Second, and most inclusive, of CPNW's multi-year package. Year 1 is $205.00/student and includes all onboarding
+                    services, documentation storage, placement services, OIG/GSA Checks, eLearning Modules, and DVS support. Includes 1
+                    background check and 1 WATCH Report. Year 2+ is $80.00/student and includes all onboarding services, placement
+                    services, OIG/GSA Checks, eLearning Modules, and DVS support. Includes 1 WATCH Report annually. This is a
+                    cost-effective option for long-term program needs, providing program support throughout all aspects of the clinical
+                    experience process.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 d-none" id="representativeWrap">
+              <p class="small mb-2">
+                <span class="fw-semibold">
+                  To establish system access to vendors supported by this package please provide the following:
+                </span>
+              </p>
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="repName">Representative Name <span class="text-body-secondary">(**Required)</span></label>
+                  <input class="form-control" id="repName" name="repName" />
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="repEmail">Representative Email <span class="text-body-secondary">(**Required)</span></label>
+                  <input class="form-control" id="repEmail" name="repEmail" type="email" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <h3 class="h6 fw-bold mb-2">Pay Per Service Options</h3>
+            <p class="text-body-secondary small mb-3">
+              Some programs may identify the need for additional services beyond their selected package.
+              <span class="fw-semibold"> Add-On Services</span> provide the flexibility to customize your package by incorporating
+              <span class="fw-semibold"> National Background Checks</span> and/or <span class="fw-semibold">WATCH Reports</span> if they are not already included.
+            </p>
+
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <div class="fw-semibold mb-2">National Background Checks</div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="checkrAddon" id="checkr0" value="" checked />
+                  <label class="form-check-label" for="checkr0">None</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="checkrAddon" id="checkr1" value="cpnw-checkr" />
+                  <label class="form-check-label" for="checkr1">CPNW: Checkr Background Check Service</label>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="fw-semibold mb-2">WATCH Reports</div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="watchAddon" id="watch0" value="" checked />
+                  <label class="form-check-label" for="watch0">None</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="watchAddon" id="watch1" value="cpnw-watch" />
+                  <label class="form-check-label" for="watch1">CPNW WATCH Report</label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <h3 class="h6 fw-bold mb-2">Payment Method for Package Selection</h3>
+            <p class="text-body-secondary small mb-3">
+              Demo placeholders. In the production app, payment method options appear based on selected packages.
+            </p>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="paymentMethod">Payment method</label>
+                <select class="form-select" id="paymentMethod" name="paymentMethod">
+                  <option value="institution" selected>Institution pay</option>
+                  <option value="selfpay">Student / Self Pay</option>
+                </select>
+                <div class="form-text" id="paymentMethodHelp"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <h3 class="h6 fw-bold mb-2">Invoicing Information</h3>
+            <p class="text-body-secondary small mb-3">
+              <span class="fw-semibold">**Required</span>
+            </p>
+
+            <div class="mb-3">
+              <fieldset class="m-0">
+                <legend class="fw-semibold mb-2 fs-6">Invoicing frequency</legend>
+                <div class="d-grid gap-2" id="invoiceFrequencyGroup">
+                  <div class="form-check" data-invoice-frequency-card tabindex="0">
+                    <input class="form-check-input" type="radio" name="invoiceFrequency" id="invFreqAnnually" value="Annually" required />
+                    <label class="form-check-label" for="invFreqAnnually">
+                      <span class="fw-semibold">Annually</span>
+                    </label>
+                  </div>
+                  <div class="form-check" data-invoice-frequency-card tabindex="0">
+                    <input class="form-check-input" type="radio" name="invoiceFrequency" id="invFreqTwice" value="TwicePerYear" />
+                    <label class="form-check-label" for="invFreqTwice">
+                      <span class="fw-semibold">Twice per year</span>
+                      <span class="text-body-secondary">(October &amp; February)</span>
+                    </label>
+                  </div>
+                  <div class="form-check" data-invoice-frequency-card tabindex="0">
+                    <input class="form-check-input" type="radio" name="invoiceFrequency" id="invFreqThree" value="ThreeTimesPerYear" />
+                    <label class="form-check-label" for="invFreqThree">
+                      <span class="fw-semibold">Three times per year</span>
+                      <span class="text-body-secondary">(October, February, May)</span>
+                    </label>
+                  </div>
+                  <div class="form-check" data-invoice-frequency-card tabindex="0">
+                    <input class="form-check-input" type="radio" name="invoiceFrequency" id="invFreqQuarterly" value="Quarterly" />
+                    <label class="form-check-label" for="invFreqQuarterly">
+                      <span class="fw-semibold">Quarterly</span>
+                      <span class="text-body-secondary">(January, April, July, October)</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="small text-body-secondary mt-2" id="invoiceFrequencyNote"></div>
+                <div class="invalid-feedback">Invoicing frequency is required.</div>
+              </fieldset>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="invoicingEmail">Email address to send CPNW invoice to <span class="text-body-secondary">(**Required)</span></label>
+                <input class="form-control" id="invoicingEmail" name="invoicingEmail" type="email" autocomplete="email" required />
+                <div class="invalid-feedback">Please enter a valid email address.</div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="copyEmail">Email address to send copy of invoice to</label>
+                <input class="form-control" id="copyEmail" name="copyEmail" type="email" autocomplete="email" />
+                <div class="invalid-feedback">Please enter a valid email address.</div>
+              </div>
+
+              <div class="col-12">
+                <div class="fw-semibold mb-2">Billing Address</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="billingStreet">Street Address</label>
+                <input class="form-control" id="billingStreet" name="billingStreet" autocomplete="street-address" />
+              </div>
+              <div class="col-12 col-md-5">
+                <label class="form-label" for="billingCity">City</label>
+                <input class="form-control" id="billingCity" name="billingCity" autocomplete="address-level2" />
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label" for="billingState">State</label>
+                <input class="form-control" id="billingState" name="billingState" autocomplete="address-level1" />
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="billingZip">Zip Code</label>
+                <input class="form-control" id="billingZip" name="billingZip" autocomplete="postal-code" />
+              </div>
+
+              <div class="col-12">
+                <p class="text-body-secondary small mb-2">
+                  Please note any specific information required on CPNW invoice such as: billing, address, cost code, routing number, etc.
+                </p>
+                <label class="form-label" for="additionalInfo">Additional information</label>
+                <input class="form-control" id="additionalInfo" name="additionalInfo" placeholder="Field for additional information" />
+              </div>
+            </div>
+          </section>
+
+          <section class="cpnw-shell p-3 p-md-4 mb-3">
+            <p class="text-body-secondary small mb-2">
+              Please list the CPNW member clinical sites where your students have <span class="fst-italic">confirmed placements in the current academic year</span>
+            </p>
+            <p class="small mb-2 fw-semibold">**Required</p>
+            <div class="mb-3">
+              <label class="form-label" for="placements">Placements</label>
+              <textarea class="form-control" id="placements" name="placements" rows="5" required></textarea>
+            </div>
+            <div>
+              <label class="form-label" for="questions">Additional information or questions</label>
+              <input class="form-control" id="questions" name="questions" />
+            </div>
+          </section>
+
+          <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <button type="reset" class="btn btn-outline-secondary btn-sm btn-cpnw">Clear</button>
+            <button type="submit" class="btn btn-cpnw btn-cpnw-primary">Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../../js/main.js?v=20251214-2"></script>
+  <script>
+    (function(){
+      const form = document.getElementById('academicGetStartedForm');
+      const list = document.getElementById('programList');
+      const tpl = document.getElementById('programTemplate');
+      const addBtn = document.getElementById('addProgramBtn');
+      const partnerMember = document.getElementById('partnerMember');
+      const partnerCommunity = document.getElementById('partnerCommunity');
+      const multiYearNote = document.getElementById('multiYearNote');
+      const repWrap = document.getElementById('representativeWrap');
+      const paymentMethod = document.getElementById('paymentMethod');
+      const paymentMethodHelp = document.getElementById('paymentMethodHelp');
+
+      if (!form || !list || !tpl || !addBtn) return;
+
+      function addProgram(){
+        const fragment = tpl.content.cloneNode(true);
+        const shell = fragment.querySelector('.cpnw-shell');
+        const removeBtn = fragment.querySelector('[data-remove-program]');
+
+        if (shell){
+          const index = list.children.length + 1;
+          shell.dataset.programIndex = String(index);
+          shell.querySelector('.fw-semibold')?.append(` ${index}`);
+          shell.querySelectorAll('[data-field]').forEach((input) => {
+            const field = input.getAttribute('data-field');
+            input.name = `programs[${index}][${field}]`;
+            input.id = `program-${index}-${field}`;
+            const label = shell.querySelector(`[data-label-for="${field}"]`);
+            if (label) label.setAttribute('for', input.id);
+          });
+        }
+
+        removeBtn?.addEventListener('click', () => {
+          shell?.remove();
+          renumberPrograms();
+        });
+
+        list.appendChild(fragment);
+      }
+
+      function renumberPrograms(){
+        Array.from(list.children).forEach((shell, idx) => {
+          const index = idx + 1;
+          shell.dataset.programIndex = String(index);
+          const title = shell.querySelector('.fw-semibold');
+          if (title) title.textContent = `Program ${index}`;
+          shell.querySelectorAll('[data-field]').forEach((input) => {
+            const field = input.getAttribute('data-field');
+            input.name = `programs[${index}][${field}]`;
+            input.id = `program-${index}-${field}`;
+            const label = shell.querySelector(`[data-label-for="${field}"]`);
+            if (label) label.setAttribute('for', input.id);
+          });
+        });
+      }
+
+      function setMultiYearDisabled(disabled){
+        document.querySelectorAll('input[name="multiYearPackage"]').forEach((el) => {
+          if (el.id === 'multi0') return;
+          el.disabled = disabled;
+        });
+        if (multiYearNote){
+          multiYearNote.textContent = disabled ? '*Only available to CPNW Members.' : '';
+        }
+        if (disabled){
+          const none = document.getElementById('multi0');
+          if (none) none.checked = true;
+          repWrap?.classList.add('d-none');
+        }
+      }
+
+      function updateRepresentativeVisibility(){
+        const selected = document.querySelector('input[name="multiYearPackage"]:checked')?.value || '';
+        const isMember = !!partnerMember?.checked;
+        const show = isMember && selected && selected !== '';
+        if (repWrap) repWrap.classList.toggle('d-none', !show);
+        document.getElementById('repName')?.toggleAttribute('required', show);
+        document.getElementById('repEmail')?.toggleAttribute('required', show);
+      }
+
+      function updatePaymentMethod(){
+        const hasCheckr = (document.querySelector('input[name="checkrAddon"]:checked')?.value || '') !== '';
+        if (!paymentMethod) return;
+
+        const selfPayOption = Array.from(paymentMethod.options).find(o => o.value === 'selfpay');
+        if (selfPayOption) selfPayOption.disabled = hasCheckr;
+
+        if (hasCheckr && paymentMethod.value === 'selfpay'){
+          paymentMethod.value = 'institution';
+        }
+        if (paymentMethodHelp){
+          paymentMethodHelp.textContent = hasCheckr
+            ? 'Student / Self Pay is disabled when a Checkr background check service is selected (demo behavior).'
+            : '';
+        }
+      }
+
+      // Start with one program card.
+      addProgram();
+
+      const disciplineSelect = document.getElementById('programDiscipline');
+      const disciplineDescription = document.getElementById('programDisciplineDescription');
+      const packageSelectionError = document.getElementById('packageSelectionError');
+      const invoiceFrequencyNote = document.getElementById('invoiceFrequencyNote');
+
+      const disciplines = [
+        {
+          value: 'prelic-clinical',
+          label: 'Pre-licensure Nursing (Clinical)',
+          description:
+            'This category includes students who will have direct interactions with facility patients or PHI, necessitating access to Electronic Health Records (EHR), other facility systems, and security badge clearance.',
+          examples: [
+            'Licensed Practical Nurse (LPN)',
+            'Registered Nurse (RN)',
+            'Bachelor of Science in Nursing (BSN)',
+            'Refresher Registered Nurses (RN)',
+            'Associate Degree in Nursing to Registered Nurse (ADN-RN)',
+            'Associate Degree in Nursing to Bachelor of Science in Nursing (ADN-BSN)'
+          ]
+        },
+        {
+          value: 'postlic-clinical',
+          label: 'Post-licensure Nursing (Clinical)',
+          description:
+            'This category includes students who will have direct interactions with facility patients or PHI, necessitating access to Electronic Health Records (EHR), other facility systems, and security badge clearance.',
+          examples: [
+            'Advanced Registered Nurse Practitioner (ARNP)',
+            'Doctor of Nursing Practice (DNP)',
+            'Master of Nursing / Master of Science in Nursing (MN/MSN)',
+            'Midwifery',
+            'Nurse Anesthesia (SRNA)',
+            'Registered Nurse First Assistant (RNFA)'
+          ]
+        },
+        {
+          value: 'postlic-nonclinical',
+          label: 'Post-licensure Nursing (Non-Clinical)',
+          description:
+            'This category includes students who will not be in direct contact with facility patients or accessing PHI, and/or do not require access to Electronic Health Records (EHR) or other facility systems. It also applies to students involved in student projects or presentations that do not involve direct patient care.',
+          examples: [
+            'Advanced Registered Nurse Practitioner (ARNP)',
+            'Doctor of Nursing Practice (DNP)',
+            'Master of Nursing / Master of Science in Nursing (MN/MSN)'
+          ]
+        },
+        {
+          value: 'allied-clinical',
+          label: 'Allied Health and Professions (Clinical)',
+          description:
+            'This category includes students who will have direct interactions with facility patients or PHI, necessitating access to Electronic Health Records (EHR), other facility systems, and security badge clearance.',
+          examples: [
+            'Dietetics',
+            'Radiologic Technology',
+            'Surgical Technology',
+            'Psychology (PsyD)',
+            'Master of Social Work (MSW)',
+            'Occupational Therapy (OT)',
+            'Physical Therapy (PT)',
+            'Pharmacy',
+            'Respiratory Therapy',
+            'Medical Coding',
+            'Health Informatics',
+            'Global/Public Health',
+            'Health Information Management (HIM)',
+            'Administration'
+          ]
+        },
+        {
+          value: 'allied-nonclinical',
+          label: 'Allied Health and Professions (Non-Clinical)',
+          description:
+            'This category includes students who will not be in direct contact with facility patients or accessing PHI, and/or do not require access to Electronic Health Records (EHR) or other facility systems. It also applies to students involved in student projects or presentations that do not involve direct patient care.',
+          examples: [
+            'Psychology (PsyD)',
+            'Administrative roles',
+            'Medical Coding',
+            'Global/Public Health',
+            'Health Information Management (HIM)',
+            'Administration'
+          ]
+        }
+      ];
+
+      function getSelectedDiscipline(){
+        return disciplineSelect?.value || '';
+      }
+
+      function isAlliedDiscipline(value){
+        return value === 'allied-clinical' || value === 'allied-nonclinical';
+      }
+
+      function setInvoiceFrequencyTooltipsEnabled(enabled){
+        const cards = document.querySelectorAll('[data-invoice-frequency-card]');
+        cards.forEach((card) => {
+          const existing = bootstrap.Tooltip.getInstance(card);
+          if (!enabled){
+            existing?.dispose();
+            card.removeAttribute('data-bs-toggle');
+            card.removeAttribute('data-bs-placement');
+            card.removeAttribute('data-bs-title');
+            card.removeAttribute('title');
+            return;
+          }
+          card.setAttribute('data-bs-toggle', 'tooltip');
+          card.setAttribute('data-bs-placement', 'top');
+          card.setAttribute('data-bs-title', 'Select a program discipline first.');
+          if (!existing){
+            new bootstrap.Tooltip(card, { trigger: 'hover focus' });
+          }
+        });
+      }
+
+      function updateInvoiceFrequencyRules(){
+        const discipline = getSelectedDiscipline();
+        const hasDiscipline = !!discipline;
+        const onlyQuarterly = isAlliedDiscipline(discipline);
+
+        const invAnnually = document.getElementById('invFreqAnnually');
+        const invTwice = document.getElementById('invFreqTwice');
+        const invThree = document.getElementById('invFreqThree');
+        const invQuarterly = document.getElementById('invFreqQuarterly');
+
+        const all = [invAnnually, invTwice, invThree, invQuarterly].filter(Boolean);
+        all.forEach((el) => {
+          el.disabled = !hasDiscipline;
+        });
+
+        if (!hasDiscipline){
+          all.forEach((el) => {
+            el.checked = false;
+          });
+          if (invoiceFrequencyNote) invoiceFrequencyNote.textContent = 'Select a program discipline to choose an invoicing option.';
+          setInvoiceFrequencyTooltipsEnabled(true);
+          return;
+        }
+
+        setInvoiceFrequencyTooltipsEnabled(false);
+
+        if (onlyQuarterly){
+          if (invAnnually) invAnnually.disabled = true;
+          if (invTwice) invTwice.disabled = true;
+          if (invThree) invThree.disabled = true;
+          if (invQuarterly){
+            invQuarterly.disabled = false;
+            invQuarterly.checked = true;
+          }
+          if (invoiceFrequencyNote) invoiceFrequencyNote.textContent = 'Allied Health disciplines require quarterly invoicing.';
+          return;
+        }
+
+        // Default selection once discipline is chosen (matches dev behavior).
+        if (!document.querySelector('input[name="invoiceFrequency"]:checked')){
+          if (invAnnually) invAnnually.checked = true;
+        }
+        if (invoiceFrequencyNote) invoiceFrequencyNote.textContent = '';
+      }
+
+      disciplineSelect?.addEventListener('change', () => {
+        const value = disciplineSelect.value || '';
+        const discipline = disciplines.find((d) => d.value === value) || null;
+        if (!disciplineDescription) return;
+        if (!discipline){
+          disciplineDescription.textContent = '';
+          disciplineDescription.classList.add('d-none');
+          updateInvoiceFrequencyRules();
+          return;
+        }
+
+        const title = document.createElement('div');
+        title.className = 'fw-semibold';
+        title.textContent = discipline.label;
+
+        const desc = document.createElement('p');
+        desc.className = 'small text-body-secondary mb-2';
+        desc.textContent = discipline.description;
+
+        const list = document.createElement('ul');
+        list.className = 'small text-body-secondary mb-0 ps-3';
+        (discipline.examples || []).forEach((example) => {
+          const li = document.createElement('li');
+          li.textContent = example;
+          list.appendChild(li);
+        });
+
+        disciplineDescription.textContent = '';
+        disciplineDescription.appendChild(title);
+        disciplineDescription.appendChild(desc);
+        if ((discipline.examples || []).length) disciplineDescription.appendChild(list);
+        disciplineDescription.classList.remove('d-none');
+        updateInvoiceFrequencyRules();
+      });
+
+      function getSelectedAnnualPackage(){
+        return document.querySelector('input[name="annualPackage"]:checked')?.value || '';
+      }
+
+      function getSelectedMultiYearPackage(){
+        return document.querySelector('input[name="multiYearPackage"]:checked')?.value || '';
+      }
+
+      function setPackageInputsDisabled(disabled){
+        document.querySelectorAll('input[name="annualPackage"], input[name="multiYearPackage"]').forEach((el) => {
+          el.disabled = !!disabled;
+        });
+      }
+
+      function setPackageTooltipsEnabled(enabled){
+        const cards = document.querySelectorAll('[data-package-card]');
+        cards.forEach((card) => {
+          const existing = bootstrap.Tooltip.getInstance(card);
+          if (!enabled){
+            existing?.dispose();
+            card.removeAttribute('data-bs-toggle');
+            card.removeAttribute('data-bs-placement');
+            card.removeAttribute('data-bs-title');
+            card.removeAttribute('title');
+            return;
+          }
+
+          card.setAttribute('data-bs-toggle', 'tooltip');
+          card.setAttribute('data-bs-placement', 'top');
+          card.setAttribute('data-bs-title', 'Select CPNW Member or Community Partner first.');
+          if (!existing){
+            new bootstrap.Tooltip(card, { trigger: 'hover focus' });
+          }
+        });
+      }
+
+      function setPackageError(message){
+        if (!packageSelectionError) return;
+        packageSelectionError.textContent = message || '';
+        packageSelectionError.classList.toggle('d-none', !message);
+      }
+
+      function clearAnnualPackageSelection(){
+        document.querySelectorAll('input[name="annualPackage"]').forEach((el) => {
+          el.checked = false;
+        });
+      }
+
+      function selectMultiYearNone(){
+        const none = document.getElementById('multi0');
+        if (none) none.checked = true;
+      }
+
+      function syncPackageRules(origin){
+        const isMember = !!partnerMember?.checked;
+        const isCommunity = !!partnerCommunity?.checked;
+
+        if (!isMember && !isCommunity){
+          setPackageInputsDisabled(true);
+          setPackageTooltipsEnabled(true);
+          setPackageError('');
+          return;
+        }
+
+        setPackageInputsDisabled(false);
+        setPackageTooltipsEnabled(false);
+
+        if (isCommunity){
+          setMultiYearDisabled(true);
+          setPackageError('');
+          return;
+        }
+
+        if (isMember){
+          setMultiYearDisabled(false);
+          const annual = getSelectedAnnualPackage();
+          const multi = getSelectedMultiYearPackage();
+
+          if (origin === 'annual' && annual){
+            selectMultiYearNone();
+          }
+          if (origin === 'multi' && multi){
+            if (multi !== '') clearAnnualPackageSelection();
+          }
+          setPackageError('');
+        }
+      }
+
+      // Enforce: community partners cannot pick multi-year; members pick annual OR multi-year (not both).
+      document.querySelectorAll('input[name="annualPackage"]').forEach((el) => {
+        el.addEventListener('change', () => {
+          syncPackageRules('annual');
+          updateRepresentativeVisibility();
+        });
+      });
+      document.querySelectorAll('input[name="multiYearPackage"]').forEach((el) => {
+        el.addEventListener('change', () => {
+          syncPackageRules('multi');
+          updateRepresentativeVisibility();
+        });
+      });
+
+      addBtn.addEventListener('click', addProgram);
+      partnerCommunity?.addEventListener('change', () => syncPackageRules('partner'));
+      partnerMember?.addEventListener('change', () => syncPackageRules('partner'));
+      document.querySelectorAll('input[name="checkrAddon"]').forEach((el) => {
+        el.addEventListener('change', updatePaymentMethod);
+      });
+      paymentMethod?.addEventListener('change', updatePaymentMethod);
+
+      // Default state.
+      setMultiYearDisabled(false);
+      syncPackageRules('init');
+      updateRepresentativeVisibility();
+      updatePaymentMethod();
+      updateInvoiceFrequencyRules();
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        form.classList.add('was-validated');
+
+        const isMember = !!partnerMember?.checked;
+        const isCommunity = !!partnerCommunity?.checked;
+        const annual = getSelectedAnnualPackage();
+        const multi = getSelectedMultiYearPackage();
+
+        if (isCommunity && !annual){
+          setPackageError('Please select a service package.');
+          document.getElementById('annualPkg1')?.focus();
+          return;
+        }
+        if (isMember && !annual && !multi){
+          setPackageError('Please select either a service package or a multi-year package.');
+          document.getElementById('annualPkg1')?.focus();
+          return;
+        }
+
+        if (!form.checkValidity()){
+          const firstInvalid = form.querySelector(':invalid');
+          firstInvalid?.focus();
+          return;
+        }
+
+        alert('Thanks! Your Academic Partner form has been submitted (demo).');
+        form.reset();
+        form.classList.remove('was-validated');
+        setPackageError('');
+        disciplineDescription?.classList.add('d-none');
+        if (disciplineDescription) disciplineDescription.textContent = '';
+        updateInvoiceFrequencyRules();
+
+        // Restore initial UI defaults after reset.
+        list.innerHTML = '';
+        addProgram();
+        setMultiYearDisabled(false);
+        syncPackageRules('reset');
+        updateRepresentativeVisibility();
+        updatePaymentMethod();
+      });
+    })();
+  </script>
+</body>
+</html>
