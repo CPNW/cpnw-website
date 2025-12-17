@@ -796,3 +796,167 @@
     }
   });
 })();
+
+// Get Started (Students) modal
+(function(){
+  const TRIGGER_SELECTOR = '[data-student-get-started-trigger], a[href="#get-started-students"]';
+
+  let modalEl = null;
+  let modalInstance = null;
+
+  const fallbackHTML = `
+    <div
+      class="modal fade"
+      id="studentGetStartedModal"
+      tabindex="-1"
+      aria-labelledby="studentGetStartedModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Get Started</p>
+              <h2 class="modal-title h4 fw-semibold mb-0" id="studentGetStartedModalLabel">
+                Registration is as easy as one, two, three.
+              </h2>
+            </div>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body pt-2">
+            <div class="cpnw-shell p-3 p-md-4">
+              <div class="d-grid gap-3">
+                <div class="d-flex gap-3 align-items-start">
+                  <div
+                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width: 40px; height: 40px;"
+                    aria-hidden="true"
+                  >
+                    <span class="fw-semibold">1</span>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold mb-1">It starts with a code from your school.</div>
+                    <p class="small text-body-secondary mb-0">
+                      Students and faculty follow the same process to create an account. It all starts with an access code provided by
+                      your school. Begin by selecting “Register” and filling in the requested information. The code is the first step
+                      on the registration page.
+                    </p>
+                  </div>
+                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px;">
+                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <hr class="my-1" />
+
+                <div class="d-flex gap-3 align-items-start">
+                  <div
+                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width: 40px; height: 40px;"
+                    aria-hidden="true"
+                  >
+                    <span class="fw-semibold">2</span>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold mb-1">Your account will be created.</div>
+                    <p class="small text-body-secondary mb-0">
+                      During registration you’ll create your username, password, and user profile. Your information is forwarded to your
+                      school’s CPNW coordinator for approval, which can take up to 24 hours. If you haven’t heard back within a day,
+                      contact the coordinator listed in your confirmation email.
+                    </p>
+                  </div>
+                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px;">
+                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 5h16v10H4z" stroke="currentColor" stroke-width="1.5" />
+                      <path d="M9 19h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                      <path d="M12 15v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                </div>
+
+                <hr class="my-1" />
+
+                <div class="d-flex gap-3 align-items-start">
+                  <div
+                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0"
+                    style="width: 40px; height: 40px;"
+                    aria-hidden="true"
+                  >
+                    <span class="fw-semibold">3</span>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold mb-1">Sign into your account.</div>
+                    <p class="small text-body-secondary mb-0">
+                      When you sign in, you’ll enter your password and then be asked for an authentication code sent to your phone or
+                      email. Two-step verification is an extra layer of security to protect your personal information.
+                    </p>
+                  </div>
+                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px;">
+                    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.5"/>
+                      <path d="M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <path d="M9.5 7h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex flex-wrap gap-2 justify-content-end mt-4">
+                <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="#register" data-bs-dismiss="modal">
+                  Register
+                </a>
+                <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="#login" id="studentGetStartedLoginBtn" data-bs-dismiss="modal">
+                  Login
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  function ensureModal(){
+    if (modalEl) return modalEl;
+    const existing = document.getElementById('studentGetStartedModal');
+    if (existing){
+      modalEl = existing;
+    }else{
+      const wrap = document.createElement('div');
+      wrap.innerHTML = fallbackHTML;
+      const modal = wrap.querySelector('.modal');
+      if (!modal) return null;
+      document.body.appendChild(modal);
+      modalEl = modal;
+    }
+    modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+
+    // If the site has a login modal trigger, make the Login button open it.
+    const loginBtn = modalEl.querySelector('#studentGetStartedLoginBtn');
+    loginBtn?.addEventListener('click', (e) => {
+      const trigger = document.getElementById('loginTrigger');
+      if (!trigger) return;
+      e.preventDefault();
+      trigger.click();
+    });
+
+    return modalEl;
+  }
+
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest(TRIGGER_SELECTOR);
+    if (!trigger) return;
+    event.preventDefault();
+    const modal = ensureModal();
+    if (!modalInstance || !modal) return;
+    modalInstance.show();
+  });
+})();
