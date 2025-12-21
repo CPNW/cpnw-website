@@ -24,7 +24,7 @@
             <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
             <span class="fw-bold" data-theme-label>Dark</span>
           </button>
-          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../index.html" data-logout-trigger>Log out</a>
         </div>
       </div>
     </nav>
@@ -248,11 +248,19 @@
       const programDefs = [
         { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
         { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
-        { id: 'surg', name: 'Surg Tech', base: 8, aySpan: 2 }
+        { id: 'surg', name: 'Surg Tech', base: 8, aySpan: 2 },
+        { id: 'rad', name: 'Radiologic Technology', base: 6, aySpan: 2 }
       ];
 
       const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
       const membershipCounts = cohortAPI ? cohortAPI.getMembershipCounts() : {};
+      const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
+        ? window.CPNW.getCurrentUser()
+        : null;
+      const currentPrograms = Array.isArray(currentUser?.programs)
+        ? currentUser.programs
+        : currentUser?.programs ? [currentUser.programs] : [];
+      const allowedPrograms = currentPrograms.map(p => String(p || '').toLowerCase());
 
       // DOM refs
       const statusChips = document.querySelectorAll('[data-status-chip]');
@@ -317,7 +325,7 @@
 
       const seedActiveCohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
       const customCohorts = cohortAPI ? cohortAPI.listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX }) : [];
-      const activeCohorts = seedActiveCohorts
+      let activeCohorts = seedActiveCohorts
         .map(c => ({
           cohortLabel: `${c.programName} – ${c.term} ${c.year}`,
           program: c.programName,
@@ -326,6 +334,20 @@
           seed: true
         }))
         .concat(customCohorts);
+
+      function normalizeProgramKey(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'surg tech';
+        if (name.includes('rad')) return 'radiologic technology';
+        if (name.includes('bsn')) return 'bsn';
+        if (name.includes('adn')) return 'adn';
+        return name;
+      }
+
+      if (allowedPrograms.length){
+        const allowedSet = new Set(allowedPrograms.map(normalizeProgramKey));
+        activeCohorts = activeCohorts.filter(c => allowedSet.has(normalizeProgramKey(c.program)));
+      }
 
       function applyStoredCohort(item){
         if (!cohortAPI) return item;
@@ -349,11 +371,38 @@
       }
 
       const data = [];
-      // Seed some staff/faculty actives
-      data.push(
-        { name: 'Alex Educator', email: 'alex@cpnw.org', program: 'BSN', role: 'education', status: 'active', date: '2025-02-15' },
-        { name: 'Fran Faculty', email: 'fran.faculty@cpnw.org', program: 'BSN', role: 'faculty', status: 'active', date: '2025-02-10' }
-      );
+      const demoPeople = (window.CPNW && Array.isArray(window.CPNW.demoPeople)) ? window.CPNW.demoPeople : [];
+
+      function normalizeProgramLabel(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'Surg Tech';
+        if (name.includes('rad')) return 'Radiologic Technology';
+        if (name.includes('bsn')) return 'BSN';
+        if (name.includes('adn')) return 'ADN';
+        return label || 'BSN';
+      }
+
+      demoPeople.forEach(person => {
+        const program = normalizeProgramLabel(person.programs?.[0]);
+        data.push(applyStoredCohort({
+          name: person.name,
+          email: person.email,
+          program,
+          role: person.role,
+          status: 'active',
+          date: '2025-02-15',
+          cohortLabel: person.cohort || ''
+        }));
+      });
+
+      if (allowedPrograms.length){
+        const allowedSet = new Set(allowedPrograms.map(normalizeProgramKey));
+        for (let i = data.length - 1; i >= 0; i--){
+          if (!allowedSet.has(normalizeProgramKey(data[i].program))){
+            data.splice(i, 1);
+          }
+        }
+      }
       // Generate active students from the same cohort-based roster used across pages
       activeCohorts.forEach((c, idx) => {
         const count = Math.min(12, Math.max(0, Number(c.students) || 0));

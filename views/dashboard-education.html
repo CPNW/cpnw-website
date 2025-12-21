@@ -37,7 +37,7 @@
             <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
             <span class="fw-bold" data-theme-label>Dark</span>
           </button>
-          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../index.html" data-logout-trigger>Log out</a>
         </div>
       </div>
     </nav>
@@ -49,10 +49,28 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
           <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Education</p>
-          <h1 class="h3 fw-semibold mb-1">Welcome back, Alex Educator</h1>
+          <h1 class="h3 fw-semibold mb-1">
+            Welcome back, <span data-current-user-name>Alex Educator</span>
+          </h1>
           <p class="text-body-secondary mb-0">Here’s the latest on cohorts, placements, and compliance.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
+          <div class="btn-group d-none" role="group" aria-label="Faculty view toggle" data-faculty-view-toggle>
+            <a
+              class="btn btn-outline-secondary btn-sm btn-cpnw"
+              href="dashboard-education.html"
+              data-faculty-view-btn="admin"
+            >
+              Admin View
+            </a>
+            <a
+              class="btn btn-outline-secondary btn-sm btn-cpnw"
+              href="student-views/dashboard-student.html"
+              data-faculty-view-btn="faculty"
+            >
+              Faculty View
+            </a>
+          </div>
           <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="requirements-education.html">Requirements</a>
           <div class="dropdown">
             <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -240,7 +258,7 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="createCohortProgram">Program</label>
+            <label class="form-label" for="createCohortProgram">Program (required)</label>
             <select class="form-select" id="createCohortProgram"></select>
           </div>
           <div class="mb-2">
@@ -332,8 +350,26 @@
       const programDefs = [
         { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
         { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
-        { id: 'surg', name: 'Surgical Technology', base: 8, aySpan: 2 }
+        { id: 'surg', name: 'Surgical Technology', base: 8, aySpan: 2 },
+        { id: 'rad', name: 'Radiologic Technology', base: 6, aySpan: 2 }
       ];
+
+      const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
+        ? window.CPNW.getCurrentUser()
+        : null;
+      const nameTarget = document.querySelector('[data-current-user-name]');
+      if (nameTarget && currentUser?.name){
+        nameTarget.textContent = currentUser.name;
+      }
+
+      function programIdFromName(name){
+        const n = String(name || '').toLowerCase();
+        if (n.includes('bsn')) return 'bsn';
+        if (n.includes('adn')) return 'adn';
+        if (n.includes('surg')) return 'surg';
+        if (n.includes('rad')) return 'rad';
+        return '';
+      }
 
       const termAdjust = { Fall: 3, Winter: 1, Spring: 0, Summer: -2 };
 
@@ -392,7 +428,7 @@
         expiringStudents: 3
       });
 
-      const cohorts = cohortSeeds.map(buildCohort);
+      let cohorts = cohortSeeds.map(buildCohort);
 
       // Merge in custom cohorts + membership deltas (stored in localStorage via main.js)
       const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
@@ -427,6 +463,24 @@
         expiringStudents: 0,
         custom: true
       });
+
+      const currentPrograms = Array.isArray(currentUser?.programs)
+        ? currentUser.programs
+        : currentUser?.programs ? [currentUser.programs] : [];
+      const demoPeople = (window.CPNW && Array.isArray(window.CPNW.demoPeople)) ? window.CPNW.demoPeople : [];
+      const demoMatch = currentUser?.email
+        ? demoPeople.find(p => p.email.toLowerCase() === currentUser.email.toLowerCase())
+        : null;
+      const fallbackPrograms = Array.isArray(demoMatch?.programs) ? demoMatch.programs : [];
+      const programsForScope = currentPrograms.length ? currentPrograms : fallbackPrograms;
+      const allowedProgramIds = programsForScope.map(programIdFromName).filter(Boolean);
+      if (allowedProgramIds.length){
+        cohorts = cohorts.filter(c => {
+          if (c.programId === 'unassigned') return true;
+          const programKey = c.programId || programIdFromName(c.programName);
+          return allowedProgramIds.includes(programKey) || allowedProgramIds.includes(programIdFromName(c.programName));
+        });
+      }
 
       function aggregateProgramsFromCohorts(list){
         const map = new Map();
@@ -499,7 +553,9 @@
 
       if (!filters) return;
 
-      const createCohortModal = createCohortModalEl ? new bootstrap.Modal(createCohortModalEl) : null;
+      const createCohortModal = (window.bootstrap && createCohortModalEl)
+        ? new bootstrap.Modal(createCohortModalEl)
+        : null;
 
       function setCreateCollision(message){
         if (!createCohortCollision) return;
@@ -558,10 +614,13 @@
         if (createCohortName) createCohortName.value = '';
         setCreateRemaining();
         if (createCohortProgram){
-          createCohortProgram.innerHTML = programs
-            .filter(p => p.id !== 'unassigned')
-            .map(p => `<option value="${p.id}">${p.name}</option>`)
-            .join('');
+          createCohortProgram.innerHTML = [
+            '<option value="">Select program</option>',
+            ...programs
+              .filter(p => p.id !== 'unassigned')
+              .map(p => `<option value="${p.id}">${p.name}</option>`)
+          ].join('');
+          createCohortProgram.value = '';
         }
         validateCreate();
         createCohortModal.show();
@@ -717,7 +776,7 @@
           if (c.programId !== 'unassigned'){
             const toggleBtn = document.createElement('button');
             toggleBtn.type = 'button';
-            toggleBtn.className = 'btn btn-outline-secondary btn-sm';
+            toggleBtn.className = 'btn btn-outline-light btn-sm';
             toggleBtn.textContent = c.archived ? 'Restore' : 'Archive';
             toggleBtn.dataset.cohortAction = c.archived ? 'restore' : 'archive';
             toggleBtn.dataset.cohortLabel = c.label;

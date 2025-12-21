@@ -37,7 +37,7 @@
             <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
             <span class="fw-bold" data-theme-label>Dark</span>
           </button>
-          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../../index.html" data-logout-trigger>Log out</a>
         </div>
       </div>
     </nav>
@@ -47,11 +47,31 @@
     <div class="container">
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
-          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Student Dashboard</p>
-          <h1 class="h3 fw-semibold mb-1">Welcome back, Sam Student</h1>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">
+            <span data-dashboard-role-label>Student</span> Dashboard
+          </p>
+          <h1 class="h3 fw-semibold mb-1">
+            Welcome back, <span data-current-user-name>Sam Student</span>
+          </h1>
           <p class="text-body-secondary mb-0">Track your requirements and upcoming rotations.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
+          <div class="btn-group d-none" role="group" aria-label="Faculty view toggle" data-faculty-view-toggle>
+            <a
+              class="btn btn-outline-secondary btn-sm btn-cpnw"
+              href="../dashboard-education.html"
+              data-faculty-view-btn="admin"
+            >
+              Admin View
+            </a>
+            <a
+              class="btn btn-outline-secondary btn-sm btn-cpnw"
+              href="dashboard-student.html"
+              data-faculty-view-btn="faculty"
+            >
+              Faculty View
+            </a>
+          </div>
           <div class="dropdown">
             <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
               My Account
@@ -403,7 +423,25 @@
         return x;
       };
 
-      const STUDENT_DATA_KEY = 'cpnw-student-data-v1';
+      const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
+        ? window.CPNW.getCurrentUser()
+        : null;
+      const demoPeople = (window.CPNW && Array.isArray(window.CPNW.demoPeople)) ? window.CPNW.demoPeople : [];
+      const demoPerson = currentUser
+        ? demoPeople.find(p => p.email.toLowerCase() === currentUser.email.toLowerCase())
+        : null;
+      const STUDENT_DATA_KEY = currentUser?.email
+        ? `cpnw-student-data-${currentUser.email.toLowerCase()}`
+        : 'cpnw-student-data-v1';
+
+      const nameTarget = document.querySelector('[data-current-user-name]');
+      if (nameTarget && currentUser?.name){
+        nameTarget.textContent = currentUser.name;
+      }
+      const roleLabel = document.querySelector('[data-dashboard-role-label]');
+      if (roleLabel && currentUser?.role === 'faculty'){
+        roleLabel.textContent = 'Faculty';
+      }
 
       const reqTypePool = ['Immunization', 'Forms', 'Certs', 'Insurance', 'Licenses', 'Site Orientation'];
       const cpnwNonELearningCount = 10; // Education pages model: CPNW total 20; first 10 are eLearning
@@ -471,6 +509,23 @@
         return { status:'', days:diffDays };
       }
 
+      function overallStatusFor(group){
+        if (!demoPerson || !demoPerson.reqs) return '';
+        return String(demoPerson.reqs[group] || '').toLowerCase();
+      }
+
+      function statusForGroup(group, index, baseStatus, expiresOverrideDays){
+        const overall = overallStatusFor(group);
+        if (overall === 'complete') return { status: 'complete', expiration: null };
+        if (overall === 'expiring'){
+          return { status: index === 0 ? 'expiring' : 'complete', expiration: addDays(expiresOverrideDays || 12) };
+        }
+        if (overall === 'incomplete'){
+          return { status: index % 3 === 0 ? 'incomplete' : 'complete', expiration: null };
+        }
+        return { status: baseStatus, expiration: null };
+      }
+
       function buildRequirements(){
         const list = [];
         // eLearning (10)
@@ -514,13 +569,14 @@
         for (let i = 1; i <= cpnwNonELearningCount; i++){
           const expiration = (i % 5 === 0) ? addDays(-10) : (i % 4 === 0) ? addDays(12) : null;
           const expiry = computeExpiryStatus(expiration);
+          const override = statusForGroup('cpnw', i - 1, expiry.status || ((i % 3) ? 'complete' : 'incomplete'), 14);
           list.push({
             id: `cpnw_${i}`,
             group: 'cpnw',
             label: `CPNW Requirement ${i}`,
             type: reqTypePool[i % reqTypePool.length],
-            status: expiry.status || ((i % 3) ? 'complete' : 'incomplete'),
-            expiration,
+            status: override.status,
+            expiration: override.status === 'expiring' ? override.expiration : expiration,
             due: addDays(14 + i),
             instructionsHTML: `<p>Upload the required documentation for CPNW Requirement ${i}.</p>`
           });
@@ -529,13 +585,14 @@
         for (let i = 1; i <= edCount; i++){
           const expiration = (i % 6 === 0) ? addDays(9) : null;
           const expiry = computeExpiryStatus(expiration);
+          const override = statusForGroup('ed', i - 1, expiry.status || ((i <= 4) ? 'complete' : 'incomplete'), 10);
           list.push({
             id: `ed_${i}`,
             group: 'ed',
             label: `Education Requirement ${i}`,
             type: reqTypePool[(i + 2) % reqTypePool.length],
-            status: expiry.status || ((i <= 4) ? 'complete' : 'incomplete'),
-            expiration,
+            status: override.status,
+            expiration: override.status === 'expiring' ? override.expiration : expiration,
             due: addDays(10 + i),
             instructionsHTML: `<p>Complete Education Requirement ${i} for your program.</p>`
           });
@@ -544,13 +601,14 @@
         for (let i = 1; i <= hcCount; i++){
           const expiration = (i % 7 === 0) ? addDays(-3) : (i % 4 === 0) ? addDays(22) : null;
           const expiry = computeExpiryStatus(expiration);
+          const override = statusForGroup('hc', i - 1, expiry.status || ((i <= 5) ? 'complete' : 'incomplete'), 22);
           list.push({
             id: `hc_${i}`,
             group: 'hc',
             label: `Healthcare Requirement ${i}`,
             type: reqTypePool[(i + 3) % reqTypePool.length],
-            status: expiry.status || ((i <= 5) ? 'complete' : 'incomplete'),
-            expiration,
+            status: override.status,
+            expiration: override.status === 'expiring' ? override.expiration : expiration,
             due: addDays(9 + i),
             instructionsHTML: `<p>Upload documentation and complete steps for Healthcare Requirement ${i}.</p>`
           });

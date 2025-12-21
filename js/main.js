@@ -39,6 +39,164 @@
   });
 })();
 
+// Current user helper (shared across pages)
+(function(){
+  window.CPNW = window.CPNW || {};
+  try{
+    const raw = localStorage.getItem('cpnw-current-user');
+    if (raw){
+      window.CPNW.currentUser = JSON.parse(raw);
+    }
+  }catch(err){}
+  window.CPNW.getCurrentUser = () => window.CPNW.currentUser || null;
+})();
+
+// Logout handler
+(function(){
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-logout-trigger]');
+    if (!trigger) return;
+    event.preventDefault();
+    try{
+      localStorage.removeItem('cpnw-current-user');
+    }catch(err){}
+    if (window.CPNW) window.CPNW.currentUser = null;
+    const target = trigger.getAttribute('href') || '../index.html';
+    window.location.href = target;
+  });
+})();
+
+// Route guard: limit access based on role + permissions.
+(function(){
+  const currentUser = window.CPNW && typeof window.CPNW.getCurrentUser === 'function'
+    ? window.CPNW.getCurrentUser()
+    : null;
+  const path = window.location.pathname || '';
+  const file = path.split('/').pop() || '';
+  const isViews = path.includes('/views/');
+  const isStudentViews = path.includes('/views/student-views/');
+  const isHealthcareViews = path.includes('/views/healthcare-views/');
+  const base = (isStudentViews || isHealthcareViews) ? '../../' : isViews ? '../' : '';
+
+  if (!currentUser){
+    if (isViews){
+      window.location.href = `${base}index.html`;
+    }
+    return;
+  }
+
+  const educationPages = new Set([
+    'dashboard-education.html',
+    'requirements-education.html',
+    'review-education.html',
+    'assignments-education.html',
+    'reports-education.html',
+    'users.html',
+    'background-watch-reports.html',
+    'requirement-builder.html'
+  ]);
+  const educationNoAccess = 'education-no-access.html';
+  const healthcarePages = new Set(['dashboard-healthcare.html']);
+  const profilePages = new Set(['my-profile.html', 'security-settings.html']);
+
+  const role = String(currentUser.role || '').toLowerCase();
+  const canCoordinate = !!currentUser.permissions?.canCoordinate;
+
+  function landingForRole(){
+    if (role === 'education'){
+      return canCoordinate ? `${base}views/dashboard-education.html` : `${base}views/education-no-access.html`;
+    }
+    if (role === 'faculty'){
+      return canCoordinate ? `${base}views/dashboard-faculty-admin.html` : `${base}views/student-views/dashboard-student.html`;
+    }
+    if (role === 'student'){
+      return `${base}views/student-views/dashboard-student.html`;
+    }
+    if (role === 'healthcare'){
+      return `${base}views/healthcare-views/dashboard-healthcare.html`;
+    }
+    return `${base}index.html`;
+  }
+
+  function redirectTo(target){
+    if (!target || window.location.href.endsWith(target)) return;
+    window.location.href = target;
+  }
+
+  if (file === 'dashboard-faculty-admin.html'){
+    if (role === 'faculty' && canCoordinate){
+      redirectTo(`${base}views/dashboard-education.html`);
+    }else{
+      redirectTo(landingForRole());
+    }
+    return;
+  }
+
+  if (educationPages.has(file)){
+    if (role === 'education'){
+      if (!canCoordinate) redirectTo(`${base}views/education-no-access.html`);
+    }else if (role === 'faculty' && canCoordinate){
+      // Faculty admins can access education tools.
+    }else{
+      redirectTo(landingForRole());
+    }
+    return;
+  }
+
+  if (file === educationNoAccess){
+    if (!(role === 'education' && !canCoordinate)){
+      redirectTo(landingForRole());
+    }
+    return;
+  }
+
+  if (isHealthcareViews || healthcarePages.has(file)){
+    if (role !== 'healthcare'){
+      redirectTo(landingForRole());
+    }
+    return;
+  }
+
+  if (isViews && profilePages.has(file)){
+    if (role === 'student' || (role === 'faculty' && !canCoordinate)){
+      const target = file === 'my-profile.html'
+        ? `${base}views/student-views/my-profile.html`
+        : `${base}views/student-views/security-settings.html`;
+      redirectTo(target);
+    }
+  }
+})();
+
+// Populate current user name in headers if present.
+(function(){
+  const currentUser = window.CPNW && typeof window.CPNW.getCurrentUser === 'function'
+    ? window.CPNW.getCurrentUser()
+    : null;
+  if (!currentUser || !currentUser.name) return;
+  document.querySelectorAll('[data-current-user-name]').forEach((el) => {
+    el.textContent = currentUser.name;
+  });
+})();
+
+// Faculty admin/student view toggle (shown only for faculty with CanCoordinate).
+(function(){
+  const currentUser = window.CPNW && typeof window.CPNW.getCurrentUser === 'function'
+    ? window.CPNW.getCurrentUser()
+    : null;
+  if (!currentUser || currentUser.role !== 'faculty' || !currentUser.permissions?.canCoordinate) return;
+
+  const toggle = document.querySelector('[data-faculty-view-toggle]');
+  if (!toggle) return;
+  toggle.classList.remove('d-none');
+
+  const adminBtn = toggle.querySelector('[data-faculty-view-btn="admin"]');
+  const facultyBtn = toggle.querySelector('[data-faculty-view-btn="faculty"]');
+  const path = window.location.pathname || '';
+  const isAdmin = path.includes('dashboard-education.html');
+  if (adminBtn) adminBtn.classList.toggle('active', isAdmin);
+  if (facultyBtn) facultyBtn.classList.toggle('active', !isAdmin);
+})();
+
 // Cohort storage helpers (custom cohorts + membership counts)
 (function(){
   const COHORTS_KEY = 'cpnw-custom-cohorts-v1';
@@ -624,6 +782,461 @@
   });
 })();
 
+const cpnwAccessCatalog = (() => {
+  const roles = {
+    '87': { key: 'healthcare', label: 'Healthcare' },
+    '58': { key: 'education', label: 'Education Coordinator' },
+    '27': { key: 'faculty', label: 'Faculty' },
+    '36': { key: 'student', label: 'Student' }
+  };
+
+  const schools = [
+    {
+      code: '100',
+      name: 'CPNW University',
+      programs: [
+        { code: '10011', abbr: 'ADN', name: 'Associate Degree in Nursing' },
+        { code: '10012', abbr: 'BSN', name: 'Bachelor of Science in Nursing' },
+        { code: '10013', abbr: 'SurgTech', name: 'Surgical Technology' }
+      ]
+    },
+    {
+      code: '101',
+      name: 'CPNW Education',
+      programs: [
+        { code: '10111', abbr: 'ADN', name: 'Associate Degree in Nursing' },
+        { code: '10112', abbr: 'BSN', name: 'Bachelor of Science in Nursing' },
+        { code: '10113', abbr: 'RadTech', name: 'Radiologic Technology' }
+      ]
+    }
+  ];
+
+  const programLookup = new Map();
+  const programs = [];
+
+  schools.forEach((school) => {
+    school.programs.forEach((program) => {
+      const entry = { ...program, schoolCode: school.code, schoolName: school.name };
+      programLookup.set(program.code, entry);
+      programs.push(entry);
+    });
+  });
+
+  return { roles, schools, programs, programLookup };
+})();
+
+const cpnwDemoPeople = [
+  {
+    email: 'alex.educator@cpnw.org',
+    name: 'Alex Educator',
+    role: 'education',
+    permissions: { canCoordinate: true, canDelete: true },
+    schools: ['CPNW University', 'CPNW Education'],
+    programs: ['ADN', 'BSN', 'SurgTech', 'RadTech'],
+    profile: {
+      firstName: 'Alex',
+      lastName: 'Educator',
+      emailUsername: 'alex.educator@cpnw.org',
+      altEmail: 'alex@cpnw.org',
+      primaryPhone: '(206) 555-0134',
+      school: 'CPNW University',
+      program: 'BSN',
+      emergencyName: 'Jordan Educator',
+      emergencyPhone: '(206) 555-0199',
+      address: '1201 3rd Ave',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98101'
+    }
+  },
+  {
+    email: 'jamie.coordinator@cpnw.org',
+    name: 'Jamie Coordinator',
+    role: 'education',
+    permissions: { canCoordinate: true, canDelete: false },
+    schools: ['CPNW University'],
+    programs: ['ADN', 'BSN', 'SurgTech'],
+    profile: {
+      firstName: 'Jamie',
+      lastName: 'Coordinator',
+      emailUsername: 'jamie.coordinator@cpnw.org',
+      altEmail: 'jamie@cpnw.org',
+      primaryPhone: '(206) 555-0177',
+      school: 'CPNW University',
+      program: 'ADN',
+      emergencyName: 'Taylor Coordinator',
+      emergencyPhone: '(206) 555-0188',
+      address: '501 Pine St',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98101'
+    }
+  },
+  {
+    email: 'morgan.coordinator@cpnw.org',
+    name: 'Morgan Coordinator',
+    role: 'education',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['ADN', 'BSN', 'RadTech'],
+    profile: {
+      firstName: 'Morgan',
+      lastName: 'Coordinator',
+      emailUsername: 'morgan.coordinator@cpnw.org',
+      altEmail: 'morgan@cpnw.org',
+      primaryPhone: '(253) 555-0141',
+      school: 'CPNW Education',
+      program: 'BSN',
+      emergencyName: 'Casey Coordinator',
+      emergencyPhone: '(253) 555-0194',
+      address: '900 Broadway',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
+    email: 'student.adn.uni@cpnw.org',
+    name: 'Taylor Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW University'],
+    programs: ['ADN'],
+    cohort: 'ADN – Fall 2025',
+    reqs: { cpnw: 'complete', ed: 'incomplete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [
+      { file: 'Immunization.pdf', req: 'Immunization', date: '2025-02-10' },
+      { file: 'BLS.pdf', req: 'BLS', date: '2025-02-08' }
+    ],
+    profile: {
+      firstName: 'Taylor',
+      lastName: 'Student',
+      emailUsername: 'student.adn.uni@cpnw.org',
+      altEmail: 'taylor.student@cpnw.org',
+      primaryPhone: '(360) 555-0130',
+      school: 'CPNW University',
+      program: 'ADN',
+      emergencyName: 'Jordan Student',
+      emergencyPhone: '(360) 555-0190',
+      address: '210 Pike St',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98101'
+    }
+  },
+  {
+    email: 'student.bsn.uni@cpnw.org',
+    name: 'Jordan Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW University'],
+    programs: ['BSN'],
+    cohort: 'BSN – Spring 2026',
+    reqs: { cpnw: 'expiring', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'BLS.pdf', req: 'BLS', date: '2025-01-22' }],
+    profile: {
+      firstName: 'Jordan',
+      lastName: 'Student',
+      emailUsername: 'student.bsn.uni@cpnw.org',
+      altEmail: 'jordan.student@cpnw.org',
+      primaryPhone: '(425) 555-0159',
+      school: 'CPNW University',
+      program: 'BSN',
+      emergencyName: 'Casey Student',
+      emergencyPhone: '(425) 555-0188',
+      address: '400 Bellevue Way',
+      city: 'Bellevue',
+      state: 'WA',
+      zip: '98004'
+    }
+  },
+  {
+    email: 'student.surgtech.uni@cpnw.org',
+    name: 'Riley Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW University'],
+    programs: ['SurgTech'],
+    cohort: 'Surgical Technology – Winter 2026',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'incomplete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'HIPAA.pdf', req: 'HIPAA', date: '2025-02-01' }],
+    profile: {
+      firstName: 'Riley',
+      lastName: 'Student',
+      emailUsername: 'student.surgtech.uni@cpnw.org',
+      altEmail: 'riley.student@cpnw.org',
+      primaryPhone: '(425) 555-0174',
+      school: 'CPNW University',
+      program: 'SurgTech',
+      emergencyName: 'Avery Student',
+      emergencyPhone: '(425) 555-0193',
+      address: '200 108th Ave',
+      city: 'Bellevue',
+      state: 'WA',
+      zip: '98004'
+    }
+  },
+  {
+    email: 'student.adn.edu@cpnw.org',
+    name: 'Casey Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['ADN'],
+    cohort: 'ADN – Fall 2025',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'BackgroundCheck.pdf', req: 'Background check', date: '2025-02-12' }],
+    profile: {
+      firstName: 'Casey',
+      lastName: 'Student',
+      emailUsername: 'student.adn.edu@cpnw.org',
+      altEmail: 'casey.student@cpnw.org',
+      primaryPhone: '(253) 555-0128',
+      school: 'CPNW Education',
+      program: 'ADN',
+      emergencyName: 'Skyler Student',
+      emergencyPhone: '(253) 555-0192',
+      address: '709 Market St',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
+    email: 'student.bsn.edu@cpnw.org',
+    name: 'Skyler Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['BSN'],
+    cohort: 'BSN – Spring 2026',
+    reqs: { cpnw: 'expiring', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'Immunization.pdf', req: 'Immunization', date: '2025-02-03' }],
+    profile: {
+      firstName: 'Skyler',
+      lastName: 'Student',
+      emailUsername: 'student.bsn.edu@cpnw.org',
+      altEmail: 'skyler.student@cpnw.org',
+      primaryPhone: '(253) 555-0166',
+      school: 'CPNW Education',
+      program: 'BSN',
+      emergencyName: 'Morgan Student',
+      emergencyPhone: '(253) 555-0191',
+      address: '112 Pacific Ave',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
+    email: 'student.radtech.edu@cpnw.org',
+    name: 'Avery Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['RadTech'],
+    cohort: 'Radiologic Technology – Winter 2026',
+    reqs: { cpnw: 'complete', ed: 'incomplete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'HIPAA.pdf', req: 'HIPAA', date: '2025-01-30' }],
+    profile: {
+      firstName: 'Avery',
+      lastName: 'Student',
+      emailUsername: 'student.radtech.edu@cpnw.org',
+      altEmail: 'avery.student@cpnw.org',
+      primaryPhone: '(206) 555-0148',
+      school: 'CPNW Education',
+      program: 'RadTech',
+      emergencyName: 'Riley Student',
+      emergencyPhone: '(206) 555-0183',
+      address: '715 2nd Ave',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98104'
+    }
+  },
+  {
+    email: 'faculty.adn.uni@cpnw.org',
+    name: 'Pat Faculty',
+    role: 'faculty',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW University'],
+    programs: ['ADN'],
+    cohort: 'ADN – Fall 2025',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'FacultyCert.pdf', req: 'Faculty Credential', date: '2025-02-12' }],
+    profile: {
+      firstName: 'Pat',
+      lastName: 'Faculty',
+      emailUsername: 'faculty.adn.uni@cpnw.org',
+      altEmail: 'pat.faculty@cpnw.org',
+      primaryPhone: '(425) 555-0140',
+      school: 'CPNW University',
+      program: 'ADN',
+      emergencyName: 'Drew Faculty',
+      emergencyPhone: '(425) 555-0197',
+      address: '1111 Market St',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98121'
+    }
+  },
+  {
+    email: 'faculty.bsn.uni@cpnw.org',
+    name: 'Quinn Faculty',
+    role: 'faculty',
+    permissions: { canCoordinate: true, canDelete: true },
+    schools: ['CPNW University'],
+    programs: ['BSN'],
+    cohort: 'BSN – Spring 2026',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'AdminAccess.pdf', req: 'Admin Approval', date: '2025-02-11' }],
+    profile: {
+      firstName: 'Quinn',
+      lastName: 'Faculty',
+      emailUsername: 'faculty.bsn.uni@cpnw.org',
+      altEmail: 'quinn.faculty@cpnw.org',
+      primaryPhone: '(425) 555-0136',
+      school: 'CPNW University',
+      program: 'BSN',
+      emergencyName: 'Emery Faculty',
+      emergencyPhone: '(425) 555-0196',
+      address: '888 108th Ave',
+      city: 'Bellevue',
+      state: 'WA',
+      zip: '98004'
+    }
+  },
+  {
+    email: 'faculty.surgtech.uni@cpnw.org',
+    name: 'Rowan Faculty',
+    role: 'faculty',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW University'],
+    programs: ['SurgTech'],
+    cohort: 'Surgical Technology – Winter 2026',
+    reqs: { cpnw: 'complete', ed: 'incomplete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'FacultyCert.pdf', req: 'Faculty Credential', date: '2025-02-02' }],
+    profile: {
+      firstName: 'Rowan',
+      lastName: 'Faculty',
+      emailUsername: 'faculty.surgtech.uni@cpnw.org',
+      altEmail: 'rowan.faculty@cpnw.org',
+      primaryPhone: '(360) 555-0142',
+      school: 'CPNW University',
+      program: 'SurgTech',
+      emergencyName: 'Pat Faculty',
+      emergencyPhone: '(360) 555-0186',
+      address: '450 Capitol Way',
+      city: 'Olympia',
+      state: 'WA',
+      zip: '98501'
+    }
+  },
+  {
+    email: 'faculty.adn.edu@cpnw.org',
+    name: 'Drew Faculty',
+    role: 'faculty',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['ADN'],
+    cohort: 'ADN – Fall 2025',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'FacultyCert.pdf', req: 'Faculty Credential', date: '2025-02-12' }],
+    profile: {
+      firstName: 'Drew',
+      lastName: 'Faculty',
+      emailUsername: 'faculty.adn.edu@cpnw.org',
+      altEmail: 'drew.faculty@cpnw.org',
+      primaryPhone: '(253) 555-0152',
+      school: 'CPNW Education',
+      program: 'ADN',
+      emergencyName: 'Skyler Faculty',
+      emergencyPhone: '(253) 555-0195',
+      address: '200 Broadway',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
+    email: 'faculty.bsn.edu@cpnw.org',
+    name: 'Emery Faculty',
+    role: 'faculty',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['BSN'],
+    cohort: 'BSN – Spring 2026',
+    reqs: { cpnw: 'expiring', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'BLS.pdf', req: 'BLS', date: '2025-01-27' }],
+    profile: {
+      firstName: 'Emery',
+      lastName: 'Faculty',
+      emailUsername: 'faculty.bsn.edu@cpnw.org',
+      altEmail: 'emery.faculty@cpnw.org',
+      primaryPhone: '(253) 555-0170',
+      school: 'CPNW Education',
+      program: 'BSN',
+      emergencyName: 'Jordan Faculty',
+      emergencyPhone: '(253) 555-0184',
+      address: '611 Market St',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
+    email: 'faculty.radtech.edu@cpnw.org',
+    name: 'Parker Faculty',
+    role: 'faculty',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['RadTech'],
+    cohort: 'Radiologic Technology – Winter 2026',
+    reqs: { cpnw: 'complete', ed: 'incomplete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'HIPAA.pdf', req: 'HIPAA', date: '2025-02-04' }],
+    profile: {
+      firstName: 'Parker',
+      lastName: 'Faculty',
+      emailUsername: 'faculty.radtech.edu@cpnw.org',
+      altEmail: 'parker.faculty@cpnw.org',
+      primaryPhone: '(206) 555-0168',
+      school: 'CPNW Education',
+      program: 'RadTech',
+      emergencyName: 'Riley Faculty',
+      emergencyPhone: '(206) 555-0181',
+      address: '1501 1st Ave',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98101'
+    }
+  }
+];
+
+window.CPNW = window.CPNW || {};
+window.CPNW.demoPeople = cpnwDemoPeople;
+
+(function(){
+  const currentUser = window.CPNW && typeof window.CPNW.getCurrentUser === 'function'
+    ? window.CPNW.getCurrentUser()
+    : null;
+  if (!currentUser) return;
+  const demo = cpnwDemoPeople.find(p => p.email.toLowerCase() === currentUser.email?.toLowerCase());
+  if (!demo) return;
+
+  const merged = {
+    ...demo,
+    ...currentUser,
+    permissions: { ...demo.permissions, ...currentUser.permissions },
+    programs: (currentUser.programs && currentUser.programs.length) ? currentUser.programs : demo.programs,
+    schools: (currentUser.schools && currentUser.schools.length) ? currentUser.schools : demo.schools,
+    profile: { ...demo.profile, ...currentUser.profile }
+  };
+  window.CPNW.currentUser = merged;
+  try{
+    localStorage.setItem('cpnw-current-user', JSON.stringify(merged));
+  }catch(err){}
+})();
+
 // Login modal loader + trigger
 (function(){
   const trigger = document.getElementById('loginTrigger');
@@ -631,20 +1244,15 @@
 
   let modalEl = null;
   let modalInstance = null;
-  const fakeUsers = [
-    { email: 'edu@example.com', password: 'Password123!', role: 'education', name: 'Alex Educator' },
-    { email: 'student@example.com', password: 'Student123!', role: 'student', name: 'Sam Student' },
-    { email: 'faculty@example.com', password: 'Faculty123!', role: 'faculty', name: 'Fran Faculty' },
-    { email: 'facultyadmin@example.com', password: 'Admin123!', role: 'faculty-admin', name: 'Avery Admin Faculty' },
-    { email: 'health@example.com', password: 'Health123!', role: 'healthcare', name: 'Harper Health' }
-  ];
-  const roleRoutes = {
-    education: 'views/dashboard-education.html',
-    student: 'views/student-views/dashboard-student.html',
-    faculty: 'views/student-views/dashboard-student.html', // same experience as student
-    'faculty-admin': 'views/dashboard-faculty-admin.html',
-    healthcare: 'views/healthcare-views/dashboard-healthcare.html'
-  };
+  const fakeUsers = cpnwDemoPeople.map(person => ({
+    email: person.email,
+    password: '123',
+    role: person.role,
+    name: person.name,
+    permissions: person.permissions || {},
+    schools: person.schools || [],
+    programs: person.programs || []
+  }));
 
   const fallbackHTML = `
     <div
@@ -713,8 +1321,8 @@
           <div class="modal-footer justify-content-center">
             <p class="small m-0">
               New to CPNW?
-              <a href="#register" class="fw-semibold text-decoration-none"
-                >Create an account</a
+              <a href="#register" class="fw-semibold text-decoration-none" data-register-trigger>
+                Create an account</a
               >
             </p>
           </div>
@@ -752,7 +1360,48 @@
         setStatus('danger', 'Invalid email or password.');
         return;
       }
-      const target = roleRoutes[user.role];
+      const demoRecord = cpnwDemoPeople.find(p => p.email.toLowerCase() === user.email.toLowerCase());
+      const currentUser = demoRecord
+        ? {
+          email: demoRecord.email,
+          role: demoRecord.role,
+          name: demoRecord.name,
+          permissions: demoRecord.permissions || {},
+          schools: demoRecord.schools || [],
+          programs: demoRecord.programs || [],
+          profile: demoRecord.profile || {},
+          reqs: demoRecord.reqs || {},
+          cohort: demoRecord.cohort || ''
+        }
+        : {
+          email: user.email,
+          role: user.role,
+          name: user.name,
+          permissions: user.permissions || {},
+          schools: user.schools || [],
+          programs: user.programs || []
+        };
+      try{
+        localStorage.setItem('cpnw-current-user', JSON.stringify(currentUser));
+        window.CPNW = window.CPNW || {};
+        window.CPNW.currentUser = currentUser;
+      }catch(err){
+        console.warn('Unable to persist current user.', err);
+      }
+      let target = '';
+      if (user.role === 'education'){
+        target = user.permissions?.canCoordinate
+          ? 'views/dashboard-education.html'
+          : 'views/education-no-access.html';
+      }else if (user.role === 'faculty'){
+        target = user.permissions?.canCoordinate
+          ? 'views/dashboard-education.html'
+          : 'views/student-views/dashboard-student.html';
+      }else if (user.role === 'student'){
+        target = 'views/student-views/dashboard-student.html';
+      }else if (user.role === 'healthcare'){
+        target = 'views/healthcare-views/dashboard-healthcare.html';
+      }
       if (!target){
         setStatus('danger', 'No dashboard available for this role yet.');
         return;
@@ -794,6 +1443,484 @@
     }catch(err){
       console.error(err);
     }
+  });
+})();
+
+// Register modal loader + trigger
+(function(){
+  const TRIGGER_SELECTOR = '[data-register-trigger], a[href="#register"]';
+  let modalEl = null;
+  let modalInstance = null;
+
+  const fallbackHTML = `
+    <div
+      class="modal fade"
+      id="registerModal"
+      tabindex="-1"
+      aria-labelledby="registerModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">
+                Register
+              </p>
+              <h2 class="modal-title h4 fw-semibold mb-0" id="registerModalLabel">
+                Register
+              </h2>
+            </div>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body pt-2">
+            <div class="row g-3 g-lg-4">
+              <div class="col-12 col-lg-5">
+              <div class="cpnw-shell p-3 p-md-4 h-100">
+                <h3 class="h5 fw-semibold mb-2">Getting Started</h3>
+                <p class="small mb-2">
+                  <a
+                    class="text-decoration-none fw-semibold"
+                    href="https://cpnw.blob.core.windows.net/documents/docDownloads/Statewide/regInstructions.pdf?638537475462634264"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    CLICK HERE TO DOWNLOAD STEP BY STEP INSTRUCTIONS BEFORE YOU BEGIN.
+                  </a>
+                </p>
+                <p class="small text-body-secondary mb-3">
+                  We recommend using a desktop or laptop computer for your registration. Older
+                  smartphones and tablets may cause errors.
+                </p>
+                <ol class="small text-body-secondary ps-3 mb-4">
+                  <li class="mb-2">
+                    Enter the access code provided by your organization. The code connects you
+                    with your program of study and school.
+                  </li>
+                  <li class="mb-2">
+                    Enter your email address, which will be your account username. Once confirmed,
+                    it cannot be changed.
+                  </li>
+                  <li class="mb-2">
+                    Create and confirm your password. It must be a minimum of 10 characters and
+                    include one uppercase letter, one lowercase letter, one number, and one special
+                    character (! @ # $ &amp; * _ ?).
+                  </li>
+                  <li class="mb-2">
+                    Set up your two-step authentication preferences. By choosing Text Message and
+                    providing a text-enabled phone number, you consent to receive SMS messages from
+                    CPNW for account verification.
+                  </li>
+                  <li>
+                    For printable registration instructions, download step-by-step instructions
+                    <a
+                      class="text-decoration-none fw-semibold"
+                      href="https://cpnw.blob.core.windows.net/documents/docDownloads/Statewide/regInstructions.pdf?638477018911319440"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      here.
+                    </a>
+                  </li>
+                </ol>
+
+                <div class="cpnw-shell-inner p-3">
+                  <div class="small text-uppercase cpnw-ls-08 text-body-secondary mb-2">
+                    Access code guide
+                  </div>
+                  <p class="small text-body-secondary mb-3">
+                    Codes follow the format <span class="fw-semibold">ProgramCode-RoleCode</span>.
+                    The program code links you to a school + program. The role code assigns your
+                    account type.
+                  </p>
+                  <div class="d-grid gap-2 small mb-3">
+                    <div class="d-flex justify-content-between">
+                      <span>Healthcare</span><span class="fw-semibold">87</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span>Education Coordinator</span><span class="fw-semibold">58</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span>Faculty</span><span class="fw-semibold">27</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span>Student</span><span class="fw-semibold">36</span>
+                    </div>
+                  </div>
+                  <div class="small text-uppercase cpnw-ls-08 text-body-secondary mb-2">
+                    Program codes
+                  </div>
+                  <div class="small d-grid gap-2" data-program-code-list></div>
+                </div>
+              </div>
+            </div>
+              <div class="col-12 col-lg-7">
+                <div
+                  class="alert alert-dismissible fade show d-none"
+                  role="alert"
+                  data-register-status
+                >
+                  <span data-register-status-text></span>
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"
+                  ></button>
+                </div>
+
+                <form id="registerForm">
+                  <div class="mb-3">
+                  <label class="form-label" for="registerAccessCode">Enter Access Code</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="registerAccessCode"
+                      name="accessCode"
+                      placeholder="Access Code *"
+                      autocomplete="off"
+                      inputmode="numeric"
+                      required
+                    />
+                  <div class="form-text">
+                    Enter access code provided by your facility.
+                  </div>
+                </div>
+
+                  <div class="cpnw-shell-inner p-3 mb-3 d-none" data-access-details>
+                    <div class="small text-uppercase cpnw-ls-08 text-body-secondary mb-2">
+                      Access code details
+                    </div>
+                    <div class="small" data-access-summary>
+                      Enter a valid access code to preview your school, program, and role.
+                    </div>
+                  </div>
+
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label" for="registerEmail">Email Address</label>
+                    <input
+                      type="email"
+                      class="form-control"
+                      id="registerEmail"
+                      name="email"
+                      autocomplete="username"
+                      placeholder="Email *"
+                      required
+                    />
+                    <div class="form-text">
+                      Enter your preferred email. This will be your username.
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerPassword">Password</label>
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="registerPassword"
+                      name="password"
+                      placeholder="Create Password *"
+                      autocomplete="new-password"
+                      value="123"
+                      required
+                    />
+                    <div class="form-text">
+                      At least 10 characters including: upper and lowercase letters, a number and a
+                      special character. Demo password is preset to 123.
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerConfirmPassword">Confirm Password</label>
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="registerConfirmPassword"
+                      name="confirmPassword"
+                      placeholder="Confirm Password *"
+                      autocomplete="new-password"
+                      value="123"
+                      required
+                    />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerMfaPreference">
+                      Authentication Code Delivery Preference
+                    </label>
+                    <select class="form-select" id="registerMfaPreference" required>
+                      <option value="">Please Select</option>
+                      <option value="Email">Email</option>
+                      <option value="Text Message">Text Message</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerCarrier">Your Cellular Provider</label>
+                    <select class="form-select" id="registerCarrier">
+                      <option value="">-No Cell Phone-</option>
+                    </select>
+                    <div class="form-text">Select your cellular provider.</div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerPhone">Text-enabled Phone</label>
+                    <input
+                      type="tel"
+                      class="form-control"
+                      id="registerPhone"
+                      name="phone"
+                      autocomplete="off"
+                      placeholder="Text Phone (xxx)xxx-xxxx *"
+                    />
+                    <div class="form-text">Enter your text-enabled phone number.</div>
+                  </div>
+                </div>
+
+                <div class="form-text mt-3">
+                  By clicking Create Account you indicate you have read and agree to the
+                  <a
+                    class="text-decoration-none fw-semibold"
+                    href="../terms-privacy.html"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    CPNW Terms of Use and Privacy Policy
+                  </a>
+                  .
+                </div>
+
+                  <button type="submit" class="btn btn-cpnw btn-cpnw-primary w-100 mt-4">
+                    Create Account
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer justify-content-center">
+            <p class="small m-0">
+              Already have an account?
+              <a href="#login" class="fw-semibold text-decoration-none" data-login-trigger>
+                Login
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  function parseAccessCode(raw){
+    const cleaned = raw.trim();
+    const match = cleaned.match(/^(\d+)-(\d{2})$/);
+    if (!match){
+      return { error: 'Enter a code like 10011-36.' };
+    }
+    const program = cpnwAccessCatalog.programLookup.get(match[1]);
+    if (!program){
+      return { error: 'Program code not found. Check the first digits.' };
+    }
+    const role = cpnwAccessCatalog.roles[match[2]];
+    if (!role){
+      return { error: 'Role code not found. Use 87, 58, 27, or 36.' };
+    }
+    return { program, role, programCode: match[1], roleCode: match[2] };
+  }
+
+  const carrierOptions = ['AT&T', 'Verizon', 'T-Mobile', 'Sprint', 'US Cellular', 'Other'];
+
+  function setStatus(modal, type, message){
+    const statusBox = modal.querySelector('[data-register-status]');
+    const statusText = modal.querySelector('[data-register-status-text]');
+    if (!statusBox || !statusText) return;
+    statusBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+    statusBox.classList.add(`alert-${type}`);
+    statusText.textContent = message;
+  }
+
+  function clearStatus(modal){
+    const statusBox = modal.querySelector('[data-register-status]');
+    if (!statusBox) return;
+    statusBox.classList.add('d-none');
+  }
+
+  function populateCarriers(modal){
+    const select = modal.querySelector('#registerCarrier');
+    if (!select) return;
+    select.innerHTML = '<option value="">-No Cell Phone-</option>';
+    carrierOptions.forEach((carrier) => {
+      const option = document.createElement('option');
+      option.value = carrier;
+      option.textContent = carrier;
+      select.appendChild(option);
+    });
+  }
+
+  function populateProgramCodes(modal){
+    const list = modal.querySelector('[data-program-code-list]');
+    if (!list) return;
+    list.innerHTML = '';
+    cpnwAccessCatalog.schools.forEach((school) => {
+      const schoolLine = document.createElement('div');
+      schoolLine.className = 'fw-semibold';
+      schoolLine.textContent = `${school.name} (${school.code})`;
+      list.appendChild(schoolLine);
+      school.programs.forEach((program) => {
+        const row = document.createElement('div');
+        row.className = 'd-flex justify-content-between';
+        row.innerHTML = `<span>${program.abbr} — ${program.name}</span><span class="fw-semibold">${program.code}</span>`;
+        list.appendChild(row);
+      });
+    });
+  }
+
+  function attachHandlers(modal){
+    if (modal.dataset.registerBound === 'true') return;
+    modal.dataset.registerBound = 'true';
+    const form = modal.querySelector('#registerForm');
+    const accessInput = modal.querySelector('#registerAccessCode');
+    const accessDetails = modal.querySelector('[data-access-details]');
+    const accessSummary = modal.querySelector('[data-access-summary]');
+    const emailInput = modal.querySelector('#registerEmail');
+    const passwordInput = modal.querySelector('#registerPassword');
+    const confirmInput = modal.querySelector('#registerConfirmPassword');
+    const mfaSelect = modal.querySelector('#registerMfaPreference');
+    const carrierSelect = modal.querySelector('#registerCarrier');
+    const phoneInput = modal.querySelector('#registerPhone');
+    const loginLink = modal.querySelector('[data-login-trigger]');
+
+    if (loginLink){
+      loginLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        const instance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+        instance.hide();
+        const loginTrigger = document.getElementById('loginTrigger');
+        if (loginTrigger) loginTrigger.click();
+      });
+    }
+
+    function updateSummary(){
+      if (!accessInput || !accessSummary || !accessDetails) return;
+      const raw = accessInput.value.trim();
+      if (!raw){
+        accessDetails.classList.add('d-none');
+        return;
+      }
+      const result = parseAccessCode(raw);
+      if (result.error){
+        accessDetails.classList.remove('d-none');
+        accessSummary.textContent = 'Sorry, that code is not valid, please contact your programs clinical coordinator.';
+        return;
+      }
+      accessDetails.classList.remove('d-none');
+      accessSummary.innerHTML = `
+        <div class="fw-semibold">
+          You are registering as a ${result.role.label} in the ${result.program.name} at ${result.program.schoolName}.
+        </div>
+      `;
+    }
+
+    function updateMfaState(){
+      if (!mfaSelect) return;
+      const isText = mfaSelect.value === 'Text Message';
+      if (carrierSelect) carrierSelect.disabled = !isText;
+      if (phoneInput) phoneInput.disabled = !isText;
+    }
+
+    function formatPhoneInput(value){
+      const digits = value.replace(/\D/g, '').slice(0, 10);
+      if (!digits) return '';
+      if (digits.length < 4) return `(${digits}`;
+      if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+
+    accessInput?.addEventListener('input', updateSummary);
+    mfaSelect?.addEventListener('change', updateMfaState);
+    phoneInput?.addEventListener('input', (event) => {
+      event.target.value = formatPhoneInput(event.target.value);
+    });
+
+    modal.addEventListener('shown.bs.modal', () => {
+      clearStatus(modal);
+      form?.reset();
+      populateCarriers(modal);
+      populateProgramCodes(modal);
+      updateSummary();
+      updateMfaState();
+      accessInput?.focus();
+    });
+
+    form?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const result = parseAccessCode(accessInput?.value || '');
+      if (result.error){
+        setStatus(modal, 'danger', 'Sorry, that code is not valid, please contact your programs clinical coordinator.');
+        return;
+      }
+      if (!emailInput?.value.trim()){
+        setStatus(modal, 'danger', 'Email is required.');
+        return;
+      }
+      if (passwordInput?.value !== confirmInput?.value){
+        setStatus(modal, 'danger', 'Confirm password does not match.');
+        return;
+      }
+      if (!mfaSelect?.value){
+        setStatus(modal, 'danger', 'Select an authentication delivery preference.');
+        return;
+      }
+      if (mfaSelect.value === 'Text Message'){
+        if (!carrierSelect?.value){
+          setStatus(modal, 'danger', 'Select your cellular provider.');
+          return;
+        }
+        if (!phoneInput?.value.trim()){
+          setStatus(modal, 'danger', 'Enter a text-enabled phone number.');
+          return;
+        }
+      }
+      setStatus(modal, 'success', 'Account created (demo). Use password 123 to sign in.');
+      setTimeout(() => {
+        const instance = bootstrap.Modal.getInstance(modal) || new bootstrap.Modal(modal);
+        instance.hide();
+      }, 900);
+    });
+  }
+
+  function ensureModal(){
+    if (modalEl) return modalEl;
+    const existing = document.getElementById('registerModal');
+    if (existing){
+      modalEl = existing;
+    }else{
+      const wrap = document.createElement('div');
+      wrap.innerHTML = fallbackHTML;
+      const modal = wrap.querySelector('.modal');
+      if (!modal) return null;
+      document.body.appendChild(modal);
+      modalEl = modal;
+    }
+    modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    attachHandlers(modalEl);
+    return modalEl;
+  }
+
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest(TRIGGER_SELECTOR);
+    if (!trigger) return;
+    event.preventDefault();
+    const modal = ensureModal();
+    if (!modalInstance || !modal) return;
+
+    const loginModal = document.getElementById('loginModal');
+    if (loginModal){
+      const loginInstance = bootstrap.Modal.getInstance(loginModal);
+      loginInstance?.hide();
+    }
+
+    modalInstance.show();
   });
 })();
 
@@ -959,4 +2086,26 @@
     if (!modalInstance || !modal) return;
     modalInstance.show();
   });
+})();
+
+// Faculty admin view switcher
+(function(){
+  const buttons = Array.from(document.querySelectorAll('[data-faculty-view-btn]'));
+  const panels = Array.from(document.querySelectorAll('[data-faculty-view]'));
+  if (!buttons.length || !panels.length) return;
+
+  function setView(view){
+    panels.forEach((panel) => {
+      panel.classList.toggle('d-none', panel.dataset.facultyView !== view);
+    });
+    buttons.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.facultyViewBtn === view);
+    });
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => setView(btn.dataset.facultyViewBtn));
+  });
+
+  setView('admin');
 })();

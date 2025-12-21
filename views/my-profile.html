@@ -24,7 +24,7 @@
             <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
             <span class="fw-bold" data-theme-label>Dark</span>
           </button>
-          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../index.html" data-logout-trigger>Log out</a>
         </div>
       </div>
     </nav>
@@ -262,8 +262,12 @@
   </script>
   <script>
     (function(){
-      const PROFILE_KEY = 'cpnw-my-profile-v1';
-      const PHOTO_KEY = 'cpnw-my-profile-photo-v1';
+      const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
+        ? window.CPNW.getCurrentUser()
+        : null;
+      const profileSuffix = currentUser?.email ? currentUser.email.toLowerCase() : 'default';
+      const PROFILE_KEY = `cpnw-my-profile-${profileSuffix}`;
+      const PHOTO_KEY = `cpnw-my-profile-photo-${profileSuffix}`;
 
       const els = {
         form: document.getElementById('profileForm'),
@@ -361,24 +365,25 @@
       }
 
       function initDefaults(){
-        // Demo defaults (matches the example screenshot)
+        const nameParts = (currentUser?.name || '').split(' ').filter(Boolean);
+        const profileDefaults = currentUser?.profile || {};
         const defaults = {
-          firstName: 'Alex',
-          lastName: 'Educator',
-          middleInitial: '',
-          emailUsername: 'alex@cpnw.org',
-          altEmail: 'alex.educator@cpnw.org',
-          primaryPhone: '(206) 555-0134',
-          school: 'CPNW EDUCATION',
-          program: 'BSN',
-          emergencyName: 'Jordan Educator',
-          emergencyPhone: '(206) 555-0199',
-          address: '1201 3rd Ave',
-          city: 'Seattle',
-          state: 'WA',
-          zip: '98101',
-          prevName: 'no',
-          prevNameValue: ''
+          firstName: profileDefaults.firstName || nameParts[0] || 'Alex',
+          lastName: profileDefaults.lastName || nameParts.slice(1).join(' ') || 'Educator',
+          middleInitial: profileDefaults.middleInitial || '',
+          emailUsername: profileDefaults.emailUsername || currentUser?.email || 'alex@cpnw.org',
+          altEmail: profileDefaults.altEmail || '',
+          primaryPhone: profileDefaults.primaryPhone || '',
+          school: profileDefaults.school || (currentUser?.schools?.[0] || '').toUpperCase() || 'CPNW EDUCATION',
+          program: profileDefaults.program || currentUser?.programs?.[0] || 'BSN',
+          emergencyName: profileDefaults.emergencyName || '',
+          emergencyPhone: profileDefaults.emergencyPhone || '',
+          address: profileDefaults.address || '',
+          city: profileDefaults.city || '',
+          state: profileDefaults.state || '',
+          zip: profileDefaults.zip || '',
+          prevName: profileDefaults.prevName || 'no',
+          prevNameValue: profileDefaults.prevNameValue || ''
         };
 
         const saved = loadJSON(PROFILE_KEY, null);
