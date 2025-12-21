@@ -24,7 +24,7 @@
             <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
             <span class="fw-bold" data-theme-label>Dark</span>
           </button>
-          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../index.html" data-logout-trigger>Log out</a>
         </div>
       </div>
     </nav>
@@ -224,6 +224,9 @@
           <div class="alert alert-info py-2 small mb-3">
             Please avoid commas in file names. Recommended: Location_FileName_IndividualName.pdf
           </div>
+          <div class="alert alert-warning py-2 small d-none" data-docs-permission>
+            You don’t have delete access. You can view and download documents, but delete is disabled.
+          </div>
           <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
             <table class="table align-middle mb-0">
               <thead class="text-body-secondary small">
@@ -232,7 +235,7 @@
                   <th scope="col">File name</th>
                   <th scope="col">Requirement</th>
                   <th scope="col">Upload date</th>
-                  <th scope="col" class="text-end">Remove</th>
+                  <th scope="col" class="text-end" id="docsRemoveHeader">Remove</th>
                 </tr>
               </thead>
               <tbody id="docsTableBody"></tbody>
@@ -264,11 +267,33 @@
       const AY_VISIBLE_MIN = CURRENT_AY_START - 3;
       const AY_VISIBLE_MAX = CURRENT_AY_START + 1;
       const TERMS = ['Fall','Winter','Spring','Summer'];
+      const currentUser = (() => {
+        try{
+          return JSON.parse(localStorage.getItem('cpnw-current-user') || 'null');
+        }catch(err){
+          return null;
+        }
+      })();
+      const canDeleteDocs = !!currentUser?.permissions?.canDelete;
+      const currentPrograms = Array.isArray(currentUser?.programs)
+        ? currentUser.programs
+        : currentUser?.programs ? [currentUser.programs] : [];
+      const allowedPrograms = currentPrograms.map(p => String(p || '').toLowerCase());
+
+      function normalizeProgramLabel(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'surg tech';
+        if (name.includes('rad')) return 'radiologic technology';
+        if (name.includes('bsn')) return 'bsn';
+        if (name.includes('adn')) return 'adn';
+        return name;
+      }
 
       const programDefs = [
         { id:'BSN', base: 12, aySpan: 2 },
         { id:'ADN', base: 10, aySpan: 2 },
-        { id:'Surg Tech', base: 8, aySpan: 2 }
+        { id:'Surg Tech', base: 8, aySpan: 2 },
+        { id:'Radiologic Technology', base: 6, aySpan: 2 }
       ];
 	      const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
 	      const asISODate = (date) => {
@@ -297,7 +322,10 @@
 	          });
 	        });
 	      });
-	      let cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+      let cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+      if (allowedPrograms.length){
+        cohorts = cohorts.filter(c => allowedPrograms.includes(normalizeProgramLabel(c.program)));
+      }
 
       // Merge custom cohorts + membership deltas (stored in localStorage via main.js)
       const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
@@ -430,12 +458,12 @@
 	      });
 	      // Ensure any non-student rows still get a computed compliance status.
 	      users.forEach(u => { u.status = u.status || computeComplianceStatus(u); });
-	      users.push(applyCohortOverride({
-	        name: 'Fran Faculty',
-	        email: 'fran.faculty@cpnw.org',
-	        program: 'BSN',
-	        cohort: '',
-	        role: 'faculty',
+      users.push(applyCohortOverride({
+        name: 'Fran Faculty',
+        email: 'fran.faculty@cpnw.org',
+        program: 'BSN',
+        cohort: '',
+        role: 'faculty',
 	        reqs: {
 	          cpnw: 'complete',
 	          ed: 'complete',
@@ -446,6 +474,43 @@
         docs: 1,
         docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
       }));
+
+      const demoPeople = (window.CPNW && Array.isArray(window.CPNW.demoPeople)) ? window.CPNW.demoPeople : [];
+      function normalizeProgramDisplay(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'Surg Tech';
+        if (name.includes('rad')) return 'Radiologic Technology';
+        if (name.includes('bsn')) return 'BSN';
+        if (name.includes('adn')) return 'ADN';
+        return label || 'BSN';
+      }
+      demoPeople.forEach(person => {
+        if (!['student', 'faculty'].includes(person.role)) return;
+        const exists = users.some(u => u.email.toLowerCase() === person.email.toLowerCase());
+        if (exists) return;
+        const record = applyCohortOverride({
+          name: person.name,
+          email: person.email,
+          program: normalizeProgramDisplay(person.programs?.[0]),
+          cohort: person.cohort || '',
+          role: person.role,
+          reqs: person.reqs || { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+          docs: person.docItems ? person.docItems.length : 0,
+          docItems: person.docItems || []
+        });
+        record.status = computeComplianceStatus(record);
+        users.push(record);
+      });
+
+      if (allowedPrograms.length){
+        const allowedSet = new Set(allowedPrograms.map(normalizeProgramLabel));
+        for (let i = users.length - 1; i >= 0; i--){
+          const programKey = normalizeProgramLabel(users[i].program);
+          if (!allowedSet.has(programKey)){
+            users.splice(i, 1);
+          }
+        }
+      }
 
       const statusButtons = document.querySelectorAll('[data-status]');
       const reportSearch = document.getElementById('reportSearch');
@@ -626,13 +691,29 @@
         const person = users.find(u=>u.name === name);
         if (!person) return;
         const tbody = document.getElementById('docsTableBody');
+        const permissionAlert = document.querySelector('[data-docs-permission]');
+        const removeHeader = document.getElementById('docsRemoveHeader');
+        if (permissionAlert){
+          permissionAlert.classList.toggle('d-none', canDeleteDocs);
+        }
+        if (removeHeader){
+          removeHeader.textContent = canDeleteDocs ? 'Remove' : 'Remove (no access)';
+        }
         tbody.innerHTML = (person.docItems || []).map(d=>`
           <tr>
             <td><input type="checkbox" class="form-check-input"></td>
             <td>${d.file}</td>
             <td>${d.req}</td>
             <td>${d.date}</td>
-            <td class="text-end"><button class="btn btn-link text-danger p-0">🗑</button></td>
+            <td class="text-end">
+              <button
+                class="btn btn-link ${canDeleteDocs ? 'text-danger' : 'text-body-secondary'} p-0"
+                type="button"
+                ${canDeleteDocs ? '' : 'disabled aria-disabled="true"'}
+              >
+                ${canDeleteDocs ? '🗑' : '🔒'}
+              </button>
+            </td>
           </tr>
         `).join('');
         const modal = new bootstrap.Modal(document.getElementById('docsModal'));

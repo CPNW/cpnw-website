@@ -85,23 +85,28 @@
             </ul>
 
             <div class="d-flex align-items-center gap-2">
-          <button
-            data-theme-toggle
-            type="button"
-            class="btn btn-cpnw btn-cpnw-primary btn-sm"
-            aria-label="Toggle dark and light mode"
-          >
-            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
-            <span class="fw-bold" data-theme-label>Dark</span>
-          </button>
-            <a
-              class="btn btn-cpnw btn-cpnw-primary btn-sm"
-              href="#login"
-              id="loginTrigger"
-              >Login</a
+              <button
+                data-theme-toggle
+                type="button"
+                class="btn btn-cpnw btn-cpnw-primary btn-sm"
+                aria-label="Toggle dark and light mode"
               >
-              <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#register"
-                >Register</a
+                <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+                <span class="fw-bold" data-theme-label>Dark</span>
+              </button>
+              <a
+                class="btn btn-cpnw btn-cpnw-primary btn-sm"
+                href="#login"
+                id="loginTrigger"
+              >
+                Login</a
+              >
+              <a
+                class="btn btn-sm btn-cpnw btn-cpnw-primary"
+                href="#register"
+                data-register-trigger
+              >
+                Register</a
               >
             </div>
           </div>
@@ -608,9 +613,271 @@
         <div class="modal-footer justify-content-center">
           <p class="small m-0">
             New to CPNW?
-            <a href="#register" class="fw-semibold text-decoration-none"
-              >Create an account</a
+            <a
+              href="#register"
+              class="fw-semibold text-decoration-none"
+              data-register-trigger
             >
+              Create an account</a
+            >
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Register modal -->
+  <div
+    class="modal fade"
+    id="registerModal"
+    tabindex="-1"
+    aria-labelledby="registerModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">
+              Register
+            </p>
+            <h2 class="modal-title h4 fw-semibold mb-0" id="registerModalLabel">
+              Register
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body pt-2">
+          <div class="row g-3 g-lg-4">
+            <div class="col-12 col-lg-5">
+              <div class="cpnw-shell p-3 p-md-4 h-100">
+                <h3 class="h5 fw-semibold mb-2">Getting Started</h3>
+                <p class="small mb-2">
+                  <a
+                    class="text-decoration-none fw-semibold"
+                    href="https://cpnw.blob.core.windows.net/documents/docDownloads/Statewide/regInstructions.pdf?638537475462634264"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    CLICK HERE TO DOWNLOAD STEP BY STEP INSTRUCTIONS BEFORE YOU BEGIN.
+                  </a>
+                </p>
+                <p class="small text-body-secondary mb-3">
+                  We recommend using a desktop or laptop computer for your registration. Older
+                  smartphones and tablets may cause errors.
+                </p>
+                <ol class="small text-body-secondary ps-3 mb-4">
+                  <li class="mb-2">
+                    Enter the access code provided by your organization. The code connects you
+                    with your program of study and school.
+                  </li>
+                  <li class="mb-2">
+                    Enter your email address, which will be your account username. Once confirmed,
+                    it cannot be changed.
+                  </li>
+                  <li class="mb-2">
+                    Create and confirm your password. It must be a minimum of 10 characters and
+                    include one uppercase letter, one lowercase letter, one number, and one special
+                    character (! @ # $ &amp; * _ ?).
+                  </li>
+                  <li class="mb-2">
+                    Set up your two-step authentication preferences. By choosing Text Message and
+                    providing a text-enabled phone number, you consent to receive SMS messages from
+                    CPNW for account verification.
+                  </li>
+                  <li>
+                    For printable registration instructions, download step-by-step instructions
+                    <a
+                      class="text-decoration-none fw-semibold"
+                      href="https://cpnw.blob.core.windows.net/documents/docDownloads/Statewide/regInstructions.pdf?638477018911319440"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      here.
+                    </a>
+                  </li>
+                </ol>
+
+                <div class="cpnw-shell-inner p-3">
+                  <div class="small text-uppercase cpnw-ls-08 text-body-secondary mb-2">
+                    Access code guide
+                  </div>
+                  <p class="small text-body-secondary mb-3">
+                    Codes follow the format <span class="fw-semibold">ProgramCode-RoleCode</span>.
+                    The program code links you to a school + program. The role code assigns your
+                    account type.
+                  </p>
+                  <div class="d-grid gap-2 small mb-3">
+                    <div class="d-flex justify-content-between">
+                      <span>Healthcare</span><span class="fw-semibold">87</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span>Education Coordinator</span><span class="fw-semibold">58</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span>Faculty</span><span class="fw-semibold">27</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span>Student</span><span class="fw-semibold">36</span>
+                    </div>
+                  </div>
+                  <div class="small text-uppercase cpnw-ls-08 text-body-secondary mb-2">
+                    Program codes
+                  </div>
+                  <div class="small d-grid gap-2" data-program-code-list></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-lg-7">
+              <div
+                class="alert alert-dismissible fade show d-none"
+                role="alert"
+                data-register-status
+              >
+                <span data-register-status-text></span>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="alert"
+                  aria-label="Close"
+                ></button>
+              </div>
+
+              <form id="registerForm">
+                <div class="mb-3">
+                  <label class="form-label" for="registerAccessCode">Enter Access Code</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="registerAccessCode"
+                    name="accessCode"
+                    placeholder="Access Code *"
+                    autocomplete="off"
+                    inputmode="numeric"
+                    required
+                  />
+                  <div class="form-text">
+                    Enter access code provided by your facility.
+                  </div>
+                </div>
+
+                <div class="cpnw-shell-inner p-3 mb-3 d-none" data-access-details>
+                  <div class="small text-uppercase cpnw-ls-08 text-body-secondary mb-2">
+                    Access code details
+                  </div>
+                  <div class="small" data-access-summary>
+                    Enter a valid access code to preview your school, program, and role.
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label" for="registerEmail">Email Address</label>
+                    <input
+                      type="email"
+                      class="form-control"
+                      id="registerEmail"
+                      name="email"
+                      autocomplete="username"
+                      placeholder="Email *"
+                      required
+                    />
+                    <div class="form-text">
+                      Enter your preferred email. This will be your username.
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerPassword">Password</label>
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="registerPassword"
+                      name="password"
+                      placeholder="Create Password *"
+                      autocomplete="new-password"
+                      value="123"
+                      required
+                    />
+                    <div class="form-text">
+                      At least 10 characters including: upper and lowercase letters, a number and a
+                      special character. Demo password is preset to 123.
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerConfirmPassword">Confirm Password</label>
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="registerConfirmPassword"
+                      name="confirmPassword"
+                      placeholder="Confirm Password *"
+                      autocomplete="new-password"
+                      value="123"
+                      required
+                    />
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerMfaPreference">
+                      Authentication Code Delivery Preference
+                    </label>
+                    <select class="form-select" id="registerMfaPreference" required>
+                      <option value="">Please Select</option>
+                      <option value="Email">Email</option>
+                      <option value="Text Message">Text Message</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerCarrier">Your Cellular Provider</label>
+                    <select class="form-select" id="registerCarrier">
+                      <option value="">-No Cell Phone-</option>
+                    </select>
+                    <div class="form-text">Select your cellular provider.</div>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label" for="registerPhone">Text-enabled Phone</label>
+                    <input
+                      type="tel"
+                      class="form-control"
+                      id="registerPhone"
+                      name="phone"
+                      autocomplete="off"
+                      placeholder="Text Phone (xxx)xxx-xxxx *"
+                    />
+                    <div class="form-text">Enter your text-enabled phone number.</div>
+                  </div>
+                </div>
+
+                <div class="form-text mt-3">
+                  By clicking Create Account you indicate you have read and agree to the
+                  <a
+                    class="text-decoration-none fw-semibold"
+                    href="terms-privacy.html"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    CPNW Terms of Use and Privacy Policy
+                  </a>
+                  .
+                </div>
+
+                <button type="submit" class="btn btn-cpnw btn-cpnw-primary w-100 mt-4">
+                  Create Account
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <p class="small m-0">
+            Already have an account?
+            <a href="#login" class="fw-semibold text-decoration-none" data-login-trigger>
+              Login
+            </a>
           </p>
         </div>
       </div>

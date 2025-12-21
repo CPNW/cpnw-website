@@ -37,7 +37,7 @@
             <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
             <span class="fw-bold" data-theme-label>Dark</span>
           </button>
-          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="#">Log out</a>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../index.html" data-logout-trigger>Log out</a>
         </div>
       </div>
     </nav>
@@ -47,17 +47,35 @@
     <div class="container">
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
-          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Faculty w/ Admin</p>
-          <h1 class="h3 fw-semibold mb-1">Welcome back, Avery Admin</h1>
-          <p class="text-body-secondary mb-0">Manage students, cohorts, and your own requirements.</p>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Faculty Admin</p>
+          <h1 class="h3 fw-semibold mb-1">
+            Welcome back, <span data-current-user-name>Avery Admin</span>
+          </h1>
+          <p class="text-body-secondary mb-0">Coordinator tools and personal requirements in one place.</p>
         </div>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div class="btn-group" role="group" aria-label="Faculty admin view">
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm btn-cpnw active"
+              data-faculty-view-btn="admin"
+            >
+              Admin View
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm btn-cpnw"
+              data-faculty-view-btn="faculty"
+            >
+              Faculty View
+            </button>
+          </div>
           <button class="btn btn-outline-secondary btn-cpnw btn-sm">Invite faculty</button>
           <button class="btn btn-cpnw btn-cpnw-primary btn-sm">Create rotation</button>
         </div>
       </div>
 
-      <div class="row g-3 g-lg-4 mb-4">
+      <div class="row g-3 g-lg-4 mb-4" data-faculty-view="admin">
         <div class="col-12 col-md-6 col-xl-3">
           <div class="cpnw-shell p-3 h-100">
             <p class="text-body-secondary small mb-1">Students ready</p>
@@ -88,13 +106,13 @@
         </div>
       </div>
 
-      <div class="row g-3 g-lg-4">
+      <div class="row g-3 g-lg-4" data-faculty-view="admin">
         <div class="col-12 col-xl-8">
           <div class="cpnw-shell p-3 p-md-4 h-100">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div>
                 <h2 class="h5 fw-bold mb-0">Cohort readiness</h2>
-                <p class="text-body-secondary small mb-0">Student oversight (education role).</p>
+                <p class="text-body-secondary small mb-0">Admin oversight for your programs.</p>
               </div>
               <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="#">View all</a>
             </div>
@@ -129,13 +147,17 @@
             </div>
           </div>
         </div>
-        <div class="col-12 col-xl-4">
+      </div>
+
+      <div class="row g-3 g-lg-4" data-faculty-view="faculty">
+        <div class="col-12 col-xl-8">
           <div class="cpnw-shell p-3 p-md-4 h-100">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div>
-                <h2 class="h5 fw-bold mb-0">Your requirements</h2>
-                <p class="text-body-secondary small mb-0">Faculty requirements (student role).</p>
+                <h2 class="h5 fw-bold mb-0">Faculty requirements</h2>
+                <p class="text-body-secondary small mb-0">Your compliance checklist for this program.</p>
               </div>
+              <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="#">View all</a>
             </div>
             <ul class="list-unstyled d-grid gap-2 mb-0">
               <li class="d-flex justify-content-between align-items-center">
@@ -160,6 +182,23 @@
                 <span class="badge text-bg-success">Done</span>
               </li>
             </ul>
+          </div>
+        </div>
+        <div class="col-12 col-xl-4">
+          <div class="cpnw-shell p-3 p-md-4 h-100">
+            <h2 class="h5 fw-bold mb-2">Quick actions</h2>
+            <p class="text-body-secondary small mb-3">Fast access to your personal checklist.</p>
+            <div class="d-grid gap-2">
+              <button class="btn btn-outline-secondary btn-cpnw btn-sm" type="button">
+                Upload document
+              </button>
+              <button class="btn btn-outline-secondary btn-cpnw btn-sm" type="button">
+                Update contact info
+              </button>
+              <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button">
+                View timeline
+              </button>
+            </div>
           </div>
         </div>
       </div>
