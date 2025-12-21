@@ -233,7 +233,7 @@
               <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
                 <tr>
                   <th scope="col">Requirement</th>
-                  <th scope="col">Type</th>
+                  <th scope="col">Frequency</th>
                   <th scope="col">Status</th>
                   <th scope="col" class="text-nowrap">Expiration</th>
                   <th scope="col" class="text-nowrap">Due</th>
@@ -304,7 +304,7 @@
 
               <div class="mb-3" id="studentReqSubmissionWrap">
                 <div class="fw-semibold mb-1">Submission</div>
-                <div class="d-flex flex-wrap gap-3 mb-2">
+                <div class="d-flex flex-wrap gap-3 mb-2" id="studentSubmissionOptions">
                   <div class="form-check">
                     <input class="form-check-input" type="radio" name="studentSubmission" id="studentSubCompleted" value="completed" data-submission-target="studentSubCompletedFields">
                     <label class="form-check-label" for="studentSubCompleted">Vaccinated / Completed</label>
@@ -341,6 +341,20 @@
                     <textarea class="form-control" id="studentOtherNotes" rows="2" placeholder="Add context for your submission…"></textarea>
                   </div>
                 </div>
+
+                <div class="mt-3 d-none" id="criminalDisclosureWrap">
+                  <div class="fw-semibold mb-2">Criminal History Disclosure Form</div>
+                  <button class="btn btn-outline-light btn-sm mb-3" type="button" id="criminalDisclosureDownload">Download disclosure form</button>
+                  <div class="row g-2" id="criminalDisclosureDates">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label small mb-1" for="criminalDisclosureDate0">Date of Disclosure</label>
+                      <input type="date" class="form-control" id="criminalDisclosureDate0">
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    <button class="btn btn-cpnw btn-cpnw-secondary btn-sm d-none" type="button" id="criminalDisclosureAdd">+ Disclosure Signature Date</button>
+                  </div>
+                </div>
               </div>
 
               <div id="studentReqUploadWrap">
@@ -352,6 +366,11 @@
                   <ul class="small mb-0" id="studentReqFileList"></ul>
                 </div>
               </div>
+
+              <div class="mt-3 d-none" id="studentReqUploadedWrap">
+                <div class="fw-semibold mb-1">Previously uploaded documents</div>
+                <ul class="small mb-0" id="studentReqUploadedList"></ul>
+              </div>
             </div>
 
             <div class="col-12 col-lg-5">
@@ -361,16 +380,16 @@
                 <div class="text-body-secondary small mb-1">Send to (select one or more)</div>
                 <div class="d-flex flex-wrap gap-3 mb-2">
                   <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="msgToStudent" checked>
-                    <label class="form-check-label" for="msgToStudent">Student</label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="msgToCpnw" checked>
-                    <label class="form-check-label" for="msgToCpnw">CPNW Reviewer</label>
+                    <input class="form-check-input" type="checkbox" id="msgToEducation">
+                    <label class="form-check-label" for="msgToEducation">Education</label>
                   </div>
                   <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="msgToHealthcare">
                     <label class="form-check-label" for="msgToHealthcare">Healthcare</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="msgToCpnw">
+                    <label class="form-check-label" for="msgToCpnw">CPNW Reviewer</label>
                   </div>
                 </div>
                 <div class="mb-2">
@@ -444,7 +463,51 @@
       }
 
       const reqTypePool = ['Immunization', 'Forms', 'Certs', 'Insurance', 'Licenses', 'Site Orientation'];
-      const cpnwNonELearningCount = 10; // Education pages model: CPNW total 20; first 10 are eLearning
+      const ELEARNING_MODULES = [
+        'Bloodborne Pathogens and Workplace Safety',
+        'Emergency Procedures',
+        'Patient Rights',
+        'Infection Prevention and Standard Precautions',
+        'Fall Risk Prevention',
+        'Patient Safety',
+        'Infectious Medical Waste',
+        'Magnetic Resonance Imaging Safety',
+        'Chemical Hazard Communication',
+        'Compliance'
+      ];
+
+      function programKeyFromName(name){
+        const n = String(name || '').toLowerCase();
+        if (n.includes('bsn')) return 'bsn';
+        if (n.includes('adn')) return 'adn';
+        if (n.includes('surg')) return 'surg';
+        if (n.includes('rad')) return 'rad';
+        return '';
+      }
+
+      const programName = currentUser?.programs?.[0] || currentUser?.profile?.program || '';
+      const programKey = programKeyFromName(programName);
+      const programPackages = {
+        bsn: { background: 'CPNW: Independent Background Check', watch: 'CPNW: Independent WATCH' },
+        adn: { background: 'CPNW: Checkr Background Check', watch: 'CPNW: CPNW WATCH' },
+        surg: { background: 'CPNW: Checkr Background Check', watch: 'CPNW: Independent WATCH' },
+        rad: { background: 'CPNW: Independent Background Check', watch: 'CPNW: CPNW WATCH' }
+      };
+
+      const CPNW_REQUIREMENTS = [
+        'CPNW: Varicella',
+        'CPNW: Influenza',
+        'CPNW: Tetanus, Diphtheria, & Pertussis',
+        'CPNW: Criminal History Disclosure',
+        'CPNW: BLS Provider Course',
+        'CPNW: Tuberculin',
+        'CPNW: Hepatitis B',
+        'CPNW: Measles, Mumps, and Rubella',
+        'CPNW: COVID-19',
+        programPackages[programKey]?.background || 'CPNW: Independent Background Check',
+        programPackages[programKey]?.watch || 'CPNW: Independent WATCH'
+      ];
+      const cpnwNonELearningCount = CPNW_REQUIREMENTS.length;
       const edCount = 6;
       const hcCount = 7;
 
@@ -488,7 +551,8 @@
 
       function statusBadge(status){
         const norm = String(status || '').toLowerCase();
-        if (norm === 'complete') return '<span class="badge text-bg-success">Complete</span>';
+        if (norm === 'complete') return '<span class="badge text-bg-success">Approved</span>';
+        if (norm === 'approved') return '<span class="badge text-bg-success">Approved</span>';
         if (norm === 'submitted') return '<span class="badge text-bg-info">Submitted</span>';
         if (norm === 'expiring') return '<span class="badge text-bg-warning text-dark">Expiring</span>';
         if (norm === 'expired') return '<span class="badge text-bg-danger">Expired</span>';
@@ -529,8 +593,9 @@
       function buildRequirements(){
         const list = [];
         // eLearning (10)
-        for (let i = 1; i <= 10; i++){
+        for (let i = 1; i <= ELEARNING_MODULES.length; i++){
           const moduleId = `elearn_${i}`;
+          const moduleName = ELEARNING_MODULES[i - 1];
           const history = studentData.elearning?.[moduleId] || {};
           const attempts = Array.isArray(history.attempts) ? history.attempts : [];
           const passedAt = history.passedAt ? new Date(history.passedAt) : null;
@@ -552,8 +617,9 @@
           list.push({
             id: moduleId,
             group: 'elearning',
-            label: `CPNW eLearning Module ${i}`,
+            label: moduleName,
             type: 'eLearning',
+            frequency: 'Annual',
             status,
             attempts,
             lastScore,
@@ -562,7 +628,7 @@
             completedOn: passedAt instanceof Date && !Number.isNaN(passedAt.getTime()) ? passedAt : null,
             expiration: expiresAt instanceof Date && !Number.isNaN(expiresAt.getTime()) ? expiresAt : null,
             due: addDays(7 + i),
-            instructionsHTML: `<p>Complete module ${i} and pass the knowledge check.</p><ul><li>Passing score is <strong>80+</strong>.</li><li>You can retake the module as many times as needed.</li><li>Modules expire <strong>1 year</strong> after successful completion.</li></ul><p>If you have issues launching the module, contact support.</p>`
+            instructionsHTML: `<p>Complete ${moduleName} and pass the knowledge check.</p><ul><li>Passing score is <strong>80+</strong>.</li><li>You can retake the module as many times as needed.</li><li>Modules expire <strong>1 year</strong> after successful completion.</li></ul><p>If you have issues launching the module, contact support.</p>`
           });
         }
         // CPNW non-eLearning (10)
@@ -570,15 +636,38 @@
           const expiration = (i % 5 === 0) ? addDays(-10) : (i % 4 === 0) ? addDays(12) : null;
           const expiry = computeExpiryStatus(expiration);
           const override = statusForGroup('cpnw', i - 1, expiry.status || ((i % 3) ? 'complete' : 'incomplete'), 14);
+          const label = CPNW_REQUIREMENTS[i - 1] || `CPNW Requirement ${i}`;
+          const isTdap = String(label || '').toLowerCase().includes('tetanus') && String(label || '').toLowerCase().includes('pertussis');
+          const isCriminalDisclosure = String(label || '').toLowerCase().includes('criminal history disclosure');
+          if (isCriminalDisclosure && override.status === 'complete') override.status = 'approved';
+          const tdapInstructions = [
+            '<p class="fw-semibold mb-1">Instructions</p>',
+            '<p class="mb-2">CPNW Tetanus, Diphtheria, Pertussis (Tdap)</p>',
+            '<p>You must provide proof of receiving the Tdap vaccine (Tetanus, Diphtheria, Pertussis). After your initial Tdap dose, a Td or Tdap booster is required every 10 years to remain compliant.</p>',
+            '<p class="fw-semibold mb-1">Vaccination Documentation:</p>',
+            '<ul>',
+            '<li>At least one documented dose of Tdap</li>',
+            '<li>And, if applicable, a Td or Tdap booster if more than 10 years have passed since the initial Tdap dose</li>',
+            '</ul>'
+          ].join('');
+          const disclosureInstructions = [
+            '<p class="fw-semibold mb-1">Instructions</p>',
+            '<p class="mb-2">CPNW: Criminal History Disclosure Form</p>',
+            '<p>A newly completed Criminal History Disclosure form is required each year a student is in program.</p>',
+            '<p>Utilize the provided document link, complete the form, and upload document to meet this requirement.</p>'
+          ].join('');
           list.push({
             id: `cpnw_${i}`,
             group: 'cpnw',
-            label: `CPNW Requirement ${i}`,
-            type: reqTypePool[i % reqTypePool.length],
+            label,
+            type: isCriminalDisclosure ? 'Forms' : reqTypePool[i % reqTypePool.length],
+            frequency: 'Annual',
             status: override.status,
             expiration: override.status === 'expiring' ? override.expiration : expiration,
             due: addDays(14 + i),
-            instructionsHTML: `<p>Upload the required documentation for CPNW Requirement ${i}.</p>`
+            instructionsHTML: isTdap
+              ? tdapInstructions
+              : (isCriminalDisclosure ? disclosureInstructions : `<p>Upload the required documentation for ${label}.</p>`)
           });
         }
         // Education (6)
@@ -591,6 +680,7 @@
             group: 'ed',
             label: `Education Requirement ${i}`,
             type: reqTypePool[(i + 2) % reqTypePool.length],
+            frequency: 'Annual',
             status: override.status,
             expiration: override.status === 'expiring' ? override.expiration : expiration,
             due: addDays(10 + i),
@@ -607,6 +697,7 @@
             group: 'hc',
             label: `Healthcare Requirement ${i}`,
             type: reqTypePool[(i + 3) % reqTypePool.length],
+            frequency: 'Annual',
             status: override.status,
             expiration: override.status === 'expiring' ? override.expiration : expiration,
             due: addDays(9 + i),
@@ -632,7 +723,41 @@
         };
 
         studentData = {
-          submissions: {},
+          submissions: {
+            cpnw_1: {
+              submittedAt: daysAgo(18),
+              notes: 'Uploaded updated immunization record.',
+              files: ['varicella-record.pdf'],
+              submission: { mode: 'completed', completedDate: daysAgo(20).slice(0, 10) }
+            },
+            cpnw_2: {
+              submittedAt: daysAgo(9),
+              notes: '',
+              files: ['influenza-shot-card.jpg'],
+              submission: { mode: 'completed', completedDate: daysAgo(12).slice(0, 10) }
+            },
+            cpnw_4: {
+              submittedAt: daysAgo(3),
+              notes: 'Disclosure form attached.',
+              files: ['criminal-history-disclosure.pdf'],
+              submission: {
+                mode: 'criminal_disclosure',
+                disclosureDates: [daysAgo(3).slice(0, 10)]
+              }
+            },
+            ed_1: {
+              submittedAt: daysAgo(14),
+              notes: 'Submitted signed acknowledgment.',
+              files: ['education-requirement-1.pdf'],
+              submission: { mode: 'completed', completedDate: daysAgo(15).slice(0, 10) }
+            },
+            hc_1: {
+              submittedAt: daysAgo(6),
+              notes: '',
+              files: ['healthcare-clearance.pdf'],
+              submission: { mode: 'completed', completedDate: daysAgo(7).slice(0, 10) }
+            }
+          },
           elearning: {
             // Passed modules (valid)
             elearn_1: { attempts:[{ at: daysAgo(110), score: 92 }], passedAt: daysAgo(110), expiresAt: expiresInDays(255) },
@@ -657,6 +782,17 @@
           if (r.group === 'elearning') return r;
           const sub = submissions[r.id];
           if (!sub || typeof sub !== 'object') return r;
+          if (r.group === 'cpnw' && /criminal history disclosure/i.test(r.label || '')){
+            const dates = Array.isArray(sub.submission?.disclosureDates)
+              ? sub.submission.disclosureDates.map(d => new Date(d)).filter(d => !Number.isNaN(d.getTime()))
+              : [];
+            if (dates.length){
+              const latest = dates.reduce((max, d) => d > max ? d : max, dates[0]);
+              const exp = new Date(latest);
+              exp.setFullYear(exp.getFullYear() + 1);
+              return { ...r, status: 'approved', expiration: exp };
+            }
+          }
           return { ...r, status: 'submitted' };
         });
       }
@@ -672,7 +808,7 @@
             // eLearning completion means a passing score (80+) and not expired.
             return s === 'complete' || s === 'expiring';
           }
-          return s === 'complete' || s === 'submitted' || s === 'expiring';
+          return s === 'complete' || s === 'approved' || s === 'submitted' || s === 'expiring';
         }).length;
         return { completed, total };
       }
@@ -691,7 +827,7 @@
           if (group === 'elearning'){
             return s === 'incomplete';
           }
-          return !['complete','submitted','expiring','expired'].includes(s);
+          return !['complete','approved','submitted','expiring','expired'].includes(s);
         }).length;
       }
 
@@ -774,6 +910,7 @@
       const elearningStatusWrap = document.getElementById('elearningStatusWrap');
       const elearningStatusSummary = document.getElementById('elearningStatusSummary');
       const elearningStatusDetails = document.getElementById('elearningStatusDetails');
+      const submissionOptionsWrap = document.getElementById('studentSubmissionOptions');
       const subRadios = document.querySelectorAll('input[name="studentSubmission"]');
       const subCompletedFields = document.getElementById('studentSubCompletedFields');
       const subSeriesFields = document.getElementById('studentSubSeriesFields');
@@ -781,16 +918,38 @@
       const subCompletedDate = document.getElementById('studentCompletedDate');
       const subSeriesStart = document.getElementById('studentSeriesStart');
       const subSeriesDue = document.getElementById('studentSeriesDue');
+      const subCompletedLabel = document.querySelector('label[for="studentSubCompleted"]');
+      const subSeriesLabel = document.querySelector('label[for="studentSubSeries"]');
+      const subOtherLabel = document.querySelector('label[for="studentSubOther"]');
+      const subCompletedDateLabel = document.querySelector('label[for="studentCompletedDate"]');
+      const subSeriesStartLabel = document.querySelector('label[for="studentSeriesStart"]');
+      const subSeriesDueLabel = document.querySelector('label[for="studentSeriesDue"]');
+      const subOtherRadio = document.getElementById('studentSubOther');
+      const subOtherWrap = subOtherRadio?.closest('.form-check');
+      const subSeriesDueWrap = subSeriesDue?.closest('.col-12');
+      const defaultSubCompletedLabel = subCompletedLabel?.textContent || 'Vaccinated / Completed';
+      const defaultSubSeriesLabel = subSeriesLabel?.textContent || 'Series in progress';
+      const defaultSubOtherLabel = subOtherLabel?.textContent || 'Other';
+      const defaultSubCompletedDateLabel = subCompletedDateLabel?.textContent || 'Vaccination / completion date';
+      const defaultSubSeriesStartLabel = subSeriesStartLabel?.textContent || 'Series start';
+      const defaultSubSeriesDueLabel = subSeriesDueLabel?.textContent || 'Next dose due';
       const subOtherNotes = document.getElementById('studentOtherNotes');
+      const criminalDisclosureWrap = document.getElementById('criminalDisclosureWrap');
+      const criminalDisclosureDates = document.getElementById('criminalDisclosureDates');
+      const criminalDisclosureAdd = document.getElementById('criminalDisclosureAdd');
+      const criminalDisclosureDate0 = document.getElementById('criminalDisclosureDate0');
+      const criminalDisclosureDownload = document.getElementById('criminalDisclosureDownload');
       const msgList = document.getElementById('studentReqMessages');
       const msgInput = document.getElementById('studentReqMessageInput');
       const msgSend = document.getElementById('studentReqMessageSend');
-      const msgToStudent = document.getElementById('msgToStudent');
+      const msgToEducation = document.getElementById('msgToEducation');
       const msgToCpnw = document.getElementById('msgToCpnw');
       const msgToHealthcare = document.getElementById('msgToHealthcare');
       const notesEl = document.getElementById('studentReqNotes');
       const filesEl = document.getElementById('studentReqFiles');
       const fileListEl = document.getElementById('studentReqFileList');
+      const uploadedWrap = document.getElementById('studentReqUploadedWrap');
+      const uploadedList = document.getElementById('studentReqUploadedList');
       const submitBtn = document.getElementById('studentReqSubmitBtn');
 
       let currentGroup = 'elearning';
@@ -798,7 +957,9 @@
       let reqPageSize = Number(pageSizeSelect?.value || 10);
       let currentReqId = '';
       let currentMessages = [];
+      const messageThreads = {};
       let currentRecipients = ['Student','CPNW Reviewer'];
+      let disclosureExtraCount = 0;
 
       function groupTitle(group){
         if (group === 'elearning') return 'CPNW eLearning modules';
@@ -817,6 +978,14 @@
         }
         el.classList.remove('d-none');
         el.textContent = message;
+      }
+
+      function renderDetailMeta(req, expOverride){
+        if (!detailMeta) return;
+        const exp = expOverride ? fmtDate(expOverride) : (req.expiration ? fmtDate(req.expiration) : '—');
+        const due = req.due ? fmtDate(req.due) : '—';
+        const freqLabel = req.frequency || '—';
+        detailMeta.innerHTML = `${groupTitle(req.group)} • <span class="badge text-bg-secondary">${freqLabel}</span> • ${statusBadge(req.status)} • Exp: ${exp} • Due: ${due}`;
       }
 
       function resetDetailAlerts(){
@@ -846,22 +1015,155 @@
         if (mode === 'other') subOtherFields?.classList.remove('d-none');
       }
 
+      function renderUploadedFiles(req){
+        if (!uploadedWrap || !uploadedList) return;
+        const submissions = studentData.submissions || {};
+        const files = Array.isArray(submissions[req.id]?.files) ? submissions[req.id].files : [];
+        if (!files.length){
+          uploadedWrap.classList.add('d-none');
+          uploadedList.innerHTML = '';
+          return;
+        }
+        uploadedWrap.classList.remove('d-none');
+        uploadedList.innerHTML = files.map(name => `
+          <li class="d-flex justify-content-between align-items-center gap-2">
+            <span>${name}</span>
+            <button class="btn btn-outline-secondary btn-sm" type="button" data-download-file="${encodeURIComponent(name)}">Download</button>
+          </li>
+        `).join('');
+      }
+
+      function isTdapRequirement(req){
+        const label = String(req?.label || '').toLowerCase();
+        return req?.group === 'cpnw' && label.includes('tetanus') && label.includes('pertussis');
+      }
+
+      function isCriminalDisclosureRequirement(req){
+        const label = String(req?.label || '').toLowerCase();
+        return req?.group === 'cpnw' && label.includes('criminal history disclosure');
+      }
+
+      function resetDisclosureFields(){
+        if (criminalDisclosureDate0) criminalDisclosureDate0.value = '';
+        if (criminalDisclosureDates){
+          const extras = criminalDisclosureDates.querySelectorAll('[data-disclosure-extra]');
+          extras.forEach(el => el.remove());
+        }
+        disclosureExtraCount = 0;
+        criminalDisclosureAdd?.classList.add('d-none');
+      }
+
+      function updateDisclosureAddVisibility(){
+        if (!criminalDisclosureAdd || !criminalDisclosureDates) return;
+        const inputs = Array.from(criminalDisclosureDates.querySelectorAll('input[type="date"]'));
+        const lastInput = inputs[inputs.length - 1];
+        if (lastInput && lastInput.value){
+          criminalDisclosureAdd.classList.remove('d-none');
+        }else{
+          criminalDisclosureAdd.classList.add('d-none');
+        }
+      }
+
+      function addDisclosureDateField(){
+        if (!criminalDisclosureDates) return;
+        disclosureExtraCount += 1;
+        const fieldId = `criminalDisclosureExtra${disclosureExtraCount}`;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'col-12 col-md-6';
+        wrapper.setAttribute('data-disclosure-extra', 'true');
+        wrapper.innerHTML = `
+          <label class="form-label small mb-1" for="${fieldId}">Disclosure Signature Date</label>
+          <input type="date" class="form-control" id="${fieldId}">
+        `;
+        criminalDisclosureDates.appendChild(wrapper);
+        const input = wrapper.querySelector('input[type="date"]');
+        input?.addEventListener('input', updateDisclosureAddVisibility);
+        updateDisclosureAddVisibility();
+      }
+
+      function disclosureBaseDate(){
+        if (!criminalDisclosureDate0?.value) return null;
+        const d = new Date(criminalDisclosureDate0.value);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+
+      function updateDisclosureExpiration(req){
+        const base = disclosureBaseDate();
+        if (!base) return;
+        const exp = new Date(base);
+        exp.setFullYear(exp.getFullYear() + 1);
+        requirements = requirements.map(r => r.id === req.id ? { ...r, status: 'approved' } : r);
+        req.status = 'approved';
+        renderCards();
+        renderDetailMeta(req, exp);
+      }
+
+      function downloadDisclosureForm(){
+        const content = [
+          'CPNW Criminal History Disclosure Form',
+          '',
+          'Student name:',
+          'Program:',
+          'School:',
+          '',
+          'Disclosure details:',
+          '',
+          'Signature:',
+          'Date:'
+        ].join('\n');
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'CPNW-Criminal-History-Disclosure-Form.txt';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function applySubmissionTemplate(req){
+        const isTdap = isTdapRequirement(req);
+        const isCriminal = isCriminalDisclosureRequirement(req);
+        if (subCompletedLabel) subCompletedLabel.textContent = isTdap ? 'Initial Tdap date' : defaultSubCompletedLabel;
+        if (subSeriesLabel) subSeriesLabel.textContent = isTdap ? 'Td/Tdap subsequent dose date' : defaultSubSeriesLabel;
+        if (subOtherLabel) subOtherLabel.textContent = defaultSubOtherLabel;
+        if (subCompletedDateLabel) subCompletedDateLabel.textContent = isTdap ? 'Initial Tdap date' : defaultSubCompletedDateLabel;
+        if (subSeriesStartLabel) subSeriesStartLabel.textContent = isTdap ? 'Td/Tdap subsequent dose date' : defaultSubSeriesStartLabel;
+        if (subSeriesDueLabel) subSeriesDueLabel.textContent = defaultSubSeriesDueLabel;
+        subOtherWrap?.classList.toggle('d-none', isTdap || isCriminal);
+        subSeriesDueWrap?.classList.toggle('d-none', isTdap || isCriminal);
+        submissionOptionsWrap?.classList.toggle('d-none', isTdap || isCriminal);
+        criminalDisclosureWrap?.classList.toggle('d-none', !isCriminal);
+        if (isTdap){
+          subCompletedFields?.classList.remove('d-none');
+          subSeriesFields?.classList.remove('d-none');
+          subOtherFields?.classList.add('d-none');
+          criminalDisclosureWrap?.classList.add('d-none');
+        }else if (isCriminal){
+          [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+          resetDisclosureFields();
+        }else{
+          criminalDisclosureWrap?.classList.add('d-none');
+        }
+      }
+
       function configureRecipients(group){
         const allowCpnw = group === 'cpnw';
-        if (msgToCpnw){
-          msgToCpnw.disabled = !allowCpnw;
-          msgToCpnw.checked = allowCpnw ? true : false;
-        }
-        if (msgToStudent){
-          msgToStudent.disabled = false;
-          msgToStudent.checked = true;
+        if (msgToEducation){
+          msgToEducation.disabled = false;
+          msgToEducation.checked = false;
         }
         if (msgToHealthcare){
           msgToHealthcare.disabled = false;
-          msgToHealthcare.checked = group === 'hc';
+          msgToHealthcare.checked = false;
+        }
+        if (msgToCpnw){
+          msgToCpnw.disabled = !allowCpnw;
+          msgToCpnw.checked = false;
         }
         currentRecipients = [];
-        if (msgToStudent?.checked) currentRecipients.push('Student');
+        if (msgToEducation?.checked) currentRecipients.push('Education');
         if (allowCpnw && msgToCpnw?.checked) currentRecipients.push('CPNW Reviewer');
         if (msgToHealthcare?.checked) currentRecipients.push('Healthcare');
       }
@@ -879,6 +1181,18 @@
         return requirements.filter(r => r.group === currentGroup);
       }
 
+      function defaultThreadFor(req){
+        if (req.group === 'elearning'){
+          return [
+            { from:'Coordinator', at:'2025-02-10', body:'If you need help launching the module, contact your program coordinator.' }
+          ];
+        }
+        return [
+          { from:'Coordinator', at:'2025-02-10', body:'Please upload the latest documentation for this requirement.' },
+          { from:'Student', at:'2025-02-11', body:'Uploaded the file on 2/11. Please confirm receipt.' }
+        ];
+      }
+
       function openReqDetail(id){
         if (!detailModal) return;
         const req = requirements.find(r => r.id === id);
@@ -887,18 +1201,23 @@
 
         resetDetailAlerts();
         if (detailLabel) detailLabel.textContent = req.label;
-        const exp = req.expiration ? fmtDate(req.expiration) : '—';
-        const due = req.due ? fmtDate(req.due) : '—';
-        if (detailMeta){
-          detailMeta.innerHTML = `${groupTitle(req.group)} • <span class="badge text-bg-secondary">${req.type}</span> • ${statusBadge(req.status)} • Exp: ${exp} • Due: ${due}`;
-        }
+        renderDetailMeta(req);
         if (detailInstructions) detailInstructions.innerHTML = req.instructionsHTML || '<p class="text-body-secondary">No instructions provided.</p>';
         if (notesEl) notesEl.value = '';
         if (filesEl) filesEl.value = '';
         if (fileListEl) fileListEl.innerHTML = '';
+        if (uploadedList) uploadedList.innerHTML = '';
         subRadios.forEach(r => { r.checked = false; });
         [subCompletedDate, subSeriesStart, subSeriesDue, subOtherNotes].forEach(el => { if (el) el.value = ''; });
         [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+        applySubmissionTemplate(req);
+        if (isCriminalDisclosureRequirement(req) && criminalDisclosureDate0){
+          const today = new Date();
+          const iso = today.toISOString().slice(0, 10);
+          criminalDisclosureDate0.value = iso;
+          updateDisclosureAddVisibility();
+          updateDisclosureExpiration(req);
+        }
 
         const isElearning = req.group === 'elearning';
         if (submitBtn) submitBtn.classList.toggle('d-none', isElearning);
@@ -906,12 +1225,12 @@
         if (uploadWrap) uploadWrap.classList.toggle('d-none', isElearning);
         if (elearningLaunchWrap) elearningLaunchWrap.classList.toggle('d-none', !isElearning);
         if (elearningStatusWrap) elearningStatusWrap.classList.toggle('d-none', !isElearning);
-        currentMessages = [
-          { from:'Coordinator', at:'2025-02-10', body:'Please upload the latest documentation for this requirement.' },
-          { from:'Student', at:'2025-02-11', body:'Uploaded the file on 2/11. Please confirm receipt.' }
-        ];
+        currentMessages = messageThreads[id]
+          ? messageThreads[id]
+          : (messageThreads[id] = defaultThreadFor(req));
         renderMessages();
         configureRecipients(req.group);
+        renderUploadedFiles(req);
 
         if (isElearning){
           const status = String(req.status || '').toLowerCase();
@@ -958,8 +1277,14 @@
         }
 
         // Close list modal to mimic the review flow (list modal -> detail modal).
-        listModal?.hide();
-        detailModal.show();
+        if (listModalEl && detailModal){
+          listModalEl.addEventListener('hidden.bs.modal', () => {
+            detailModal.show();
+          }, { once: true });
+          listModal?.hide();
+        }else{
+          detailModal?.show();
+        }
       }
 
       function renderReqList(){
@@ -975,7 +1300,7 @@
         if (listSub) listSub.textContent = 'Select a requirement to view details and submit.';
 
         // Expiring/expired first, then incomplete, then submitted/complete.
-        const order = { expired:0, expiring:1, incomplete:2, submitted:3, complete:4 };
+        const order = { expired:0, expiring:1, incomplete:2, submitted:3, approved:4, complete:5 };
         filtered.sort((a,b) => {
           const oa = order[String(a.status || '').toLowerCase()] ?? 99;
           const ob = order[String(b.status || '').toLowerCase()] ?? 99;
@@ -997,7 +1322,7 @@
           return `
             <tr>
               <td class="fw-semibold">${r.label}</td>
-              <td>${r.type}</td>
+              <td>${r.frequency || '—'}</td>
               <td>${statusBadge(r.status)}</td>
               <td class="text-nowrap">${exp}</td>
               <td class="text-nowrap">${due}</td>
@@ -1021,6 +1346,20 @@
         fileListEl.innerHTML = names.length ? names.map(n => `<li>${n}</li>`).join('') : '<li class="text-body-secondary">No files selected.</li>';
       }
 
+      function downloadUploadedFile(name){
+        const safeName = name || 'document.txt';
+        const content = `Demo file download: ${safeName}`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = safeName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
       function submitCurrent(){
         resetDetailAlerts();
         const req = requirements.find(r => r.id === currentReqId);
@@ -1032,14 +1371,21 @@
         const notes = (notesEl?.value || '').trim();
         const files = Array.from(filesEl?.files || []).map(f => f.name);
         const nextStatus = req.group === 'elearning' ? 'complete' : 'submitted';
-        const submissionMode = Array.from(subRadios).find(r => r.checked)?.value || '';
+        const submissionMode = isTdapRequirement(req)
+          ? 'tdap'
+          : (isCriminalDisclosureRequirement(req)
+            ? 'criminal_disclosure'
+            : (Array.from(subRadios).find(r => r.checked)?.value || ''));
 
         const submissionPayload = {
           mode: submissionMode,
           completedDate: subCompletedDate?.value || '',
           seriesStart: subSeriesStart?.value || '',
           seriesDue: subSeriesDue?.value || '',
-          otherNotes: subOtherNotes?.value || ''
+          otherNotes: subOtherNotes?.value || '',
+          disclosureDates: isCriminalDisclosureRequirement(req) && criminalDisclosureDates
+            ? Array.from(criminalDisclosureDates.querySelectorAll('input[type="date"]')).map(el => el.value).filter(Boolean)
+            : []
         };
 
         const nextStudentData = loadStudentData();
@@ -1059,8 +1405,14 @@
 
         window.setTimeout(() => {
           detailModal?.hide();
+          if (detailModalEl && listModal){
+            detailModalEl.addEventListener('hidden.bs.modal', () => {
+              openReqList(req.group);
+            }, { once: true });
+          }else{
+            openReqList(req.group);
+          }
           // Re-open the list modal so the student sees their updated status.
-          openReqList(req.group);
         }, 650);
       }
 
@@ -1073,6 +1425,12 @@
         const viewBtn = e.target.closest('[data-view-req]');
         if (viewBtn){
           openReqDetail(viewBtn.dataset.viewReq);
+          return;
+        }
+        const downloadBtn = e.target.closest('[data-download-file]');
+        if (downloadBtn){
+          const name = decodeURIComponent(downloadBtn.dataset.downloadFile || '');
+          downloadUploadedFile(name);
         }
       });
 
@@ -1085,13 +1443,23 @@
         radio.addEventListener('change', () => setSubmissionMode(radio.value));
       });
 
+      criminalDisclosureDate0?.addEventListener('input', () => {
+        updateDisclosureAddVisibility();
+        const req = requirements.find(r => r.id === currentReqId);
+        if (req && isCriminalDisclosureRequirement(req)){
+          updateDisclosureExpiration(req);
+        }
+      });
+      criminalDisclosureAdd?.addEventListener('click', addDisclosureDateField);
+      criminalDisclosureDownload?.addEventListener('click', downloadDisclosureForm);
+
       filesEl?.addEventListener('change', updateFileList);
       submitBtn?.addEventListener('click', submitCurrent);
       elearningLaunchBtn?.addEventListener('click', () => {
         const req = requirements.find(r => r.id === currentReqId);
         if (!req) return;
 
-        alert('Modules will open in a new tab (demo).');
+        alert('This is a demo. In a real scenario the eLearning module would open in a new tab and the score would be recorded and posted to the account automatically after completion.');
 
         const nextStudentData = loadStudentData();
         nextStudentData.elearning = nextStudentData.elearning || {};
@@ -1132,11 +1500,15 @@
         if (!body) return;
         const to = [];
         const allowCpnw = currentGroup === 'cpnw';
-        if (msgToStudent?.checked) to.push('Student');
+        if (msgToEducation?.checked) to.push('Education');
         if (allowCpnw && msgToCpnw?.checked) to.push('CPNW Reviewer');
         if (msgToHealthcare?.checked) to.push('Healthcare');
-        if (!to.length) to.push('CPNW Reviewer');
+        if (!to.length){
+          alert('Please choose at least one recipient.');
+          return;
+        }
         currentMessages.push({ from:'Student', at: new Date().toLocaleString(), body, to });
+        if (currentReqId) messageThreads[currentReqId] = currentMessages;
         if (msgInput) msgInput.value = '';
         renderMessages();
       });
