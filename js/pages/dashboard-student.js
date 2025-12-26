@@ -100,11 +100,12 @@
         const raw = loadJSON(STUDENT_DATA_KEY, null);
         // Back-compat: previous versions stored a flat map of submissions.
         if (!raw || typeof raw !== 'object' || Array.isArray(raw)){
-          return { submissions: {}, elearning: {} };
+          return { submissions: {}, elearning: {}, messages: {} };
         }
         const submissions = raw.submissions && typeof raw.submissions === 'object' && !Array.isArray(raw.submissions) ? raw.submissions : {};
         const elearning = raw.elearning && typeof raw.elearning === 'object' && !Array.isArray(raw.elearning) ? raw.elearning : {};
-        return { submissions, elearning };
+        const messages = raw.messages && typeof raw.messages === 'object' && !Array.isArray(raw.messages) ? raw.messages : {};
+        return { submissions, elearning, messages };
       }
 
       function saveStudentData(next){
@@ -930,9 +931,11 @@
         if (uploadWrap) uploadWrap.classList.toggle('d-none', isElearning);
         if (elearningLaunchWrap) elearningLaunchWrap.classList.toggle('d-none', !isElearning);
         if (elearningStatusWrap) elearningStatusWrap.classList.toggle('d-none', !isElearning);
-        currentMessages = messageThreads[id]
-          ? messageThreads[id]
-          : (messageThreads[id] = defaultThreadFor(req));
+        const storedMessages = studentData.messages?.[id];
+        currentMessages = storedMessages
+          ? storedMessages
+          : (messageThreads[id] ? messageThreads[id] : defaultThreadFor(req));
+        messageThreads[id] = currentMessages;
         renderMessages();
         configureRecipients(req.group);
         renderUploadedFiles(req);
@@ -1246,7 +1249,12 @@
           return;
         }
         currentMessages.push({ from:'Student', at: new Date().toLocaleString(), body, to });
-        if (currentReqId) messageThreads[currentReqId] = currentMessages;
+        if (currentReqId){
+          messageThreads[currentReqId] = currentMessages;
+          studentData.messages = studentData.messages || {};
+          studentData.messages[currentReqId] = currentMessages;
+          saveStudentData(studentData);
+        }
         if (msgInput) msgInput.value = '';
         renderMessages();
       });

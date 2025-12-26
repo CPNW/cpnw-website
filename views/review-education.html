@@ -173,16 +173,16 @@
   </footer>
 
   <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header sticky-top" style="background: var(--bs-body-bg); z-index: 5;">
-          <div>
-            <h5 class="modal-title" id="reviewModalLabel">Submission details</h5>
-            <p class="small text-body-secondary mb-0" id="reviewModalSub"></p>
-          </div>
+        <div class="modal-header" style="background: var(--bs-body-bg);">
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+          <div class="position-sticky top-0 bg-body border rounded px-3 py-2 mb-3" style="z-index:5;">
+            <h5 class="modal-title mb-1" id="reviewModalLabel"></h5>
+            <div class="small text-body-secondary" id="reviewModalSub"></div>
+          </div>
           <div class="row g-3 mb-3 align-items-center">
             <div class="col-12 col-md-9">
               <div class="row g-3">
