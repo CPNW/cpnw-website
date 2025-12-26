@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Reviewer Attention</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button data-theme-toggle type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" aria-label="Toggle dark and light mode">
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../index.html" data-logout-trigger>Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container position-relative">
+      <img src="../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="dashboard-cpnw-reviewer.html">Back to dashboard</a>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="reviewer-attention.html">Requirements</a>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="my-profile.html">My Profile</a></li>
+              <li><a class="dropdown-item" href="security-settings.html">Security Settings</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="reviewer-attention.html">Review</a></li>
+              <li><a class="dropdown-item" href="cpnw-watch-reports.html">CPNW WATCH Report</a></li>
+              <li><a class="dropdown-item" href="reports-cpnw.html">Reports</a></li>
+              <li><a class="dropdown-item" href="users-cpnw.html">Users</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">CPNW Reviewer</p>
+          <h1 class="h3 fw-semibold mb-1">Review Submissions</h1>
+          <p class="text-body-secondary mb-0">DVS-enabled programs with CPNW requirements ready for review.</p>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-4">
+          <div class="form-floating">
+            <select class="form-select" id="schoolFilter">
+              <option value="">All schools</option>
+            </select>
+            <label for="schoolFilter">School</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="form-floating">
+            <select class="form-select" id="programFilter">
+              <option value="">All programs</option>
+            </select>
+            <label for="programFilter">Program</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="form-floating">
+            <input type="search" class="form-control" id="reviewSearch" placeholder="Search name" />
+            <label for="reviewSearch">Search by name</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="cpnw-shell p-3 p-md-4">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 cpnw-table reviewer-attention-table">
+            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+              <tr>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="name">Name</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="verified">Verified</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="status">Status</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="program">Program</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="school">School</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="sid">SID/EID</button></th>
+                <th scope="col" class="text-end">View</th>
+              </tr>
+            </thead>
+            <tbody id="reviewTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="reviewPageSize">Show</label>
+            <select class="form-select form-select-sm" id="reviewPageSize" style="width: auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span class="small text-body-secondary">entries</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="reviewPrevPage">Prev</button>
+            <div class="small text-body-secondary" id="reviewPageInfo">Page 1</div>
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="reviewNextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header" style="background: var(--bs-body-bg);">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="position-sticky top-0 bg-body border rounded px-3 py-2 mb-3" style="z-index:5;">
+            <h5 class="modal-title mb-1" id="reviewModalLabel"></h5>
+            <div class="small text-body-secondary" id="reviewModalSub"></div>
+          </div>
+          <div class="row g-3 mb-3 align-items-center">
+            <div class="col-12 col-md-9">
+              <div class="row g-3">
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">School</div>
+                  <div id="modalSchool" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Program</div>
+                  <div id="modalProgram" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">SID/EID</div>
+                  <div id="modalSid" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Email</div>
+                  <div id="modalEmail" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Contact phone</div>
+                  <div id="modalPhone" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Emergency contact name</div>
+                  <div id="modalEmergName" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Emergency contact phone</div>
+                  <div id="modalEmergPhone" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">DOB</div>
+                  <div id="modalDob" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">eLearning modules completed</div>
+                  <div id="modalElearningCount" class="fw-semibold"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3 text-center">
+              <div class="border rounded p-2 d-inline-flex flex-column align-items-center">
+                <div class="text-body-secondary small mb-1">Profile photo</div>
+                <div class="bg-light-subtle border rounded" style="width:120px; height:140px; background:url('../images/spores-watermark.png') center/60% no-repeat;"></div>
+              </div>
+            </div>
+          </div>
+          <hr class="my-3">
+          <h6 class="fw-bold mb-2">Clinical assignments</h6>
+          <div class="table-responsive mb-4">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="text-body-secondary small">
+                <tr>
+                  <th>Location</th>
+                  <th>Start date</th>
+                  <th>End date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="assignTableBody"></tbody>
+            </table>
+          </div>
+
+          <hr class="my-3">
+          <h6 class="fw-bold mb-2">CPNW Requirements</h6>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="text-body-secondary small">
+                <tr>
+                  <th>Requirement Name</th>
+                  <th>Status</th>
+                  <th>Expiration</th>
+                  <th>Due Date</th>
+                  <th>Score</th>
+                  <th>Type</th>
+                  <th>Frequency</th>
+                  <th>Category</th>
+                  <th>Reviewer</th>
+                </tr>
+              </thead>
+              <tbody id="reqTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="studentReqDetailModal" tabindex="-1" aria-labelledby="studentReqDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header sticky-top" style="background: var(--bs-body-bg); z-index: 5;">
+          <div class="w-100">
+            <div class="small text-body-secondary" id="studentReqDetailTypeLabel">Requirement</div>
+            <h5 class="modal-title mb-0" id="studentReqDetailModalLabel"></h5>
+            <p class="small text-body-secondary mb-0" id="studentReqDetailMeta"></p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-success d-none" role="alert" id="studentReqDetailSaved">Saved.</div>
+          <div class="alert alert-warning d-none" role="alert" id="studentReqDetailError"></div>
+
+          <div class="row g-4">
+            <div class="col-12 col-lg-7 border-end">
+              <div class="border rounded p-3 bg-body-tertiary d-none mb-3" id="elearningStatusWrap">
+                <div class="fw-semibold mb-1">Module status</div>
+                <div class="small text-body-secondary mb-2" id="elearningStatusSummary"></div>
+                <ul class="small mb-0" id="elearningStatusDetails"></ul>
+              </div>
+
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Instructions</div>
+                <div class="text-body-secondary" id="studentReqDetailInstructions"></div>
+                <div class="mt-3 d-none" id="criminalDisclosureDownloadWrap">
+                  <button class="btn btn-outline-light btn-sm" type="button" id="criminalDisclosureDownload">Download disclosure form</button>
+                </div>
+                <div class="mt-3 d-none" id="elearningLaunchWrap">
+                  <button type="button" class="btn btn-cpnw btn-cpnw-primary" id="elearningLaunchBtn">
+                    Launch Module
+                  </button>
+                  <div class="form-text">Modules will open in a new tab (demo).</div>
+                </div>
+              </div>
+
+              <hr class="text-body-secondary opacity-50 my-3">
+
+              <div class="mb-3" id="studentReqSubmissionWrap">
+                <div class="fw-semibold mb-1">Submission</div>
+                <div class="d-flex flex-wrap gap-3 mb-2" id="studentSubmissionOptions">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="studentSubmission" id="studentSubCompleted" value="completed" data-submission-target="studentSubCompletedFields">
+                    <label class="form-check-label" for="studentSubCompleted">Vaccinated / Completed</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="studentSubmission" id="studentSubSeries" value="series" data-submission-target="studentSubSeriesFields">
+                    <label class="form-check-label" for="studentSubSeries">Series in progress</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="studentSubmission" id="studentSubOther" value="other" data-submission-target="studentSubOtherFields">
+                    <label class="form-check-label" for="studentSubOther">Other</label>
+                  </div>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-12 col-md-6 d-none" id="studentSubCompletedFields">
+                    <label class="form-label small mb-1" for="studentCompletedDate">Vaccination / completion date</label>
+                    <input type="date" class="form-control" id="studentCompletedDate">
+                  </div>
+                  <div class="col-12 d-none" id="studentSubSeriesFields">
+                    <div class="row g-2">
+                      <div class="col-12 col-sm-6">
+                        <label class="form-label small mb-1" for="studentSeriesStart">Series start</label>
+                        <input type="date" class="form-control" id="studentSeriesStart">
+                      </div>
+                      <div class="col-12 col-sm-6">
+                        <label class="form-label small mb-1" for="studentSeriesDue">Next dose due</label>
+                        <input type="date" class="form-control" id="studentSeriesDue">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12 d-none" id="studentSubOtherFields">
+                    <label class="form-label small mb-1" for="studentOtherNotes">Notes</label>
+                    <textarea class="form-control" id="studentOtherNotes" rows="2" placeholder="Add context for your submission…"></textarea>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-none" id="hepBSubmissionWrap">
+                  <div class="fw-semibold mb-2">Hepatitis B submission</div>
+                  <div class="d-flex flex-column gap-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="hepBMainOption" id="hepBOptionTiter" value="titer">
+                      <label class="form-check-label" for="hepBOptionTiter">Proof of immunity by Titer (POSITIVE ONLY)</label>
+                    </div>
+                    <div class="ms-4 d-none" id="hepBTiterFields">
+                      <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="hepBTiterDate">Titer date drawn</label>
+                          <input type="date" class="form-control" id="hepBTiterDate">
+                        </div>
+                        <div class="col-12 col-md-6 d-flex align-items-end">
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="hepBTiterPositive">
+                            <label class="form-check-label" for="hepBTiterPositive">Positive Result</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="hepBMainOption" id="hepBOptionNoTiter" value="notiter">
+                      <label class="form-check-label" for="hepBOptionNoTiter">I do not have a titer, or my titer result is negative</label>
+                    </div>
+                    <div class="ms-4 d-none" id="hepBNoTiterFields">
+                      <div class="d-flex flex-wrap gap-3">
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="hepBNoTiterReason" id="hepBReasonNonConverter" value="nonconverter">
+                          <label class="form-check-label" for="hepBReasonNonConverter">Non-Converter</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="hepBNoTiterReason" id="hepBReasonSeriesInProcess" value="inprocess">
+                          <label class="form-check-label" for="hepBReasonSeriesInProcess">Series in Process</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="hepBNoTiterReason" id="hepBReasonHistory" value="history">
+                          <label class="form-check-label" for="hepBReasonHistory">History of Disease</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="hepBNoTiterReason" id="hepBReasonHealth" value="health">
+                          <label class="form-check-label" for="hepBReasonHealth">Health Reason</label>
+                        </div>
+                      </div>
+
+                      <div class="mt-3 d-none" id="hepBNonConverterWrap">
+                        <div class="border rounded p-2">
+                          <div class="fw-semibold small mb-2">Series #1</div>
+                          <div class="d-flex flex-wrap gap-3 mb-2">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="hepBNcSeries1Steps" id="hepBNcSeries1Two" value="2">
+                              <label class="form-check-label" for="hepBNcSeries1Two">2-step</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="hepBNcSeries1Steps" id="hepBNcSeries1Three" value="3">
+                              <label class="form-check-label" for="hepBNcSeries1Three">3-step</label>
+                            </div>
+                          </div>
+                          <div class="row g-2 d-none" id="hepBNcSeries1TwoFields">
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries1Date1">Vaccination date 1</label>
+                              <input type="date" class="form-control" id="hepBNcSeries1Date1">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries1Date2">Vaccination date 2</label>
+                              <input type="date" class="form-control" id="hepBNcSeries1Date2">
+                            </div>
+                          </div>
+                          <div class="row g-2 d-none" id="hepBNcSeries1ThreeFields">
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries1Date1b">Vaccination date 1</label>
+                              <input type="date" class="form-control" id="hepBNcSeries1Date1b">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries1Date2b">Vaccination date 2</label>
+                              <input type="date" class="form-control" id="hepBNcSeries1Date2b">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries1Date3b">Vaccination date 3</label>
+                              <input type="date" class="form-control" id="hepBNcSeries1Date3b">
+                            </div>
+                          </div>
+                          <div class="row g-2 mt-2">
+                            <div class="col-12 col-md-6">
+                              <label class="form-label small mb-1" for="hepBNcSeries1TiterDate">Titer date drawn</label>
+                              <input type="date" class="form-control" id="hepBNcSeries1TiterDate">
+                            </div>
+                            <div class="col-12 col-md-6">
+                              <div class="form-label small mb-1">Result</div>
+                              <div class="d-flex gap-3">
+                                <div class="form-check">
+                                  <input class="form-check-input" type="radio" name="hepBNcSeries1TiterResult" id="hepBNcSeries1TiterNeg" value="neg">
+                                  <label class="form-check-label" for="hepBNcSeries1TiterNeg">Neg</label>
+                                </div>
+                                <div class="form-check">
+                                  <input class="form-check-input" type="radio" name="hepBNcSeries1TiterResult" id="hepBNcSeries1TiterPos" value="pos">
+                                  <label class="form-check-label" for="hepBNcSeries1TiterPos">Pos</label>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <p class="small text-body-secondary mt-2 mb-2">If titer is negative after series #1, then include series #2 information with date the titer was drawn and results.</p>
+
+                        <div class="border rounded p-2">
+                          <div class="fw-semibold small mb-2">Series #2</div>
+                          <div class="d-flex flex-wrap gap-3 mb-2">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="hepBNcSeries2Steps" id="hepBNcSeries2Two" value="2">
+                              <label class="form-check-label" for="hepBNcSeries2Two">2-step</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="hepBNcSeries2Steps" id="hepBNcSeries2Three" value="3">
+                              <label class="form-check-label" for="hepBNcSeries2Three">3-step</label>
+                            </div>
+                          </div>
+                          <div class="row g-2 d-none" id="hepBNcSeries2TwoFields">
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries2Date1">Vaccination date 1</label>
+                              <input type="date" class="form-control" id="hepBNcSeries2Date1">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries2Date2">Vaccination date 2</label>
+                              <input type="date" class="form-control" id="hepBNcSeries2Date2">
+                            </div>
+                          </div>
+                          <div class="row g-2 d-none" id="hepBNcSeries2ThreeFields">
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries2Date1b">Vaccination date 1</label>
+                              <input type="date" class="form-control" id="hepBNcSeries2Date1b">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries2Date2b">Vaccination date 2</label>
+                              <input type="date" class="form-control" id="hepBNcSeries2Date2b">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBNcSeries2Date3b">Vaccination date 3</label>
+                              <input type="date" class="form-control" id="hepBNcSeries2Date3b">
+                            </div>
+                          </div>
+                          <div class="row g-2 mt-2">
+                            <div class="col-12 col-md-6">
+                              <label class="form-label small mb-1" for="hepBNcSeries2TiterDate">Titer date drawn</label>
+                              <input type="date" class="form-control" id="hepBNcSeries2TiterDate">
+                            </div>
+                            <div class="col-12 col-md-6">
+                              <div class="form-label small mb-1">Result</div>
+                              <div class="d-flex gap-3">
+                                <div class="form-check">
+                                  <input class="form-check-input" type="radio" name="hepBNcSeries2TiterResult" id="hepBNcSeries2TiterNeg" value="neg">
+                                  <label class="form-check-label" for="hepBNcSeries2TiterNeg">Neg</label>
+                                </div>
+                                <div class="form-check">
+                                  <input class="form-check-input" type="radio" name="hepBNcSeries2TiterResult" id="hepBNcSeries2TiterPos" value="pos">
+                                  <label class="form-check-label" for="hepBNcSeries2TiterPos">Pos</label>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="mt-3 d-none" id="hepBSeriesInProcessWrap">
+                        <button class="btn btn-outline-light btn-sm mb-3" type="button" id="hepBSeriesInProcessDownload">Download Series In Process form</button>
+                        <div class="border rounded p-2">
+                          <div class="fw-semibold small mb-2">Series #1</div>
+                          <div class="d-flex flex-wrap gap-3 mb-2">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="hepBIpSeries1Steps" id="hepBIpSeries1Two" value="2">
+                              <label class="form-check-label" for="hepBIpSeries1Two">2-step</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="hepBIpSeries1Steps" id="hepBIpSeries1Three" value="3">
+                              <label class="form-check-label" for="hepBIpSeries1Three">3-step</label>
+                            </div>
+                          </div>
+                          <div class="row g-2 d-none" id="hepBIpSeries1TwoFields">
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBIpSeries1Date1">Vaccination date 1</label>
+                              <input type="date" class="form-control" id="hepBIpSeries1Date1">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBIpSeries1Date2">Vaccination date 2</label>
+                              <input type="date" class="form-control" id="hepBIpSeries1Date2">
+                            </div>
+                          </div>
+                          <div class="row g-2 d-none" id="hepBIpSeries1ThreeFields">
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBIpSeries1Date1b">Vaccination date 1</label>
+                              <input type="date" class="form-control" id="hepBIpSeries1Date1b">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBIpSeries1Date2b">Vaccination date 2</label>
+                              <input type="date" class="form-control" id="hepBIpSeries1Date2b">
+                            </div>
+                            <div class="col-12 col-md-4">
+                              <label class="form-label small mb-1" for="hepBIpSeries1Date3b">Vaccination date 3</label>
+                              <input type="date" class="form-control" id="hepBIpSeries1Date3b">
+                            </div>
+                          </div>
+                          <div class="row g-2 mt-2">
+                            <div class="col-12 col-md-6">
+                              <label class="form-label small mb-1" for="hepBIpSeries1TiterDate">Titer date drawn</label>
+                              <input type="date" class="form-control" id="hepBIpSeries1TiterDate">
+                            </div>
+                            <div class="col-12 col-md-6">
+                              <div class="form-label small mb-1">Result</div>
+                              <div class="d-flex gap-3">
+                                <div class="form-check">
+                                  <input class="form-check-input" type="radio" name="hepBIpSeries1TiterResult" id="hepBIpSeries1TiterNeg" value="neg">
+                                  <label class="form-check-label" for="hepBIpSeries1TiterNeg">Neg</label>
+                                </div>
+                                <div class="form-check">
+                                  <input class="form-check-input" type="radio" name="hepBIpSeries1TiterResult" id="hepBIpSeries1TiterPos" value="pos">
+                                  <label class="form-check-label" for="hepBIpSeries1TiterPos">Pos</label>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="mt-3 d-none" id="hepBHealthReasonWrap">
+                        <label class="form-label small mb-1" for="hepBHealthReasonInput">Explain the health reason</label>
+                        <textarea class="form-control" id="hepBHealthReasonInput" rows="3" maxlength="200" placeholder="Up to 200 characters"></textarea>
+                        <div class="small text-body-secondary mt-1" id="hepBHealthReasonCount">0/200</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-none" id="criminalDisclosureWrap">
+                  <div class="fw-semibold mb-2">Criminal History Disclosure Form</div>
+                  <div class="row g-2" id="criminalDisclosureDates">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label small mb-1" for="criminalDisclosureDate0">Date of Disclosure</label>
+                      <input type="date" class="form-control" id="criminalDisclosureDate0">
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    <button class="btn btn-cpnw btn-cpnw-secondary btn-sm d-none" type="button" id="criminalDisclosureAdd">+ Disclosure Signature Date</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="studentReqUploadWrap">
+                <div class="fw-semibold mb-1">Upload documents</div>
+                <div class="text-body-secondary small mb-2">Accepted: PDF/JPG/PNG. (Demo only — files are not uploaded anywhere.)</div>
+                <input class="form-control" type="file" id="studentReqFiles" multiple />
+                <div class="mt-3">
+                  <div class="text-body-secondary small mb-1">Selected files</div>
+                  <ul class="small mb-0" id="studentReqFileList"></ul>
+                </div>
+              </div>
+
+              <div class="mt-3 d-none" id="studentReqUploadedWrap">
+                <div class="fw-semibold mb-1">Previously uploaded documents</div>
+                <ul class="small mb-0" id="studentReqUploadedList"></ul>
+              </div>
+
+              <div class="mt-4">
+                <div class="fw-semibold mb-1">Decision</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decApprove">
+                    <label class="form-check-label" for="decApprove">Approve</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decConditional" data-requires-reason>
+                    <label class="form-check-label" for="decConditional">Conditionally approve</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decReject" data-requires-reason>
+                    <label class="form-check-label" for="decReject">Reject</label>
+                  </div>
+                </div>
+                <div class="mt-2 d-none" id="decisionReasonWrap">
+                  <label class="form-label small mb-1" for="decisionReason">Reason</label>
+                  <textarea class="form-control form-control-sm" id="decisionReason" rows="2" placeholder="Enter reason for conditional approval or rejection"></textarea>
+                </div>
+                <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                  <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" id="reqDecisionSave">Save</button>
+                  <div class="small text-body-secondary d-none" id="reqDecisionSaved">Saved.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-lg-5">
+              <div class="mb-0">
+                <div class="fw-semibold mb-1">Message</div>
+                <div class="border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;" id="studentReqMessages"></div>
+                <div class="text-body-secondary small mb-1">Send to (select one or more)</div>
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="msgToEducation">
+                    <label class="form-check-label" for="msgToEducation">Education</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="msgToHealthcare">
+                    <label class="form-check-label" for="msgToHealthcare">Healthcare</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="msgToCpnw">
+                    <label class="form-check-label" for="msgToCpnw">CPNW Reviewer</label>
+                  </div>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label small mb-1" for="studentReqMessageInput">Message</label>
+                  <textarea class="form-control form-control-sm" id="studentReqMessageInput" rows="3" placeholder="Leave a note..."></textarea>
+                </div>
+                <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" id="studentReqMessageSend">Send message</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary btn-cpnw" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary" id="studentReqSubmitBtn">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../js/main.js?v=20251214-2"></script>
+  <script src="../js/pages/reviewer-attention.js"></script>
+</body>
+</html>

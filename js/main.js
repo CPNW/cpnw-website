@@ -78,8 +78,10 @@
   const isHealthcareViews = path.includes('/views/healthcare-views/');
   const base = (isStudentViews || isHealthcareViews) ? '../../' : isViews ? '../' : '';
 
+  const isGetStartedViews = path.includes('/views/get-started-views/');
+
   if (!currentUser){
-    if (isViews){
+    if (isViews && !isGetStartedViews){
       window.location.href = `${base}index.html`;
     }
     return;
@@ -94,6 +96,14 @@
     'users.html',
     'background-watch-reports.html',
     'requirement-builder.html'
+  ]);
+  const reviewerPages = new Set([
+    'dashboard-cpnw-reviewer.html',
+    'reviewer-attention.html',
+    'cpnw-watch-reports.html',
+    'reports-cpnw.html',
+    'users-cpnw.html',
+    'reviewer-attention.html'
   ]);
   const educationNoAccess = 'education-no-access.html';
   const healthcarePages = new Set(['dashboard-healthcare.html']);
@@ -114,6 +124,9 @@
     }
     if (role === 'healthcare'){
       return `${base}views/healthcare-views/dashboard-healthcare.html`;
+    }
+    if (role === 'cpnw-reviewer'){
+      return `${base}views/dashboard-cpnw-reviewer.html`;
     }
     return `${base}index.html`;
   }
@@ -138,6 +151,13 @@
     }else if (role === 'faculty' && canCoordinate){
       // Faculty admins can access education tools.
     }else{
+      redirectTo(landingForRole());
+    }
+    return;
+  }
+
+  if (reviewerPages.has(file)){
+    if (role !== 'cpnw-reviewer'){
       redirectTo(landingForRole());
     }
     return;
@@ -787,7 +807,8 @@ const cpnwAccessCatalog = (() => {
     '87': { key: 'healthcare', label: 'Healthcare' },
     '58': { key: 'education', label: 'Education Coordinator' },
     '27': { key: 'faculty', label: 'Faculty' },
-    '36': { key: 'student', label: 'Student' }
+    '36': { key: 'student', label: 'Student' },
+    '91': { key: 'cpnw-reviewer', label: 'CPNW Reviewer' }
   };
 
   const schools = [
@@ -822,10 +843,41 @@ const cpnwAccessCatalog = (() => {
     });
   });
 
+  programLookup.set('94', {
+    code: '94',
+    abbr: 'CPNW',
+    name: 'CPNW Reviewer',
+    schoolCode: 'CPNW',
+    schoolName: 'CPNW'
+  });
+
   return { roles, schools, programs, programLookup };
 })();
 
 const cpnwDemoPeople = [
+  {
+    email: 'reviewer.cpnw@cpnw.org',
+    name: 'Riley Reviewer',
+    role: 'cpnw-reviewer',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW University', 'CPNW Education'],
+    programs: ['ADN', 'BSN', 'SurgTech', 'RadTech'],
+    profile: {
+      firstName: 'Riley',
+      lastName: 'Reviewer',
+      emailUsername: 'reviewer.cpnw@cpnw.org',
+      altEmail: 'riley.reviewer@cpnw.org',
+      primaryPhone: '(206) 555-0199',
+      school: 'CPNW',
+      program: 'CPNW Reviewer',
+      emergencyName: 'Jordan Reviewer',
+      emergencyPhone: '(206) 555-0182',
+      address: '1200 5th Ave',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98101'
+    }
+  },
   {
     email: 'alex.educator@cpnw.org',
     name: 'Alex Educator',
@@ -1214,6 +1266,44 @@ const cpnwDemoPeople = [
 
 window.CPNW = window.CPNW || {};
 window.CPNW.demoPeople = cpnwDemoPeople;
+window.CPNW.reviewerRoster = (() => {
+  const roster = [];
+  const demoPeople = Array.isArray(cpnwDemoPeople) ? cpnwDemoPeople : [];
+  demoPeople.forEach((person) => {
+    if (['student','faculty'].includes(person.role)){
+      roster.push(person);
+    }
+  });
+
+  const TODAY = new Date();
+  const FALL_START_MONTH = 7;
+  const CURRENT_AY_START = TODAY.getMonth() >= FALL_START_MONTH ? TODAY.getFullYear() : TODAY.getFullYear() - 1;
+  const TERMS = ['Fall', 'Winter', 'Spring', 'Summer'];
+  const termAdjust = { Fall: 3, Winter: 1, Spring: 0, Summer: -2 };
+  const programDefs = [
+    { id: 'adn', name: 'ADN', base: 10 },
+    { id: 'bsn', name: 'BSN', base: 12 }
+  ];
+
+  programDefs.forEach((p, idx) => {
+    TERMS.forEach((term, termIdx) => {
+      const count = Math.max(8, p.base + termAdjust[term]);
+      for (let i = 0; i < count; i++){
+        const id = `dvs-${p.id}-${idx}-${termIdx}-${i + 1}`;
+        roster.push({
+          name: `Student ${id.toUpperCase()}`,
+          email: `student.${p.id}.${termIdx}.${i + 1}@dvs.cpnw.org`,
+          role: 'student',
+          schools: [p.id === 'adn' ? 'CPNW University' : 'CPNW Education'],
+          programs: [p.name],
+          profile: { school: p.id === 'adn' ? 'CPNW University' : 'CPNW Education', program: p.name }
+        });
+      }
+    });
+  });
+
+  return roster;
+})();
 
 (function(){
   const currentUser = window.CPNW && typeof window.CPNW.getCurrentUser === 'function'
@@ -1401,6 +1491,8 @@ window.CPNW.demoPeople = cpnwDemoPeople;
         target = 'views/student-views/dashboard-student.html';
       }else if (user.role === 'healthcare'){
         target = 'views/healthcare-views/dashboard-healthcare.html';
+      }else if (user.role === 'cpnw-reviewer'){
+        target = 'views/dashboard-cpnw-reviewer.html';
       }
       if (!target){
         setStatus('danger', 'No dashboard available for this role yet.');
@@ -1717,13 +1809,16 @@ window.CPNW.demoPeople = cpnwDemoPeople;
     if (!match){
       return { error: 'Enter a code like 10011-36.' };
     }
-    const program = cpnwAccessCatalog.programLookup.get(match[1]);
-    if (!program){
-      return { error: 'Program code not found. Check the first digits.' };
-    }
     const role = cpnwAccessCatalog.roles[match[2]];
     if (!role){
-      return { error: 'Role code not found. Use 87, 58, 27, or 36.' };
+      return { error: 'Role code not found. Use 87, 58, 27, 36, or 91.' };
+    }
+    const program = cpnwAccessCatalog.programLookup.get(match[1]);
+    if (!program){
+      if (role.key === 'cpnw-reviewer' && match[1] === '94'){
+        return { program: cpnwAccessCatalog.programLookup.get('94'), role, programCode: match[1], roleCode: match[2] };
+      }
+      return { error: 'Program code not found. Check the first digits.' };
     }
     return { program, role, programCode: match[1], roleCode: match[2] };
   }

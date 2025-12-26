@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CPNW — Reviewer Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="../css/style.css" />
+  </head>
+  <body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button
+            data-theme-toggle
+            type="button"
+            class="btn btn-outline-secondary btn-sm btn-cpnw"
+            aria-label="Toggle dark and light mode"
+          >
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../index.html" data-logout-trigger>Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+    <main class="py-4 py-lg-5">
+      <div class="container position-relative">
+        <img src="../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+          <div>
+            <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">CPNW Reviewer</p>
+            <h1 class="h3 fw-semibold mb-1">
+              Welcome back, <span data-current-user-name>Riley Reviewer</span>
+            </h1>
+            <p class="text-body-secondary mb-0">Track DVS-enabled programs and verify CPNW requirements.</p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="reviewer-attention.html">Requirements</a>
+            <div class="dropdown">
+              <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                My Account
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="my-profile.html">My Profile</a></li>
+                <li><a class="dropdown-item" href="security-settings.html">Security Settings</a></li>
+              </ul>
+            </div>
+            <div class="dropdown">
+              <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Admin
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="reviewer-attention.html">Review</a></li>
+                <li><a class="dropdown-item" href="cpnw-watch-reports.html">CPNW WATCH Report</a></li>
+                <li><a class="dropdown-item" href="reports-cpnw.html">Reports</a></li>
+                <li><a class="dropdown-item" href="users-cpnw.html">Users</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+          <div class="dropdown" data-bs-auto-close="outside">
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Programs <span class="badge text-bg-secondary align-middle" id="reviewerProgramCount">All</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 240px;">
+              <div class="d-grid gap-2" id="reviewerProgramFilters"></div>
+            </div>
+          </div>
+          <div class="dropdown" data-bs-auto-close="outside">
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Schools <span class="badge text-bg-secondary align-middle" id="reviewerSchoolCount">All</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 240px;">
+              <div class="d-grid gap-2" id="reviewerSchoolFilters"></div>
+            </div>
+          </div>
+        </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="cpnw-shell p-3 h-100">
+            <p class="text-body-secondary small mb-1">Students needing review</p>
+            <div class="h2 mb-0" id="reviewerNeedsReviewCount">--</div>
+            <div class="d-flex align-items-center justify-content-between">
+              <p class="small text-body-secondary mb-0">Submitted or in review CPNW items</p>
+              <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="reviewer-attention.html">View</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="cpnw-shell p-3 h-100">
+            <p class="text-body-secondary small mb-1">CPNW WATCH reports needed</p>
+            <div class="h2 mb-0" id="reviewerWatchNeededCount">--</div>
+            <p class="small text-body-secondary mb-0">Not submitted WATCH reports</p>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="cpnw-shell p-3 h-100">
+            <p class="text-body-secondary small mb-1">Approvals this week</p>
+            <div class="h2 mb-0" id="reviewerApprovalsWeek">--</div>
+            <p class="small text-body-secondary mb-0">CPNW requirement approvals</p>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="cpnw-shell p-3 h-100">
+            <p class="text-body-secondary small mb-1">Avg review time</p>
+            <div class="h2 mb-0" id="reviewerAvgReviewTime">--</div>
+            <p class="small text-body-secondary mb-0">Rolling 30-day average</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 g-lg-4 mb-4">
+        <div class="col-12 col-xl-6">
+          <div class="cpnw-shell p-3 p-md-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-0">Notifications</h2>
+                <p class="text-body-secondary small mb-0">Latest updates from DVS-enabled programs.</p>
+              </div>
+              <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="#">View all</a>
+            </div>
+            <ul class="list-unstyled d-grid gap-2 mb-0" id="reviewerNotifications"></ul>
+          </div>
+        </div>
+        <div class="col-12 col-xl-6">
+          <div class="cpnw-shell p-3 p-md-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-0">Programs with DVS</h2>
+                <p class="text-body-secondary small mb-0">Eligible programs and student volume.</p>
+              </div>
+              <span class="badge text-bg-secondary" id="reviewerProgramCountPanel">--</span>
+            </div>
+            <div style="max-height: 360px; overflow-y: auto;">
+              <ul class="list-unstyled d-grid gap-2 mb-0" id="reviewerProgramsList"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </main>
+
+    <div class="modal fade" id="cpnwReviewModal" tabindex="-1" aria-labelledby="cpnwReviewModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title" id="cpnwReviewModalLabel">CPNW Requirement Review</h5>
+              <p class="small text-body-secondary mb-0" id="cpnwReviewModalSub"></p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="d-flex flex-wrap gap-3 mb-3">
+              <div>
+                <div class="text-body-secondary small">School</div>
+                <div class="fw-semibold" id="cpnwReviewSchool"></div>
+              </div>
+              <div>
+                <div class="text-body-secondary small">Program</div>
+                <div class="fw-semibold" id="cpnwReviewProgram"></div>
+              </div>
+              <div>
+                <div class="text-body-secondary small">eLearning Completed</div>
+                <div class="fw-semibold" id="cpnwReviewElearning"></div>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="text-body-secondary small">
+                  <tr>
+                    <th>Requirement</th>
+                    <th>Status</th>
+                    <th class="text-end">Decision</th>
+                  </tr>
+                </thead>
+                <tbody id="cpnwReviewReqBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary btn-cpnw" type="button" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    <script src="../js/main.js?v=20251214-2"></script>
+    <script src="../js/pages/dashboard-cpnw-reviewer.js"></script>
+  </body>
+</html>

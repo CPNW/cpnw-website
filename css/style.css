@@ -316,6 +316,14 @@ body{
   border-top: 1px solid color-mix(in srgb, var(--bs-border-color) 60%, transparent);
 }
 
+.cpnw-table.reviewer-attention-table tbody tr + tr{
+  border-top: 2px solid #fff;
+}
+
+[data-bs-theme="light"] .cpnw-table.reviewer-attention-table tbody tr + tr{
+  border-top: 2px solid #b8bec6;
+}
+
 /* Ad rail */
 .cpnw-ad{
   position: sticky;
