@@ -110,10 +110,17 @@
 
   function seededStatus(email, reqLabel){
     const seed = Array.from(String(email)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const reqSeed = seed + Array.from(String(reqLabel)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
     if (/watch/i.test(reqLabel)){
-      return seed % 11 === 0 ? 'Not Submitted' : 'Submitted';
+      const mod = reqSeed % 20;
+      if (mod < 3) return 'In Review';
+      if (mod < 7) return 'Submitted';
+      return 'Not Submitted';
     }
-    return seed % 3 === 0 ? 'Submitted' : 'Not Submitted';
+    const mod = reqSeed % 20;
+    if (mod < 4) return 'In Review';
+    if (mod < 9) return 'Submitted';
+    return 'Not Submitted';
   }
 
   function countElearningCompleted(email){

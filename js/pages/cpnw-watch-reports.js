@@ -11,6 +11,7 @@
   const modalDob = document.getElementById('watchModalDob');
   const modalReqName = document.getElementById('watchModalReqName');
   const modalStatus = document.getElementById('watchModalStatus');
+  const sortButtons = document.querySelectorAll('.sort');
   const uploadInput = document.getElementById('watchReqUpload');
   const uploadedWrap = document.getElementById('watchUploadedWrap');
   const uploadedList = document.getElementById('watchUploadedList');
@@ -38,6 +39,7 @@
   const PAGE_SIZE = 10;
   let currentPage = 1;
   let currentContext = { email: '', reqName: '' };
+  let sortState = { field: 'name', dir: 'asc' };
 
   function loadJSON(key, fallback){
     try{
@@ -147,12 +149,33 @@
 
   function renderTable(){
     if (!tableBody) return;
-    const total = rows.length;
+    const sorted = rows.slice().sort((a, b) => {
+      const field = sortState.field;
+      const dir = sortState.dir === 'desc' ? -1 : 1;
+      if (field === 'dob') return (a.dob - b.dob) * dir;
+      if (field === 'name'){
+        const nameCmp = a.first.localeCompare(b.first, undefined, { sensitivity: 'base' });
+        return nameCmp * dir;
+      }
+      if (field === 'middle'){
+        const midCmp = String(a.middle || '').localeCompare(String(b.middle || ''), undefined, { sensitivity: 'base' });
+        return midCmp * dir;
+      }
+      if (field === 'program'){
+        const keyA = `${a.program} ${a.school}`.toLowerCase();
+        const keyB = `${b.program} ${b.school}`.toLowerCase();
+        if (keyA < keyB) return -1 * dir;
+        if (keyA > keyB) return 1 * dir;
+        return 0;
+      }
+      return 0;
+    });
+    const total = sorted.length;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
     if (currentPage > totalPages) currentPage = totalPages;
     const start = (currentPage - 1) * PAGE_SIZE;
     const end = Math.min(start + PAGE_SIZE, total);
-    const pageRows = rows.slice(start, end);
+    const pageRows = sorted.slice(start, end);
 
     tableBody.innerHTML = pageRows.map((row) => `
       <tr>
@@ -345,4 +368,18 @@
   });
 
   renderTable();
+
+  sortButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const field = btn.dataset.sort;
+      if (!field) return;
+      if (sortState.field === field){
+        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+      }else{
+        sortState = { field, dir: 'asc' };
+      }
+      currentPage = 1;
+      renderTable();
+    });
+  });
 })();

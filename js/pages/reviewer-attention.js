@@ -11,6 +11,8 @@
   const sortButtons = document.querySelectorAll('.sort');
   const detailModalEl = document.getElementById('studentReqDetailModal');
   const detailModal = detailModalEl ? new bootstrap.Modal(detailModalEl) : null;
+  const reqFilterWrap = document.getElementById('reviewerReqFilters');
+  const reqFilterHint = document.getElementById('reviewerReqFilterHint');
 
   const roster = (window.CPNW && Array.isArray(window.CPNW.reviewerRoster)) ? window.CPNW.reviewerRoster : [];
 
@@ -149,6 +151,7 @@
   let currentStudentEmail = '';
   let currentMessages = [];
   let disclosureExtraCount = 0;
+  const selectedReqs = new Set();
 
   function loadJSON(key, fallback){
     try{
@@ -212,10 +215,17 @@
 
   function seededStatus(email, reqLabel){
     const seed = Array.from(String(email)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const reqSeed = seed + Array.from(String(reqLabel)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
     if (/watch/i.test(reqLabel)){
-      return seed % 11 === 0 ? 'Not Submitted' : 'Submitted';
+      const mod = reqSeed % 20;
+      if (mod < 3) return 'In Review';
+      if (mod < 7) return 'Submitted';
+      return 'Not Submitted';
     }
-    return seed % 3 === 0 ? 'Submitted' : 'Not Submitted';
+    const mod = reqSeed % 20;
+    if (mod < 4) return 'In Review';
+    if (mod < 9) return 'Submitted';
+    return 'Not Submitted';
   }
 
   function requirementStatus(email, reqName, submissionKey){
@@ -224,6 +234,11 @@
     const submissions = getStudentData(email)?.submissions || {};
     if (submissions && submissions[submissionKey]) return 'Submitted';
     return seededStatus(email, reqName);
+  }
+
+  function reqNeedsReview(email, reqName, submissionKey){
+    const status = requirementStatus(email, reqName, submissionKey);
+    return status === 'Submitted' || status === 'In Review';
   }
 
   function statusBadge(status){
@@ -634,6 +649,13 @@
       if (school && p.school !== school) return false;
       if (program && p.program !== program) return false;
       if (q && !`${p.name} ${p.sid} ${p.email}`.toLowerCase().includes(q)) return false;
+      if (selectedReqs.size){
+        const matches = CPNW_REQUIREMENTS.some((req, idx) => {
+          if (!selectedReqs.has(req)) return false;
+          return reqNeedsReview(p.email, req, `cpnw_${idx + 1}`);
+        });
+        if (!matches) return false;
+      }
       return true;
     });
 
@@ -1027,6 +1049,33 @@
 
   submitBtn?.setAttribute('disabled', 'true');
 
+  function renderReqFilters(){
+    if (!reqFilterWrap) return;
+    const listWrap = reqFilterWrap.querySelector('.d-grid');
+    if (!listWrap) return;
+    listWrap.innerHTML = CPNW_REQUIREMENTS.map((req) => `
+      <label class="form-check">
+        <input class="form-check-input" type="checkbox" value="${req}">
+        <span class="form-check-label">${req.replace(/^CPNW:\\s*/, '')}</span>
+      </label>
+    `).join('');
+  }
+
+  function updateReqFilterHint(){
+    if (!reqFilterHint) return;
+    reqFilterHint.textContent = selectedReqs.size ? `${selectedReqs.size} selected` : 'All requirements';
+  }
+
+  reqFilterWrap?.addEventListener('change', (e) => {
+    const input = e.target.closest('input[type="checkbox"]');
+    if (!input) return;
+    if (input.checked) selectedReqs.add(input.value);
+    else selectedReqs.delete(input.value);
+    updateReqFilterHint();
+    reviewPage = 1;
+    renderReviews();
+  });
+
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-download-file]');
     if (!btn) return;
@@ -1034,5 +1083,7 @@
   });
 
   updateFilterOptions();
+  renderReqFilters();
+  updateReqFilterHint();
   renderReviews();
 })();

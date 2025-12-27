@@ -69,8 +69,19 @@
       const statusButtons = document.querySelectorAll('[data-filter-status]');
       const showSelectedBtn = document.getElementById('showSelected');
       const exportBtn = document.getElementById('exportAssignments');
+      const assignGroupBtn = document.getElementById('assignGroupBtn');
+      const editGroupBtn = document.getElementById('editGroupBtn');
       const rangeButtons = document.querySelectorAll('[data-range]');
       const sortButtons = document.querySelectorAll('.sort');
+      const groupModalEl = document.getElementById('groupAssignmentModal');
+      const groupModal = groupModalEl ? new bootstrap.Modal(groupModalEl) : null;
+      const groupModalLabel = document.getElementById('groupAssignmentModalLabel');
+      const groupModalSub = document.getElementById('groupAssignmentModalSub');
+      const groupLocation = document.getElementById('groupAssignLocation');
+      const groupStart = document.getElementById('groupAssignStart');
+      const groupEnd = document.getElementById('groupAssignEnd');
+      const groupError = document.getElementById('groupAssignError');
+      const groupSave = document.getElementById('groupAssignSave');
 
       const locations = ['CPNW Medical Center','CPNW Healthcare Facility','Evergreen Health','Providence NW'];
       const statusPool = ['approved','pending','rejected'];
@@ -145,6 +156,8 @@
       const selectedIds = new Set();
       let addDraft = null; // { replaceRowId?: string, afterRowId?: string, studentId: string }
       let editDraft = null; // { rowId: string, assignmentId: string }
+      let groupMode = 'assign';
+      let groupSelection = [];
 
       function getSortToken(row, field){
         const student = row.student;
@@ -209,6 +222,78 @@
         const mm = String(d.getMonth()+1).padStart(2,'0');
         const dd = String(d.getDate()).padStart(2,'0');
         return `${yyyy}-${mm}-${dd}`;
+      }
+
+      function setGroupError(message){
+        if (!groupError) return;
+        if (!message){
+          groupError.classList.add('d-none');
+          groupError.textContent = '';
+          return;
+        }
+        groupError.classList.remove('d-none');
+        groupError.textContent = message;
+      }
+
+      function getSelectionDetails(){
+        const details = [];
+        selectedIds.forEach(id=>{
+          if (!id) return;
+          let studentId = '';
+          let assignment = null;
+          if (id.startsWith('placeholder-')){
+            studentId = id.replace('placeholder-','');
+          }else{
+            assignment = assignments.find(a=>a.id === id) || null;
+            studentId = assignment?.studentId || '';
+          }
+          const student = students.find(s=>s.id === studentId) || null;
+          if (student){
+            details.push({ rowId: id, student, assignment });
+          }
+        });
+        return details;
+      }
+
+      function openGroupModal(mode){
+        if (!groupModal) return;
+        groupMode = mode;
+        groupSelection = getSelectionDetails();
+        if (!groupSelection.length){
+          alert('Select at least one student.');
+          return;
+        }
+        setGroupError('');
+        if (groupModalLabel){
+          groupModalLabel.textContent = mode === 'edit' ? 'Edit group assignment' : 'Assign group';
+        }
+        if (groupModalSub){
+          groupModalSub.textContent = `${groupSelection.length} selected`;
+        }
+        if (groupLocation){
+          const opts = Array.from(new Set([...locationAddOptions, ...locations])).sort();
+          groupLocation.innerHTML = ['<option value="">Select location</option>', ...opts.map(l=>`<option value="${l}">${l}</option>`)].join('');
+        }
+        if (groupStart) groupStart.value = '';
+        if (groupEnd) groupEnd.value = '';
+
+        if (mode === 'edit'){
+          const assignmentsOnly = groupSelection.filter(item => item.assignment);
+          if (assignmentsOnly.length !== groupSelection.length){
+            alert('Edit group only applies to students with existing assignments.');
+            return;
+          }
+          const startVal = fmtDateInput(assignmentsOnly[0].assignment.start);
+          const endVal = fmtDateInput(assignmentsOnly[0].assignment.end);
+          const sameDates = assignmentsOnly.every(item => fmtDateInput(item.assignment.start) === startVal && fmtDateInput(item.assignment.end) === endVal);
+          if (!sameDates){
+            alert('Edit group only works when all selected students share the same start/end dates.');
+            return;
+          }
+          if (groupStart) groupStart.value = startVal;
+          if (groupEnd) groupEnd.value = endVal;
+        }
+        groupModal.show();
       }
 
       function renderAssignments(showOnlySelected = false){
@@ -641,7 +726,43 @@
         alert(`Exporting ${selectedIds.size} selected assignments (demo).`);
       });
 
+      assignGroupBtn?.addEventListener('click', ()=> openGroupModal('assign'));
+      editGroupBtn?.addEventListener('click', ()=> openGroupModal('edit'));
+
+      groupSave?.addEventListener('click', ()=>{
+        if (!groupSelection.length){
+          setGroupError('No students selected.');
+          return;
+        }
+        const loc = groupLocation?.value || '';
+        const startVal = groupStart?.value || '';
+        const endVal = groupEnd?.value || '';
+        if (!loc || !startVal || !endVal){
+          setGroupError('Please choose a location and enter both start and end dates.');
+          return;
+        }
+        const start = new Date(`${startVal}T00:00:00`);
+        const end = new Date(`${endVal}T00:00:00`);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start){
+          setGroupError('Please enter a valid date range (end date must be on/after start date).');
+          return;
+        }
+
+        groupSelection.forEach((item, idx)=>{
+          const id = `a-group-${item.student.id}-${Date.now()}-${idx}`;
+          assignments.push({ id, studentId: item.student.id, location: loc, start, end, status: 'pending' });
+        });
+
+        setGroupError('');
+        groupModal?.hide();
+        selectedIds.clear();
+        if (selectAllAssignments) selectAllAssignments.checked = false;
+        document.querySelectorAll('.assignment-row').forEach(cb => {
+          cb.checked = false;
+        });
+        renderAssignments();
+      });
+
       renderAssignments();
     })();
   
-
