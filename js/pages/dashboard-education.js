@@ -518,6 +518,9 @@
       }
 
       filters.addEventListener('change', handleProgramSelectionChanged);
+      filters.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
       if (programSearch){
         programSearch.addEventListener('input', (e) => {
           renderFilters(e.target.value || '');
@@ -578,6 +581,9 @@
         cohortFilters.addEventListener('change', () => {
           cohortSelectionMode = 'manual';
           summarize();
+        });
+        cohortFilters.addEventListener('click', (e) => {
+          e.stopPropagation();
         });
       }
 
@@ -664,4 +670,3 @@
       renderCohorts();
     })();
   
-

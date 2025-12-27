@@ -269,8 +269,32 @@
         return d;
       }
 
-      function buildReqs(overallStatus){
+      function addYears(date, years){
+        const d = new Date(date);
+        d.setFullYear(d.getFullYear() + years);
+        return d;
+      }
+
+      function seedFromPerson(person){
+        const key = person?.sid || person?.email || person?.name || '';
+        return Array.from(String(key)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      }
+
+      function hasExpiringReq(person){
+        const rows = buildReqs(person.status === 'needs-review' ? 'needs-review' : 'complete', seedFromPerson(person), person.sid)
+          .filter(r => r.category === 'CPNW Clinical Passport' || r.category === 'Education');
+        const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+        const windowEnd = datePlusDays(30);
+        return rows.some(r => {
+          if (!r.expiration || !(r.expiration instanceof Date)) return false;
+          const exp = new Date(r.expiration.getFullYear(), r.expiration.getMonth(), r.expiration.getDate());
+          return exp < today || exp <= windowEnd;
+        });
+      }
+
+      function buildReqs(overallStatus, seed = 0, sid = ''){
         const rows = [];
+        const seedOffset = Number.isFinite(seed) ? seed : 0;
         Object.entries(reqCounts).forEach(([key,count])=>{
           for(let i=1;i<=count;i++){
             const isCPNW = key === 'cpnw';
@@ -279,7 +303,7 @@
             const frequency = isElearning ? 'Annual' : freqOptions[i % freqOptions.length];
             const category = key === 'cpnw' ? 'CPNW Clinical Passport' : key === 'ed' ? 'Education' : 'Healthcare';
             const reviewer = isElearning ? '' : reviewerPool[i % reviewerPool.length];
-            let status = reqStatusPool[(i + (overallStatus === 'needs-review' ? 1 : 3) + key.length) % reqStatusPool.length];
+            let status = reqStatusPool[(i + (overallStatus === 'needs-review' ? 1 : 3) + key.length + (seedOffset % reqStatusPool.length)) % reqStatusPool.length];
             if (isElearning){
               if (!['Not Submitted','Approved','Expired','Expiring Soon'].includes(status)){
                 status = 'Not Submitted';
@@ -304,6 +328,28 @@
             const name = isCPNW
               ? (isElearning ? CPNW_ELEARNING[i - 1] : CPNW_REQUIREMENTS[i - 1 - CPNW_ELEARNING.length])
               : `${reqLabels[key]} Req ${i}`;
+            if (sid === '1000' && (name === 'Bloodborne Pathogens and Workplace Safety' || name === 'Chemical Hazard Communication')){
+              status = 'Approved';
+              exp = datePlusDays(365);
+            }
+            if (sid){
+              const saved = getDecisionRecord(sid, name);
+              const savedStatus = decisionToStatus(saved?.decision);
+              if (savedStatus){
+                status = savedStatus;
+                if (status === 'Approved' || status === 'Conditionally Approved'){
+                  if (frequency === 'Annual' || frequency === 'Seasonal'){
+                    const baseDate = saved?.at ? new Date(saved.at) : TODAY;
+                    exp = addYears(baseDate, 1);
+                  }else{
+                    exp = null;
+                  }
+                }else if (status === 'Rejected'){
+                  exp = null;
+                }
+              }
+            }
+
             rows.push({
               name,
               status,
@@ -356,7 +402,11 @@
         const cohortSel = cohortFilterEl && cohortFilterEl.value && validCohorts.has(cohortFilterEl.value) ? cohortFilterEl.value : '';
 
         const filtered = people.filter(p=>{
-          if (currentStatusChip !== 'all' && p.status !== currentStatusChip) return false;
+          if (currentStatusChip === 'expiring'){
+            if (!hasExpiringReq(p)) return false;
+          }else if (currentStatusChip !== 'all' && p.status !== currentStatusChip){
+            return false;
+          }
           if (cohortSel){
             if (cohortSel === '__unassigned__'){
               if ((p.cohort || '').trim()) return false;
@@ -522,7 +572,7 @@
         // Requirements with pagination within modal
         let reqPageSize = Number(document.getElementById('reqPageSize')?.value || 10);
         let reqPage = 1;
-        const reqRows = buildReqs(person.status === 'needs-review' ? 'needs-review' : 'complete');
+        const reqRows = buildReqs(person.status === 'needs-review' ? 'needs-review' : 'complete', seedFromPerson(person), person.sid);
         const orderedReqs = [
           ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type !== 'eLearning'),
           ...reqRows.filter(r => r.category === 'Education'),

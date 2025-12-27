@@ -68,30 +68,44 @@
         </div>
       </div>
 
-	      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-	        <div class="d-flex gap-1">
-	          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status-chip="active">Active</button>
-	          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="requests">Requests</button>
-	          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="inactive">Inactive</button>
-	        </div>
-	        <div class="d-flex align-items-center gap-2 flex-wrap ms-auto">
-	          <input type="search" class="form-control form-control-sm" placeholder="Search name, email" id="userSearch" style="min-width: 200px;">
-          <select class="form-select form-select-sm" id="roleFilter" style="min-width: 150px;">
-            <option value="">All roles</option>
-            <option value="education">Education</option>
-            <option value="faculty">Faculty</option>
-            <option value="student">Student</option>
-          </select>
-          <select class="form-select form-select-sm" id="programFilter" style="min-width: 150px;">
-            <option value="">All programs</option>
-            <option value="BSN">BSN</option>
-            <option value="ADN">ADN</option>
-            <option value="Surg Tech">Surg Tech</option>
-            <option value="Allied">Allied</option>
-          </select>
-          <select class="form-select form-select-sm" id="cohortFilter" style="min-width: 160px;">
-            <option value="">All cohorts</option>
-          </select>
+      <div class="cpnw-shell p-3 p-md-4 mb-3">
+        <div class="row g-3 align-items-center">
+          <div class="col-12 col-lg-4">
+            <div class="d-flex flex-wrap gap-1">
+              <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status-chip="active">Active</button>
+              <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="requests">Requests</button>
+              <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="inactive">Inactive</button>
+            </div>
+          </div>
+          <div class="col-12 col-lg-8">
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <input type="search" class="form-control form-control-sm" placeholder="Search name, email" id="userSearch">
+              </div>
+              <div class="col-12 col-md-6">
+                <select class="form-select form-select-sm" id="roleFilter">
+                  <option value="">All roles</option>
+                  <option value="education">Education</option>
+                  <option value="faculty">Faculty</option>
+                  <option value="student">Student</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <select class="form-select form-select-sm" id="programFilter">
+                  <option value="">All programs</option>
+                  <option value="BSN">BSN</option>
+                  <option value="ADN">ADN</option>
+                  <option value="Surg Tech">Surg Tech</option>
+                  <option value="Allied">Allied</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <select class="form-select form-select-sm" id="cohortFilter">
+                  <option value="">All cohorts</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -147,6 +147,9 @@
       }
 
       demoPeople.forEach(person => {
+        const role = String(person.role || '').toLowerCase();
+        if (role === 'cpnw-reviewer' || role === 'healthcare') return;
+        if (!['student','faculty','education'].includes(role)) return;
         const program = normalizeProgramLabel(person.programs?.[0]);
         data.push(applyStoredCohort({
           name: person.name,
@@ -653,4 +656,3 @@
       updateTable();
     })();
   
-
