@@ -251,18 +251,16 @@
           <hr class="my-3">
           <h6 class="fw-bold mb-2">Requirements</h6>
           <div class="table-responsive">
-            <table class="table align-middle mb-0">
+            <table class="table align-middle mb-0" id="reqTable">
               <thead class="text-body-secondary small">
                 <tr>
-                  <th>Requirement Name</th>
-                  <th>Status</th>
-                  <th>Expiration</th>
-                  <th>Due Date</th>
-                  <th>Score</th>
-                  <th>Type</th>
-                  <th>Frequency</th>
-                  <th>Category</th>
-                  <th>Reviewer</th>
+                  <th class="text-start"><button class="btn btn-link p-0 text-decoration-none text-start req-sort" data-sort="name">Requirement Name</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="status">Status</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="expiration">Expiration</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="type">Type</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="frequency">Frequency</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="category">Category</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="reviewer">Reviewer</button></th>
                 </tr>
               </thead>
               <tbody id="reqTableBody"></tbody>

@@ -292,6 +292,11 @@
         });
       }
 
+      function isImmunizationRequirement(name){
+        if (!name) return false;
+        return /(covid|covid-19|hepatitis|influenza|varicella|measles|mumps|rubella|mmr|tetanus|diphtheria|pertussis|tdap|tb|tuberculin|vaccine|vaccination|immunization)/i.test(name);
+      }
+
       function buildReqs(overallStatus, seed = 0, sid = ''){
         const rows = [];
         const seedOffset = Number.isFinite(seed) ? seed : 0;
@@ -299,7 +304,7 @@
           for(let i=1;i<=count;i++){
             const isCPNW = key === 'cpnw';
             const isElearning = isCPNW && i <= CPNW_ELEARNING.length;
-            const type = isElearning ? 'eLearning' : typePool[(i + count) % typePool.length];
+            const baseType = isElearning ? 'eLearning' : typePool[(i + count) % typePool.length];
             const frequency = isElearning ? 'Annual' : freqOptions[i % freqOptions.length];
             const category = key === 'cpnw' ? 'CPNW Clinical Passport' : key === 'ed' ? 'Education' : 'Healthcare';
             const reviewer = isElearning ? '' : reviewerPool[i % reviewerPool.length];
@@ -349,6 +354,7 @@
                 }
               }
             }
+            const type = !isElearning && isImmunizationRequirement(name) ? 'Immunization' : baseType;
 
             rows.push({
               name,
@@ -572,6 +578,8 @@
         // Requirements with pagination within modal
         let reqPageSize = Number(document.getElementById('reqPageSize')?.value || 10);
         let reqPage = 1;
+        let reqSortKey = 'grouped';
+        let reqSortDir = 'asc';
         const reqRows = buildReqs(person.status === 'needs-review' ? 'needs-review' : 'complete', seedFromPerson(person), person.sid);
         const orderedReqs = [
           ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type !== 'eLearning'),
@@ -580,10 +588,45 @@
           ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type === 'eLearning')
         ];
         const reqBody = document.getElementById('reqTableBody');
+        const reqTable = document.getElementById('reqTable');
+        const reqSortButtons = reqTable ? reqTable.querySelectorAll('.req-sort') : [];
         const fmt = (d) => d instanceof Date ? d.toLocaleDateString() : '—';
         const reqPrev = document.getElementById('reqPrev');
         const reqNext = document.getElementById('reqNext');
         const reqPageInfo = document.getElementById('reqPageInfo');
+
+        function getEffectiveStatus(r){
+          const saved = getDecisionRecord(person.sid, r.name);
+          const savedStatus = decisionToStatus(saved?.decision);
+          let effectiveStatus = savedStatus || r.status;
+          if (r.type === 'eLearning' && !['Not Submitted','Approved','Expired','Expiring Soon'].includes(effectiveStatus)){
+            effectiveStatus = 'Not Submitted';
+          }
+          return effectiveStatus;
+        }
+
+        function compareValues(a, b){
+          if (a == null && b == null) return 0;
+          if (a == null) return 1;
+          if (b == null) return -1;
+          if (a instanceof Date && b instanceof Date) return a - b;
+          if (typeof a === 'number' && typeof b === 'number') return a - b;
+          return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+        }
+
+        function updateSortIndicators(){
+          if (!reqTable) return;
+          reqTable.querySelectorAll('th').forEach(th=>{
+            const btn = th.querySelector('.req-sort');
+            const key = btn?.dataset?.sort;
+            if (!key) return;
+            if (key === reqSortKey){
+              th.setAttribute('aria-sort', reqSortDir === 'asc' ? 'ascending' : 'descending');
+            } else {
+              th.setAttribute('aria-sort', 'none');
+            }
+          });
+        }
 
         function renderReqs(){
           const total = orderedReqs.length;
@@ -591,14 +634,37 @@
           if (reqPage > totalPages) reqPage = totalPages;
           const start = (reqPage - 1) * reqPageSize;
           const end = Math.min(start + reqPageSize, total);
-          const pageItems = orderedReqs.slice(start, end);
+          const groupRank = {
+            'CPNW Clinical Passport': 0,
+            'Education': 1,
+            'Healthcare': 2
+          };
+          const sortMap = {
+            grouped: (r) => r,
+            name: (r) => r.name,
+            status: (r) => getEffectiveStatus(r),
+            expiration: (r) => r.expiration,
+            type: (r) => r.type,
+            frequency: (r) => r.frequency,
+            category: (r) => r.category,
+            reviewer: (r) => r.reviewer
+          };
+          const sortFn = sortMap[reqSortKey] || sortMap.name;
+          const sortedReqs = [...orderedReqs].sort((a, b)=>{
+            if (reqSortKey === 'grouped'){
+              const aRank = a.type === 'eLearning' ? 3 : (groupRank[a.category] ?? 3);
+              const bRank = b.type === 'eLearning' ? 3 : (groupRank[b.category] ?? 3);
+              const groupResult = aRank - bRank;
+              if (groupResult !== 0) return reqSortDir === 'asc' ? groupResult : -groupResult;
+              const nameResult = compareValues(a.name, b.name);
+              return reqSortDir === 'asc' ? nameResult : -nameResult;
+            }
+            const result = compareValues(sortFn(a), sortFn(b));
+            return reqSortDir === 'asc' ? result : -result;
+          });
+          const pageItems = sortedReqs.slice(start, end);
 	        reqBody.innerHTML = pageItems.map((r, idx)=>{
-	          const saved = getDecisionRecord(person.sid, r.name);
-	          const savedStatus = decisionToStatus(saved?.decision);
-	          let effectiveStatus = savedStatus || r.status;
-	          if (r.type === 'eLearning' && !['Not Submitted','Approved','Expired','Expiring Soon'].includes(effectiveStatus)){
-	            effectiveStatus = 'Not Submitted';
-	          }
+	          const effectiveStatus = getEffectiveStatus(r);
 	          let statusBadge = '<span class="badge text-bg-secondary">Not Submitted</span>';
 	          const statusMap = {
 	            'Not Submitted':'text-bg-secondary',
@@ -615,19 +681,16 @@
 	            if (effectiveStatus && statusMap[effectiveStatus]){
 	              statusBadge = `<span class="badge ${statusMap[effectiveStatus]}">${effectiveStatus}</span>`;
 	            }
-            const scoreCell = r.type === 'eLearning' ? (r.score || '—') : '—';
           const abbr = r.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,6);
           const requiredBy = r.category === 'CPNW Clinical Passport' ? 'CPNW' : r.category === 'Education' ? 'Education' : 'CPNW Healthcare Facility';
           const nameCell = r.type === 'eLearning'
-            ? `<span class="text-body-secondary">${r.name}</span>`
-            : `<button class="btn btn-link p-0 text-decoration-none req-detail-btn" data-req-detail="1" data-req-index="${start + idx}" data-req-name="${r.name}" data-req-abbr="${abbr}" data-req-requiredby="${requiredBy}" data-req-instructions="Follow the instructions to submit required proof for ${r.name}." data-req-category="${r.category}">${r.name}</button>`;
+            ? `<span class="text-body-secondary text-start">${r.name}</span>`
+            : `<button class="btn btn-link p-0 text-decoration-none text-start req-detail-btn" data-req-detail="1" data-req-index="${start + idx}" data-req-name="${r.name}" data-req-abbr="${abbr}" data-req-requiredby="${requiredBy}" data-req-instructions="Follow the instructions to submit required proof for ${r.name}." data-req-category="${r.category}">${r.name}</button>`;
           return `
             <tr>
-              <td>${nameCell}</td>
+              <td class="text-start">${nameCell}</td>
               <td>${statusBadge}</td>
               <td>${fmt(r.expiration)}</td>
-              <td>${fmt(r.dueDate)}</td>
-              <td>${scoreCell}</td>
               <td>${r.type}</td>
               <td>${r.frequency}</td>
               <td>${r.category}</td>
@@ -644,6 +707,23 @@
             reqNext.disabled = end >= total;
           }
         }
+
+        reqSortButtons.forEach(btn=>{
+          btn.addEventListener('click', () => {
+            const key = btn.dataset.sort;
+            if (!key) return;
+            if (reqSortKey === key){
+              reqSortDir = reqSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+              reqSortKey = key;
+              reqSortDir = 'asc';
+            }
+            reqPage = 1;
+            updateSortIndicators();
+            renderReqs();
+          });
+        });
+        updateSortIndicators();
 
         const reqPageSizeSelect = document.getElementById('reqPageSize');
         if (reqPageSizeSelect){
