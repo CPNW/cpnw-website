@@ -925,6 +925,29 @@ const cpnwDemoPeople = [
     }
   },
   {
+    email: 'taylor.healthcare@cpnw.org',
+    name: 'Taylor Healthcare',
+    role: 'healthcare',
+    permissions: { canCoordinate: true, canDelete: false },
+    schools: ['CPNW Healthcare Facility'],
+    programs: ['CPNW Healthcare Facility'],
+    profile: {
+      firstName: 'Taylor',
+      lastName: 'Healthcare',
+      emailUsername: 'taylor.healthcare@cpnw.org',
+      altEmail: 'taylor@cpnw.org',
+      primaryPhone: '(206) 555-0166',
+      school: 'CPNW Healthcare Facility',
+      program: 'CPNW Healthcare Facility',
+      emergencyName: 'Jordan Healthcare',
+      emergencyPhone: '(206) 555-0168',
+      address: '901 4th Ave',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98104'
+    }
+  },
+  {
     email: 'morgan.coordinator@cpnw.org',
     name: 'Morgan Coordinator',
     role: 'education',

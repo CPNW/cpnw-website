@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Healthcare Requirements</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button data-theme-toggle type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" aria-label="Toggle dark and light mode">
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../../index.html" data-logout-trigger>Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container position-relative">
+      <img src="../../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="dashboard-healthcare.html">Back to dashboard</a>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="requirements-healthcare.html" aria-current="page">Requirements</a>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="my-profile.html">My Profile</a></li>
+              <li><a class="dropdown-item" href="security-settings.html">Security Settings</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="review-healthcare.html">Review</a></li>
+              <li><a class="dropdown-item" href="reports-healthcare.html">Reports</a></li>
+              <li><a class="dropdown-item" href="users-healthcare.html">Users</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Requirements</p>
+          <h1 class="h3 fw-semibold mb-1">Healthcare Requirements</h1>
+          <p class="text-body-secondary mb-0">Manage the requirements that programs assign to users.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary" href="requirement-builder-healthcare.html">
+            Create Requirement
+          </a>
+        </div>
+      </div>
+
+      <div class="cpnw-shell p-0 overflow-hidden">
+        <div class="d-flex flex-wrap justify-content-between align-items-center p-3 gap-3 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="reqPageSize">Show</label>
+            <select class="form-select form-select-sm" id="reqPageSize" style="width: auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span class="small text-body-secondary">entries</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="reqSearch">Search:</label>
+            <input class="form-control form-control-sm" id="reqSearch" style="width: min(340px, 70vw);" placeholder="Search…" />
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 cpnw-table">
+            <thead class="text-body-secondary small">
+              <tr>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="name">Name</button></th>
+                <th scope="col" class="d-none d-md-table-cell"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="category">Type</button></th>
+                <th scope="col" class="d-none d-lg-table-cell"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="frequency">Frequency</button></th>
+                <th scope="col" class="d-none d-xl-table-cell"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="requiredBy">Required By</button></th>
+                <th scope="col" class="d-none d-xl-table-cell"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="userType">Required For</button></th>
+                <th scope="col" class="text-nowrap"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="createdAt">Created</button></th>
+                <th scope="col" class="text-nowrap d-none d-lg-table-cell"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="retiredAt">Retired</button></th>
+                <th scope="col" class="text-nowrap"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="status">Status</button></th>
+                <th scope="col" class="text-end">Edit</th>
+                <th scope="col" class="text-end">Delete</th>
+              </tr>
+            </thead>
+            <tbody id="reqTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center p-3 gap-2 border-top">
+          <div class="small text-body-secondary" id="reqPageInfo">Page 1</div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="reqPrev">Prev</button>
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="reqNext">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../../js/main.js?v=20251214-2"></script>
+  <script src="../../js/pages/requirements-healthcare.js"></script>
+</body>
+</html>
