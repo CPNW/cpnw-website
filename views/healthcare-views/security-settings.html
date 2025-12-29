@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Security Settings</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button data-theme-toggle type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" aria-label="Toggle dark and light mode">
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../../index.html" data-logout-trigger>Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container position-relative">
+      <img src="../../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="dashboard-healthcare.html">Back to dashboard</a>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="requirements-healthcare.html">Requirements</a>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="my-profile.html">My Profile</a></li>
+              <li><a class="dropdown-item active" aria-current="page" href="security-settings.html">Security Settings</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="review-healthcare.html">Review</a></li>
+              <li><a class="dropdown-item" href="reports-healthcare.html">Reports</a></li>
+              <li><a class="dropdown-item" href="users-healthcare.html">Users</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">My Account</p>
+          <h1 class="h3 fw-semibold mb-1">My Security Settings</h1>
+          <p class="text-body-secondary mb-0">Update password and preferred authentication delivery.</p>
+        </div>
+      </div>
+
+      <div class="row g-3 g-lg-4">
+        <div class="col-12">
+          <div class="cpnw-shell p-3 p-md-4">
+            <div class="alert alert-success d-none" role="alert" id="securitySaved">
+              Settings updated (stored locally for this demo).
+            </div>
+            <div class="alert alert-warning d-none" role="alert" id="securityError"></div>
+
+            <form id="securityForm" novalidate>
+              <div class="row g-3">
+                <div class="col-12 col-lg-7">
+                  <label class="form-label" for="newPassword">Change Password</label>
+                  <input class="form-control" id="newPassword" type="password" autocomplete="new-password" placeholder="Change Password" minlength="8" />
+                  <div class="form-text">Leave blank to keep your current password.</div>
+                </div>
+                <div class="col-12 col-lg-5">
+                  <label class="form-label" for="confirmPassword">Confirm New Password</label>
+                  <input class="form-control" id="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm Password" minlength="8" />
+                </div>
+
+                <div class="col-12 col-lg-7">
+                  <label class="form-label" for="authPreference">I prefer to receive my authentication code by:</label>
+                  <select class="form-select" id="authPreference">
+                    <option value="text" selected>Text Message</option>
+                    <option value="email">Email</option>
+                  </select>
+                </div>
+                <div class="col-12 col-lg-5">
+                  <label class="form-label" for="primaryTextPhone">Primary Text Phone Number</label>
+                  <input class="form-control" id="primaryTextPhone" placeholder="xxx-xxx-xxxx" />
+                  <div class="form-text">Required if you select Text Message.</div>
+                </div>
+
+                <div class="col-12 col-lg-7">
+                  <label class="form-label" for="cellCarrier">Select Cell Carrier</label>
+                  <select class="form-select" id="cellCarrier">
+                    <option value="" selected>-No Cell Phone-</option>
+                    <option value="att">AT&amp;T</option>
+                    <option value="verizon">Verizon</option>
+                    <option value="tmobile">T-Mobile</option>
+                    <option value="sprint">Sprint</option>
+                    <option value="uscellular">U.S. Cellular</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <div class="form-text">Required if you select Text Message.</div>
+                </div>
+
+                <div class="col-12 pt-2">
+                  <button type="submit" class="btn btn-cpnw btn-cpnw-primary">Update</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../../js/main.js?v=20251214-2"></script>
+  <script src="../../js/pages/security-settings.js"></script>
+  
+</body>
+</html>

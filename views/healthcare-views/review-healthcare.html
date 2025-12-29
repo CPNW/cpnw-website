@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPNW — Healthcare Review</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <link rel="stylesheet" href="../../css/style.css" />
+</head>
+<body>
+  <header class="cpnw-header">
+    <nav class="navbar navbar-expand-md py-2" aria-label="Primary">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="../../index.html" aria-label="CPNW Home">
+          <img class="cpnw-logo" src="../../images/CPNWLogoo.png" alt="Clinical Placements Northwest" />
+        </a>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button data-theme-toggle type="button" class="btn btn-outline-secondary btn-sm btn-cpnw" aria-label="Toggle dark and light mode">
+            <span class="me-1" aria-hidden="true" data-theme-icon>🌙</span>
+            <span class="fw-bold" data-theme-label>Dark</span>
+          </button>
+          <a class="btn btn-sm btn-cpnw btn-cpnw-primary" href="../../index.html" data-logout-trigger>Log out</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="py-4 py-lg-5">
+    <div class="container position-relative">
+      <img src="../../images/spores-watermark.png" class="cpnw-spores" alt="" aria-hidden="true" />
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <a class="btn btn-outline-secondary btn-sm btn-cpnw" href="dashboard-healthcare.html">Back to dashboard</a>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="requirements-healthcare.html">Requirements</a>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              My Account
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="my-profile.html">My Profile</a></li>
+              <li><a class="dropdown-item" href="security-settings.html">Security Settings</a></li>
+            </ul>
+          </div>
+          <div class="dropdown">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Admin
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="review-healthcare.html">Review</a></li>
+              <li><a class="dropdown-item" href="reports-healthcare.html">Reports</a></li>
+              <li><a class="dropdown-item" href="users-healthcare.html">Users</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+          <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Admin</p>
+          <h1 class="h3 fw-semibold mb-1">Review Submissions</h1>
+          <p class="text-body-secondary mb-0">Verify submissions by program and status.</p>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="schoolFilter">
+              <option value="">All schools</option>
+              <option>CPNW Education</option>
+              <option>CPNW University</option>
+              <option>Evergreen College</option>
+            </select>
+            <label for="schoolFilter">School</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="programFilter">
+              <option value="">All programs</option>
+              <option value="BSN">BSN</option>
+              <option value="ADN">ADN</option>
+              <option value="Surg Tech">Surg Tech</option>
+            </select>
+            <label for="programFilter">Program</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="cohortFilter">
+              <option value="">All cohorts</option>
+            </select>
+            <label for="cohortFilter">Cohorts</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating">
+            <input type="search" class="form-control" id="reviewSearch" placeholder="Search name" />
+            <label for="reviewSearch">Search by name</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <div class="d-flex gap-2">
+          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status-chip="all">All</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="needs-review">Needs review</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status-chip="expiring">Expiring/Expired</button>
+        </div>
+      </div>
+
+      <div class="cpnw-shell p-3 p-md-4">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 cpnw-table">
+            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+              <tr>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="name">Name</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="verified">Verified</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="status">Status</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="program">Program</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="school">School</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="cohort">Cohort</button></th>
+                <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="sid">SID/EID</button></th>
+                <th scope="col" class="text-end">View</th>
+              </tr>
+            </thead>
+            <tbody id="reviewTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="reviewPageSize">Show</label>
+            <select class="form-select form-select-sm" id="reviewPageSize" style="width: auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span class="small text-body-secondary">entries</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="reviewPrevPage">Prev</button>
+            <div class="small text-body-secondary" id="reviewPageInfo">Page 1</div>
+            <button class="btn btn-outline-secondary btn-sm" type="button" id="reviewNextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="cpnw-footer py-3 py-lg-4">
+    <div class="container">
+      <div class="cpnw-footer-inner text-center">
+        <div class="small text-body-secondary">
+          Copyright © 2024 Clinical Placements Northwest | All rights reserved.
+          <a class="text-decoration-none" href="../../terms-privacy.html">Terms of Use and Privacy Policy</a>
+        </div>
+        <div class="mt-2">
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary btn-sm" data-contact-trigger>
+            Contact Us
+          </button>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header" style="background: var(--bs-body-bg);">
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="position-sticky top-0 bg-body border rounded px-3 py-2 mb-3" style="z-index:5;">
+            <h5 class="modal-title mb-1" id="reviewModalLabel"></h5>
+            <div class="small text-body-secondary" id="reviewModalSub"></div>
+          </div>
+          <div class="row g-3 mb-3 align-items-center">
+            <div class="col-12 col-md-9">
+              <div class="row g-3">
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">School</div>
+                  <div id="modalSchool" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Program</div>
+                  <div id="modalProgram" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Cohort</div>
+                  <div id="modalCohort" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">SID/EID</div>
+                  <div id="modalSid" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Email</div>
+                  <div id="modalEmail" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Contact phone</div>
+                  <div id="modalPhone" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Emergency contact name</div>
+                  <div id="modalEmergName" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">Emergency contact phone</div>
+                  <div id="modalEmergPhone" class="fw-semibold"></div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4">
+                  <div class="text-body-secondary small">DOB</div>
+                  <div id="modalDob" class="fw-semibold"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3 text-center">
+              <div class="border rounded p-2 d-inline-flex flex-column align-items-center">
+                <div class="text-body-secondary small mb-1">Profile photo</div>
+                <div class="bg-light-subtle border rounded" style="width:120px; height:140px; background:url('../../images/spores-watermark.png') center/60% no-repeat;"></div>
+              </div>
+            </div>
+          </div>
+          <hr class="my-3">
+          <h6 class="fw-bold mb-2">Clinical assignments</h6>
+          <div class="table-responsive mb-4">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="text-body-secondary small">
+                <tr>
+                  <th>Location</th>
+                  <th>Start date</th>
+                  <th>End date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="assignTableBody"></tbody>
+            </table>
+          </div>
+
+          <hr class="my-3">
+          <h6 class="fw-bold mb-2">Requirements</h6>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0" id="reqTable">
+              <thead class="text-body-secondary small">
+                <tr>
+                  <th class="text-start"><button class="btn btn-link p-0 text-decoration-none text-start req-sort" data-sort="name">Requirement Name</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="status">Status</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="expiration">Expiration</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="type">Type</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="frequency">Frequency</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="category">Category</button></th>
+                  <th><button class="btn btn-link p-0 text-decoration-none req-sort" data-sort="reviewer">Reviewer</button></th>
+                </tr>
+              </thead>
+              <tbody id="reqTableBody"></tbody>
+            </table>
+          </div>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2">
+            <label class="small text-body-secondary mb-0" for="reqPageSize">Show</label>
+            <select class="form-select form-select-sm" id="reqPageSize" style="width:auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span class="small text-body-secondary">requirements</span>
+            <div class="ms-auto d-flex align-items-center gap-2">
+              <button class="btn btn-outline-secondary btn-sm" type="button" id="reqPrev">Prev</button>
+              <div class="small text-body-secondary" id="reqPageInfo">Page 1</div>
+              <button class="btn btn-outline-secondary btn-sm" type="button" id="reqNext">Next</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary btn-cpnw" type="button" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="reqDetailModal" tabindex="-1" aria-labelledby="reqDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+        <div class="modal-header">
+          <div class="w-100">
+            <div class="bg-body border rounded px-3 py-2 mb-2">
+              <div class="text-body-secondary small">Student</div>
+              <div class="fw-semibold" id="reqDetailStudent"></div>
+              <div class="small text-body-secondary" id="reqDetailStudentEmail"></div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <h5 class="modal-title" id="reqDetailModalLabel"></h5>
+            <p class="small text-body-secondary mb-0" id="reqDetailMeta"></p>
+          </div>
+
+          <div class="mb-3">
+            <div class="text-body-secondary small mb-1">Instructions</div>
+            <p class="mb-0" id="reqDetailInstructions"></p>
+          </div>
+
+          <div class="row g-4">
+            <div class="col-12 col-lg-8 border-end">
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Submission</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input req-submission" type="radio" name="submission" id="subVaccinated" data-target="subVaccinatedFields">
+                    <label class="form-check-label" for="subVaccinated">Vaccinated / Completed</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input req-submission" type="radio" name="submission" id="subSeries" data-target="subSeriesFields">
+                    <label class="form-check-label" for="subSeries">Series in progress</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input req-submission" type="radio" name="submission" id="subOther" data-target="subOtherFields">
+                    <label class="form-check-label" for="subOther">Other</label>
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <div class="req-submission-fields d-none" id="subVaccinatedFields">
+                    <label class="form-label small mb-1" for="vaccDate">Vaccination / completion date</label>
+                    <input type="date" class="form-control form-control-sm" id="vaccDate">
+                  </div>
+                  <div class="req-submission-fields d-none" id="subSeriesFields">
+                    <div class="row g-2">
+                      <div class="col-6">
+                        <label class="form-label small mb-1" for="seriesStart">Series start</label>
+                        <input type="date" class="form-control form-control-sm" id="seriesStart">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small mb-1" for="seriesDue">Next dose due</label>
+                        <input type="date" class="form-control form-control-sm" id="seriesDue">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="req-submission-fields d-none" id="subOtherFields">
+                    <label class="form-label small mb-1" for="otherNotes">Notes</label>
+                    <textarea class="form-control form-control-sm" id="otherNotes" rows="2" placeholder="Describe submission..."></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Declination reasons</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="declEgg">
+                    <label class="form-check-label" for="declEgg">Egg allergy</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="declIngredient">
+                    <label class="form-check-label" for="declIngredient">Ingredient allergy</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="declGB">
+                    <label class="form-check-label" for="declGB">Guillain Barre</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="declOther">
+                    <label class="form-check-label" for="declOther">Other</label>
+                  </div>
+                </div>
+              </div>
+
+	              <div class="mb-3">
+	                <div class="fw-semibold mb-1">Upload document</div>
+	                <input class="form-control" type="file" id="reqUpload" multiple>
+	                <div class="form-text">Uploads are saved when you click Save (demo stores file names only).</div>
+	                <div class="mt-2 d-none" id="reqUploadedWrap">
+	                  <div class="small text-body-secondary mb-1">Saved uploads</div>
+	                  <ul class="small mb-0" id="reqUploadedList"></ul>
+	                </div>
+	              </div>
+
+              <div class="mb-3">
+                <div class="fw-semibold mb-1">Decision</div>
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decApprove">
+                    <label class="form-check-label" for="decApprove">Approve</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decConditional" data-requires-reason>
+                    <label class="form-check-label" for="decConditional">Conditionally approve</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input decision-radio" type="radio" name="decision" id="decReject" data-requires-reason>
+                    <label class="form-check-label" for="decReject">Reject</label>
+                  </div>
+                </div>
+	                <div class="mt-2 d-none" id="decisionReasonWrap">
+	                  <label class="form-label small mb-1" for="decisionReason">Reason</label>
+	                  <textarea class="form-control form-control-sm" id="decisionReason" rows="2" placeholder="Enter reason for conditional approval or rejection"></textarea>
+	                </div>
+	                <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+	                  <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" id="reqDecisionSave">Save</button>
+	                  <div class="small text-body-secondary d-none" id="reqDecisionSaved">Saved.</div>
+	                </div>
+	              </div>
+            </div>
+
+            <div class="col-12 col-lg-4">
+              <div class="fw-semibold mb-1">Message</div>
+              <div class="border rounded p-2 mb-2" style="max-height: 220px; overflow: auto; background: color-mix(in srgb, var(--bs-body-bg) 80%, transparent);">
+                <div class="text-body-secondary small mb-1">Thread</div>
+                <div class="d-flex flex-column gap-2" id="msgThread"></div>
+              </div>
+              <div class="mb-2">
+                <div class="text-body-secondary small mb-1">Send to (select one or more)</div>
+                <div class="d-flex flex-column gap-1" id="msgRecipient"></div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-1" for="msgBody">Message</label>
+                <textarea class="form-control form-control-sm" id="msgBody" rows="6" placeholder="Leave a note..."></textarea>
+              </div>
+              <button class="btn btn-outline-secondary btn-cpnw btn-sm" type="button" id="msgSend">Send message</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary btn-cpnw" type="button" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  <script src="../../js/main.js?v=20251214-2"></script>
+  <script src="../../js/pages/review-education.js"></script>
+</body>
+</html>
