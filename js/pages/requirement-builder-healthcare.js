@@ -143,7 +143,7 @@
             const safeName = escapeHTML(f.name || 'File');
             const sizeLabel = f.size ? ` • ${Math.round(f.size / 1024)} KB` : '';
             li.innerHTML = `
-              <div class="text-truncate" style="max-width: 70%;">
+              <div class="text-truncate cpnw-maxw-70">
                 <span class="fw-semibold">${safeName}</span>
                 <span class="small text-body-secondary">${sizeLabel}</span>
               </div>

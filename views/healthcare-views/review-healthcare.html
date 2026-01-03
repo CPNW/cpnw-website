@@ -54,6 +54,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="review-healthcare.html">Review</a></li>
               <li><a class="dropdown-item" href="reports-healthcare.html">Reports</a></li>
+              <li><a class="dropdown-item" href="clinical-roster-healthcare.html">Clinical Roster</a></li>
               <li><a class="dropdown-item" href="users-healthcare.html">Users</a></li>
             </ul>
           </div>
@@ -69,37 +70,37 @@
       </div>
 
       <div class="row g-3 mb-3">
-        <div class="col-12 col-md-3">
-          <div class="form-floating">
-            <select class="form-select" id="schoolFilter">
-              <option value="">All schools</option>
-              <option>CPNW Education</option>
-              <option>CPNW University</option>
-              <option>Evergreen College</option>
-            </select>
-            <label for="schoolFilter">School</label>
+        <div class="col-12 col-md-4">
+          <div class="form-floating cpnw-program-filter" data-program-filter>
+            <input
+              type="text"
+              class="form-control"
+              id="programFilter"
+              placeholder="All programs"
+              readonly
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            />
+            <label for="programFilter">School / Program</label>
+            <div class="cpnw-program-menu" data-program-menu role="listbox"></div>
           </div>
         </div>
-        <div class="col-12 col-md-3">
-          <div class="form-floating">
-            <select class="form-select" id="programFilter">
-              <option value="">All programs</option>
-              <option value="BSN">BSN</option>
-              <option value="ADN">ADN</option>
-              <option value="Surg Tech">Surg Tech</option>
-            </select>
-            <label for="programFilter">Program</label>
-          </div>
-        </div>
-        <div class="col-12 col-md-3">
-          <div class="form-floating">
-            <select class="form-select" id="cohortFilter">
-              <option value="">All cohorts</option>
-            </select>
+        <div class="col-12 col-md-4">
+          <div class="form-floating cpnw-program-filter" data-cohort-filter>
+            <input
+              type="text"
+              class="form-control"
+              id="cohortFilter"
+              placeholder="All cohorts"
+              readonly
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            />
             <label for="cohortFilter">Cohorts</label>
+            <div class="cpnw-program-menu" data-cohort-menu role="listbox"></div>
           </div>
         </div>
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-4">
           <div class="form-floating">
             <input type="search" class="form-control" id="reviewSearch" placeholder="Search name" />
             <label for="reviewSearch">Search by name</label>
@@ -118,7 +119,7 @@
       <div class="cpnw-shell p-3 p-md-4">
         <div class="table-responsive">
           <table class="table align-middle mb-0 cpnw-table">
-            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+            <thead class="text-body-secondary small position-sticky top-0 cpnw-table-head">
               <tr>
                 <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="name">Name</button></th>
                 <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="verified">Verified</button></th>
@@ -137,7 +138,7 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
           <div class="d-flex align-items-center gap-2">
             <label class="small text-body-secondary mb-0" for="reviewPageSize">Show</label>
-            <select class="form-select form-select-sm" id="reviewPageSize" style="width: auto;">
+            <select class="form-select form-select-sm w-auto" id="reviewPageSize">
               <option value="10" selected>10</option>
               <option value="25">25</option>
               <option value="50">50</option>
@@ -174,11 +175,11 @@
   <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header" style="background: var(--bs-body-bg);">
+        <div class="modal-header cpnw-modal-header">
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="position-sticky top-0 bg-body border rounded px-3 py-2 mb-3" style="z-index:5;">
+          <div class="position-sticky top-0 bg-body border rounded px-3 py-2 mb-3 cpnw-z-5">
             <h5 class="modal-title mb-1" id="reviewModalLabel"></h5>
             <div class="small text-body-secondary" id="reviewModalSub"></div>
           </div>
@@ -226,7 +227,7 @@
             <div class="col-12 col-md-3 text-center">
               <div class="border rounded p-2 d-inline-flex flex-column align-items-center">
                 <div class="text-body-secondary small mb-1">Profile photo</div>
-                <div class="bg-light-subtle border rounded" style="width:120px; height:140px; background:url('../../images/spores-watermark.png') center/60% no-repeat;"></div>
+                <div class="bg-light-subtle border rounded cpnw-doc-preview"></div>
               </div>
             </div>
           </div>
@@ -266,7 +267,7 @@
           </div>
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2">
             <label class="small text-body-secondary mb-0" for="reqPageSize">Show</label>
-            <select class="form-select form-select-sm" id="reqPageSize" style="width:auto;">
+            <select class="form-select form-select-sm w-auto" id="reqPageSize">
               <option value="10" selected>10</option>
               <option value="25">25</option>
               <option value="50">50</option>
@@ -413,7 +414,7 @@
 
             <div class="col-12 col-lg-4">
               <div class="fw-semibold mb-1">Message</div>
-              <div class="border rounded p-2 mb-2" style="max-height: 220px; overflow: auto; background: color-mix(in srgb, var(--bs-body-bg) 80%, transparent);">
+              <div class="border rounded p-2 mb-2 cpnw-thread-box">
                 <div class="text-body-secondary small mb-1">Thread</div>
                 <div class="d-flex flex-column gap-2" id="msgThread"></div>
               </div>

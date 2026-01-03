@@ -99,7 +99,7 @@
           <button class="btn btn-outline-secondary btn-sm btn-cpnw dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
             Filter requirements
           </button>
-          <div class="dropdown-menu p-3" style="min-width: 280px;" id="reviewerReqFilters">
+          <div class="dropdown-menu p-3 cpnw-dropdown-menu-280" id="reviewerReqFilters">
             <div class="small text-body-secondary">Show students with these CPNW requirements in Submitted/In Review.</div>
             <div class="d-grid gap-2 mt-2"></div>
           </div>
@@ -111,7 +111,7 @@
       <div class="cpnw-shell p-3 p-md-4">
         <div class="table-responsive">
           <table class="table align-middle mb-0 cpnw-table reviewer-attention-table">
-            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+            <thead class="text-body-secondary small position-sticky top-0 cpnw-table-head">
               <tr>
                 <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="name">Name</button></th>
                 <th scope="col"><button class="btn btn-link p-0 text-decoration-none sort" data-sort="verified">Verified</button></th>
@@ -129,7 +129,7 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
           <div class="d-flex align-items-center gap-2">
             <label class="small text-body-secondary mb-0" for="reviewPageSize">Show</label>
-            <select class="form-select form-select-sm" id="reviewPageSize" style="width: auto;">
+            <select class="form-select form-select-sm w-auto" id="reviewPageSize">
               <option value="10" selected>10</option>
               <option value="25">25</option>
               <option value="50">50</option>
@@ -150,11 +150,11 @@
   <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header" style="background: var(--bs-body-bg);">
+        <div class="modal-header cpnw-modal-header">
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="position-sticky top-0 bg-body border rounded px-3 py-2 mb-3" style="z-index:5;">
+          <div class="position-sticky top-0 bg-body border rounded px-3 py-2 mb-3 cpnw-z-5">
             <h5 class="modal-title mb-1" id="reviewModalLabel"></h5>
             <div class="small text-body-secondary" id="reviewModalSub"></div>
           </div>
@@ -202,7 +202,7 @@
             <div class="col-12 col-md-3 text-center">
               <div class="border rounded p-2 d-inline-flex flex-column align-items-center">
                 <div class="text-body-secondary small mb-1">Profile photo</div>
-                <div class="bg-light-subtle border rounded" style="width:120px; height:140px; background:url('../images/spores-watermark.png') center/60% no-repeat;"></div>
+                <div class="bg-light-subtle border rounded cpnw-doc-preview"></div>
               </div>
             </div>
           </div>
@@ -250,7 +250,7 @@
   <div class="modal fade" id="studentReqDetailModal" tabindex="-1" aria-labelledby="studentReqDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header sticky-top" style="background: var(--bs-body-bg); z-index: 5;">
+        <div class="modal-header sticky-top cpnw-modal-header-sticky">
           <div class="w-100">
             <div class="small text-body-secondary" id="studentReqDetailTypeLabel">Requirement</div>
             <h5 class="modal-title mb-0" id="studentReqDetailModalLabel"></h5>
@@ -618,7 +618,7 @@
             <div class="col-12 col-lg-5">
               <div class="mb-0">
                 <div class="fw-semibold mb-1">Message</div>
-                <div class="border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;" id="studentReqMessages"></div>
+                <div class="border rounded p-2 mb-2 cpnw-scroll-200" id="studentReqMessages"></div>
                 <div class="text-body-secondary small mb-1">Send to (select one or more)</div>
                 <div class="d-flex flex-wrap gap-3 mb-2">
                   <div class="form-check">

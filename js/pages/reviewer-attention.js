@@ -15,6 +15,7 @@
   const reqFilterHint = document.getElementById('reviewerReqFilterHint');
 
   const roster = (window.CPNW && Array.isArray(window.CPNW.reviewerRoster)) ? window.CPNW.reviewerRoster : [];
+  const requirementsStore = (window.CPNW && window.CPNW.requirementsStore) ? window.CPNW.requirementsStore : null;
 
   const DVS_PACKAGES = new Set(['sp-13', 'sp-14', 'my-17', 'my-18']);
   const PROGRAM_PACKAGES = [
@@ -26,7 +27,22 @@
     { school: 'CPNW Education', program: 'RadTech', packageId: 'sp-11' }
   ];
   const dvsPrograms = PROGRAM_PACKAGES.filter(p => DVS_PACKAGES.has(p.packageId));
-  const dvsProgramKeys = new Set(dvsPrograms.map(p => `${p.school}::${p.program}`));
+  function normalizeProgramName(name){
+    const normalized = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (normalized.includes('surg')) return 'SurgTech';
+    if (normalized.includes('rad')) return 'RadTech';
+    if (normalized.includes('bsn')) return 'BSN';
+    if (normalized.includes('adn')) return 'ADN';
+    return String(name || '').trim();
+  }
+
+  function normalizeSchoolName(name){
+    return String(name || '').trim();
+  }
+
+  const dvsProgramKeys = new Set(
+    dvsPrograms.map(p => `${normalizeSchoolName(p.school)}::${normalizeProgramName(p.program)}`)
+  );
 
   const CPNW_REQUIREMENTS = [
     'CPNW: Varicella',
@@ -211,6 +227,12 @@
     try{
       localStorage.setItem('cpnw-reviewer-decisions-v1', JSON.stringify(store));
     }catch{}
+    if (requirementsStore?.setStatus){
+      requirementsStore.setStatus({ email }, reqName, record?.status || '', {
+        source: 'decision',
+        updatedAt: record?.at || new Date().toISOString()
+      });
+    }
   }
 
   function seededStatus(email, reqLabel){
@@ -229,10 +251,28 @@
   }
 
   function requirementStatus(email, reqName, submissionKey){
+    if (requirementsStore){
+      const stored = requirementsStore.getRecord(requirementsStore.resolveStudentKey({ email }), reqName);
+      if (stored?.status) return stored.status;
+    }
     const decision = getDecision(email, reqName);
-    if (decision?.status) return decision.status;
+    if (decision?.status){
+      requirementsStore?.setStatus({ email }, reqName, decision.status, {
+        source: 'decision',
+        updatedAt: decision.at || new Date().toISOString()
+      });
+      return decision.status;
+    }
     const submissions = getStudentData(email)?.submissions || {};
-    if (submissions && submissions[submissionKey]) return 'Submitted';
+    if (submissions && submissions[submissionKey]){
+      requirementsStore?.setSubmission({ email }, reqName, {
+        updatedAt: submissions[submissionKey].submittedAt || new Date().toISOString()
+      });
+      return 'Submitted';
+    }
+    if (requirementsStore){
+      return requirementsStore.getStatus({ email }, reqName, { category: 'CPNW Clinical Passport' });
+    }
     return seededStatus(email, reqName);
   }
 
@@ -249,6 +289,9 @@
     if (s === 'approved') return '<span class="badge text-bg-success">Approved</span>';
     if (s === 'conditionally approved') return '<span class="badge text-bg-primary">Conditionally Approved</span>';
     if (s === 'rejected') return '<span class="badge text-bg-danger">Rejected</span>';
+    if (s === 'expired') return '<span class="badge text-bg-dark">Expired</span>';
+    if (s === 'expiring' || s === 'expiring soon') return '<span class="badge text-bg-warning text-dark">Expiring</span>';
+    if (s === 'declination') return '<span class="badge text-bg-danger-subtle text-danger">Declination</span>';
     return '<span class="badge text-bg-secondary">Not Submitted</span>';
   }
 
@@ -528,25 +571,34 @@
     if (decisionSaved) decisionSaved.classList.add('d-none');
 
     const savedDecision = currentReqName ? getDecision(currentStudentEmail, currentReqName) : null;
-    if (savedDecision?.status){
-      const status = String(savedDecision.status || '').toLowerCase();
+    let statusHint = savedDecision?.status || '';
+    if (!statusHint && requirementsStore){
+      const stored = requirementsStore.getRecord(
+        requirementsStore.resolveStudentKey({ email: currentStudentEmail }),
+        currentReqName
+      );
+      statusHint = stored?.status || '';
+    }
+    if (statusHint){
+      const status = String(statusHint || '').toLowerCase();
       if (decApprove) decApprove.checked = status === 'approved';
       if (decConditional) decConditional.checked = status === 'conditionally approved';
       if (decReject) decReject.checked = status === 'rejected';
-      if (decisionReason) decisionReason.value = savedDecision.reason || '';
+      if (decisionReason) decisionReason.value = savedDecision?.reason || '';
       decisionReasonWrap?.classList.toggle('d-none', !(decConditional?.checked || decReject?.checked));
     }
     detailModal.show();
   }
 
   function resolveProgram(person){
-    const program = person.programs?.[0] || person.profile?.program || '';
-    const school = person.schools?.[0] || person.profile?.school || '';
+    const program = person.program || person.programs?.[0] || person.profile?.program || '';
+    const school = person.school || person.schools?.[0] || person.profile?.school || '';
     return { program, school };
   }
 
   function isDvsProgram(program, school){
-    return dvsProgramKeys.has(`${school}::${program}`);
+    const key = `${normalizeSchoolName(school)}::${normalizeProgramName(program)}`;
+    return dvsProgramKeys.has(key);
   }
 
   function stringSeed(value){
@@ -560,10 +612,10 @@
       const sid = person.sid || person.profile?.sid || `SID-${1000 + seed}`;
       const verified = typeof person.verified === 'boolean' ? person.verified : seed % 2 === 0;
       const status = needsReview(person) ? 'needs-review' : '';
-      const phone = person.profile?.primaryPhone || `(555) 01${seed % 10}${seed % 7}-${1000 + (seed % 900)}`;
-      const emergName = person.profile?.emergencyName || `Contact ${person.name?.split(' ')[0] || 'CPNW'}`;
-      const emergPhone = person.profile?.emergencyPhone || `(555) 02${seed % 9}${seed % 8}-${1200 + (seed % 700)}`;
-      const dob = new Date(1994 + (seed % 8), seed % 12, (seed % 26) + 1);
+      const phone = person.phone || person.profile?.primaryPhone || `(555) 01${seed % 10}${seed % 7}-${1000 + (seed % 900)}`;
+      const emergName = person.emergName || person.profile?.emergencyName || `Contact ${person.name?.split(' ')[0] || 'CPNW'}`;
+      const emergPhone = person.emergPhone || person.profile?.emergencyPhone || `(555) 02${seed % 9}${seed % 8}-${1200 + (seed % 700)}`;
+      const dob = person.dob || new Date(1994 + (seed % 8), seed % 12, (seed % 26) + 1);
       return {
         name: person.name,
         email: person.email,
@@ -768,9 +820,14 @@
       const submissionKey = `cpnw_${idx + 1}`;
       const decision = getDecision(person.email, req);
       const status = requirementStatus(person.email, req, submissionKey);
+      const storedRecord = requirementsStore
+        ? requirementsStore.getRecord(requirementsStore.resolveStudentKey({ email: person.email }), req)
+        : null;
       const submittedAtRaw = submissions?.[submissionKey]?.submittedAt;
       const submittedAt = submittedAtRaw ? new Date(submittedAtRaw) : null;
-      const decisionAt = decision?.at ? new Date(decision.at) : null;
+      const decisionAt = decision?.at
+        ? new Date(decision.at)
+        : (storedRecord?.updatedAt ? new Date(storedRecord.updatedAt) : null);
       const baseDate = decisionAt instanceof Date && !Number.isNaN(decisionAt.getTime())
         ? decisionAt
         : (submittedAt instanceof Date && !Number.isNaN(submittedAt.getTime()) ? submittedAt : null);

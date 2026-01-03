@@ -1,6 +1,7 @@
 
 	    (function(){
 	      const REVIEW_DECISIONS_KEY = 'cpnw-review-decisions-v1';
+	      const requirementsStore = (window.CPNW && window.CPNW.requirementsStore) ? window.CPNW.requirementsStore : null;
 	      let currentReqContext = { sid: '', reqName: '', rerenderReqs: null };
 
 	      function loadJSON(key, fallback){
@@ -78,12 +79,158 @@
       const AY_VISIBLE_MAX = CURRENT_AY_START + 1;
       const TERMS = ['Fall','Winter','Spring','Summer'];
 
+      const isHealthcareView = window.location.pathname.includes('/healthcare-views/');
+      const ASSIGNMENTS_KEY = 'cpnw-assignments-v1';
+      const ASSIGNMENT_GRACE_DAYS = 14;
+      const HEALTHCARE_REVIEWABLE_STATUSES = new Set(['Submitted', 'In Review']);
+      const HEALTHCARE_EXPIRING_STATUSES = new Set(['Expired', 'Expiring', 'Expiring Soon']);
+      const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
+        ? window.CPNW.getCurrentUser()
+        : null;
+
       const programDefs = [
         { id:'BSN', base: 12, aySpan: 2 },
         { id:'ADN', base: 10, aySpan: 2 },
         { id:'Surg Tech', base: 8, aySpan: 2 }
       ];
       const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
+      const assignmentLocations = ['CPNW Medical Center','CPNW Healthcare Facility','Evergreen Health','Providence NW'];
+      const assignmentStatusPool = ['approved','pending','rejected'];
+
+      function normalize(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
+      function normalizeProgramToken(value){
+        const name = normalize(value).replace(/[^a-z0-9]/g, '');
+        if (name.includes('surg')) return 'surgtech';
+        if (name.includes('rad')) return 'radtech';
+        if (name.includes('bsn')) return 'bsn';
+        if (name.includes('adn')) return 'adn';
+        return name;
+      }
+
+      function formatProgramLabel(value){
+        const name = normalize(value);
+        if (name.includes('surg')) return 'Surg Tech';
+        if (name.includes('rad')) return 'Radiologic Technology';
+        if (name.includes('bsn')) return 'BSN';
+        if (name.includes('adn')) return 'ADN';
+        return String(value || '').trim();
+      }
+
+      function hydrateAssignments(list){
+        if (!Array.isArray(list)) return null;
+        return list.map(item => {
+          if (!item || typeof item !== 'object') return null;
+          const start = item.start ? new Date(item.start) : null;
+          const end = item.end ? new Date(item.end) : null;
+          return { ...item, start, end };
+        }).filter(Boolean);
+      }
+
+      function serializeAssignments(list){
+        return (Array.isArray(list) ? list : []).map(item => ({
+          ...item,
+          start: item.start instanceof Date ? item.start.toISOString() : item.start,
+          end: item.end instanceof Date ? item.end.toISOString() : item.end
+        }));
+      }
+
+      function loadAssignments(){
+        const stored = loadJSON(ASSIGNMENTS_KEY, null);
+        if (!stored || !Array.isArray(stored)) return null;
+        return hydrateAssignments(stored);
+      }
+
+      function saveAssignments(list){
+        saveJSON(ASSIGNMENTS_KEY, serializeAssignments(list));
+      }
+
+      function getHealthcareFacilityNames(){
+        if (!currentUser?.permissions?.canCoordinate) return new Set();
+        const names = [
+          currentUser.profile?.program,
+          currentUser.profile?.school,
+          ...(currentUser.programs || []),
+          ...(currentUser.schools || [])
+        ];
+        return new Set(names.map(normalize).filter(Boolean));
+      }
+
+      function seedAssignmentsFromPeople(list){
+        const assignments = [];
+        list.forEach(person => {
+          if (!person.studentId) return;
+          const parts = String(person.studentId).split('-');
+          const idx = Number(parts[0]) - 1;
+          const i = Number(parts[1]) - 1;
+          if (!Number.isFinite(idx) || !Number.isFinite(i)) return;
+          const hasCurrentUpcoming = ((idx + i) % 5) !== 0;
+          const hasPast = ((idx + i) % 3) !== 0;
+
+          if (hasPast){
+            const startPast = new Date(TODAY);
+            startPast.setDate(startPast.getDate() - (120 + idx * 3 + i));
+            const endPast = new Date(startPast);
+            endPast.setDate(endPast.getDate() + 60);
+            assignments.push({
+              id: `a-past-${person.studentId}`,
+              studentId: person.studentId,
+              studentSid: person.sid,
+              location: assignmentLocations[(i + idx) % assignmentLocations.length],
+              start: startPast,
+              end: endPast,
+              status: assignmentStatusPool[(i + idx + 1) % assignmentStatusPool.length]
+            });
+          }
+
+          if (hasCurrentUpcoming){
+            const start = new Date(TODAY);
+            start.setDate(start.getDate() + (idx * 8) + i * 2);
+            const end = new Date(start);
+            end.setDate(end.getDate() + 90);
+            assignments.push({
+              id: `a-cur-${person.studentId}`,
+              studentId: person.studentId,
+              studentSid: person.sid,
+              location: assignmentLocations[(i + idx + 2) % assignmentLocations.length],
+              start,
+              end,
+              status: assignmentStatusPool[(i + idx) % assignmentStatusPool.length]
+            });
+          }
+        });
+        return assignments;
+      }
+
+      function assignmentWithinWindow(assignment){
+        const end = assignment?.end instanceof Date ? assignment.end : (assignment?.end ? new Date(assignment.end) : null);
+        if (!(end instanceof Date) || Number.isNaN(end.getTime())) return false;
+        const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        const cutoff = new Date(endDate);
+        cutoff.setDate(cutoff.getDate() + ASSIGNMENT_GRACE_DAYS);
+        const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+        return cutoff >= today;
+      }
+
+      function assignmentMatchesFacility(assignment, facilityNames){
+        if (!facilityNames.size) return false;
+        const loc = normalize(assignment?.location);
+        return facilityNames.has(loc);
+      }
+
+      function buildAssignmentEligibility(assignments, facilityNames){
+        const ids = new Set();
+        const sids = new Set();
+        assignments.forEach(assignment => {
+          if (!assignmentMatchesFacility(assignment, facilityNames)) return;
+          if (!assignmentWithinWindow(assignment)) return;
+          if (assignment.studentId) ids.add(String(assignment.studentId));
+          if (assignment.studentSid) sids.add(String(assignment.studentSid));
+        });
+        return { ids, sids };
+      }
       const cohortSeeds = [];
       programDefs.forEach(p => {
         Array.from({length:p.aySpan},(_,i)=>CURRENT_AY_START - i).forEach(ay=>{
@@ -118,47 +265,15 @@
         cohorts = cohorts.concat(custom);
       }
       const cohortFilterEl = document.getElementById('cohortFilter');
-      if (cohortFilterEl){
-        const options = ['', '__unassigned__'];
-        cohorts.forEach(c => options.push(c.cohortLabel));
-        cohortFilterEl.innerHTML = options.map(opt => {
-          if (!opt) return `<option value="">All cohorts</option>`;
-          if (opt === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
-          return `<option value="${opt}">${opt}</option>`;
-        }).join('');
-      }
+      const cohortFilterWrap = cohortFilterEl?.closest('[data-cohort-filter]');
+      const cohortFilterMenu = cohortFilterWrap?.querySelector('[data-cohort-menu]');
 
-      const people = [];
-      const statusPool = ['needs-review','']; // blank = no outstanding review
-      cohorts.forEach((c, idx) => {
-        const count = Math.min(10, c.students);
-        for (let i=0; i<count; i++){
-          const dob = new Date(1995 + (i % 10), i % 12, (i % 27) + 1);
-          const person = {
-            name: `Student ${idx+1}-${i+1}`,
-            email: `student${idx+1}${i+1}@demo.cpnw.org`,
-            program: c.program,
-            school: c.school,
-            cohort: c.cohortLabel,
-            sid: String(1000 + idx * 50 + i),
-            verified: (i + idx) % 3 === 0,
-            status: statusPool[(i + idx) % statusPool.length],
-            phone: `(555) 01${i}${idx}-${1000 + i}`,
-            emergName: `Emergency Contact ${i+1}`,
-            emergPhone: `(555) 77${idx}-${2000 + i}`,
-            dob
-          };
-          if (cohortAPI){
-            const override = typeof cohortAPI.getUserCohortLabel === 'function'
-              ? cohortAPI.getUserCohortLabel(person.email)
-              : null;
-            if (override !== null && override !== undefined){
-              person.cohort = override;
-            }
-          }
-          people.push(person);
-        }
-      });
+      const baseRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+        ? window.CPNW.getSharedRoster()
+        : [];
+      const people = baseRoster
+        .filter(person => ['student','faculty','faculty-admin'].includes(person.role))
+        .map(person => ({ ...person }));
 
       // Include faculty + faculty-admin accounts (education-role users are intentionally excluded from this table)
       function addPerson(raw){
@@ -204,10 +319,26 @@
         dob: new Date(1985, 9, 3)
       });
 
+      const storedAssignments = loadAssignments();
+      const assignments = storedAssignments || seedAssignmentsFromPeople(people);
+      if (!storedAssignments){
+        saveAssignments(assignments);
+      }
+      const facilityNames = getHealthcareFacilityNames();
+      const assignmentEligibility = buildAssignmentEligibility(assignments, facilityNames);
+      const programAccess = (window.CPNW && typeof window.CPNW.getProgramAccess === 'function')
+        ? window.CPNW.getProgramAccess(currentUser)
+        : [];
+      const accessSummary = (window.CPNW && typeof window.CPNW.getProgramAccessSummary === 'function')
+        ? window.CPNW.getProgramAccessSummary(currentUser)
+        : { schools: [], programsBySchool: {}, programs: [] };
+      const programAccessSet = new Set(
+        programAccess.map(item => `${normalize(item.school)}|${normalizeProgramToken(item.program)}`)
+      );
+
       const statusChipButtons = document.querySelectorAll('[data-status-chip]');
       const reviewTableBody = document.getElementById('reviewTableBody');
       const reviewSearch = document.getElementById('reviewSearch');
-      const schoolFilter = document.getElementById('schoolFilter');
       const programFilter = document.getElementById('programFilter');
       const reviewPageSizeSelect = document.getElementById('reviewPageSize');
       const reviewPrevPage = document.getElementById('reviewPrevPage');
@@ -219,6 +350,89 @@
       let reviewPage = 1;
       let reviewPageSize = Number(reviewPageSizeSelect?.value || 10);
       let sortState = { field:'', dir:'asc' };
+
+      function getProgramsBySchool(){
+        if (!isHealthcareView && Object.keys(accessSummary.programsBySchool || {}).length){
+          return accessSummary.programsBySchool;
+        }
+        const source = isHealthcareView
+          ? people.filter(p => (p.studentId && assignmentEligibility.ids.has(p.studentId))
+            || assignmentEligibility.sids.has(p.sid))
+          : people;
+        return source.reduce((acc, person) => {
+          if (!person.school || !person.program) return acc;
+          acc[person.school] ||= [];
+          acc[person.school].push(person.program);
+          return acc;
+        }, {});
+      }
+
+      const programFilterWrap = programFilter?.closest('[data-program-filter]');
+      const programFilterMenu = programFilterWrap?.querySelector('[data-program-menu]');
+      const programFilterControl = (window.CPNW && typeof window.CPNW.buildProgramFilter === 'function')
+        ? window.CPNW.buildProgramFilter({
+          input: programFilter,
+          menu: programFilterMenu,
+          programsBySchool: getProgramsBySchool(),
+          formatProgramLabel,
+          onChange: () => {
+            reviewPage = 1;
+            updateCohortItems();
+            renderReviews();
+          }
+        })
+        : null;
+
+      const cohortFilterControl = (isHealthcareView && window.CPNW && typeof window.CPNW.buildCheckboxMultiSelect === 'function')
+        ? window.CPNW.buildCheckboxMultiSelect({
+          input: cohortFilterEl,
+          menu: cohortFilterMenu,
+          placeholder: 'All cohorts',
+          onChange: () => {
+            reviewPage = 1;
+            renderReviews();
+          }
+        })
+        : null;
+
+      function getCohortItems(programSelections = []){
+        const hasProgramSelections = programSelections.length > 0;
+        const filtered = cohorts.filter(c => {
+          if (!hasProgramSelections) return true;
+          return programSelections.some(sel =>
+            normalize(sel.school) === normalize(c.school)
+            && normalizeProgramToken(sel.program) === normalizeProgramToken(c.program)
+          );
+        });
+        const items = [];
+        const seen = new Set();
+        items.push({ value: '__unassigned__', label: 'Unassigned', group: '' });
+        filtered.forEach(c => {
+          if (seen.has(c.cohortLabel)) return;
+          seen.add(c.cohortLabel);
+          items.push({ value: c.cohortLabel, label: c.cohortLabel, group: c.school || '' });
+        });
+        return items;
+      }
+
+      function updateCohortItems(){
+        if (cohortFilterControl){
+          const selections = programFilterControl ? programFilterControl.getSelection() : [];
+          cohortFilterControl.setItems(getCohortItems(selections));
+          return;
+        }
+        if (cohortFilterEl){
+          const options = ['', '__unassigned__'];
+          cohorts.forEach(c => options.push(c.cohortLabel));
+          cohortFilterEl.innerHTML = options.map(opt => {
+            if (!opt) return `<option value="">All cohorts</option>`;
+            if (opt === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
+            return `<option value="${opt}">${opt}</option>`;
+          }).join('');
+        }
+      }
+
+      updateCohortItems();
 
       const CPNW_ELEARNING = [
         'Bloodborne Pathogens and Workplace Safety',
@@ -281,7 +495,7 @@
       }
 
       function hasExpiringReq(person){
-        const rows = buildReqs(person.status === 'needs-review' ? 'needs-review' : 'complete', seedFromPerson(person), person.sid)
+        const rows = buildReqs('complete', seedFromPerson(person), person.sid, person.email)
           .filter(r => r.category === 'CPNW Clinical Passport' || r.category === 'Education');
         const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
         const windowEnd = datePlusDays(30);
@@ -292,14 +506,42 @@
         });
       }
 
+      function getHealthcareReqSummary(person){
+        const rows = buildReqs(
+          'complete',
+          seedFromPerson(person),
+          person.sid,
+          person.email
+        ).filter(r => r.category === 'Healthcare');
+        let hasReviewable = false;
+        let hasExpiring = false;
+        rows.forEach(r => {
+          if (HEALTHCARE_REVIEWABLE_STATUSES.has(r.status)) hasReviewable = true;
+          if (HEALTHCARE_EXPIRING_STATUSES.has(r.status)) hasExpiring = true;
+        });
+        return { hasReviewable, hasExpiring };
+      }
+
+      function getEducationReviewStatus(person){
+        const rows = buildReqs(
+          'complete',
+          seedFromPerson(person),
+          person.sid,
+          person.email
+        ).filter(r => r.category !== 'Healthcare' && r.type !== 'eLearning');
+        const needsReview = rows.some(r => r.status === 'Submitted' || r.status === 'In Review');
+        return needsReview ? 'needs-review' : '';
+      }
+
       function isImmunizationRequirement(name){
         if (!name) return false;
         return /(covid|covid-19|hepatitis|influenza|varicella|measles|mumps|rubella|mmr|tetanus|diphtheria|pertussis|tdap|tb|tuberculin|vaccine|vaccination|immunization)/i.test(name);
       }
 
-      function buildReqs(overallStatus, seed = 0, sid = ''){
+      function buildReqs(overallStatus, seed = 0, sid = '', studentEmail = ''){
         const rows = [];
         const seedOffset = Number.isFinite(seed) ? seed : 0;
+        const studentKey = requirementsStore ? requirementsStore.resolveStudentKey({ sid, email: studentEmail }) : '';
         Object.entries(reqCounts).forEach(([key,count])=>{
           for(let i=1;i<=count;i++){
             const isCPNW = key === 'cpnw';
@@ -337,11 +579,26 @@
               status = 'Approved';
               exp = datePlusDays(365);
             }
+            let storedRecord = null;
+            if (requirementsStore && studentKey){
+              storedRecord = requirementsStore.getRecord(studentKey, name);
+              if (storedRecord?.status){
+                status = storedRecord.status;
+              }else{
+                status = requirementsStore.getStatus(studentKey, name, { category, isElearning });
+              }
+            }
             if (sid){
               const saved = getDecisionRecord(sid, name);
               const savedStatus = decisionToStatus(saved?.decision);
-              if (savedStatus){
+              if (savedStatus && (!storedRecord || storedRecord.source === 'seed')){
                 status = savedStatus;
+                if (requirementsStore){
+                  requirementsStore.setStatus({ sid, email: studentEmail }, name, savedStatus, {
+                    source: 'decision',
+                    updatedAt: saved?.savedAt || saved?.at || new Date().toISOString()
+                  });
+                }
                 if (status === 'Approved' || status === 'Conditionally Approved'){
                   if (frequency === 'Annual' || frequency === 'Seasonal'){
                     const baseDate = saved?.at ? new Date(saved.at) : TODAY;
@@ -393,6 +650,7 @@
         if (!val) return '<span class="text-body-secondary">—</span>';
         const map = {
           'needs-review': { text:'Needs review', cls:'text-bg-warning text-dark' },
+          'expiring': { text:'Expiring/Expired', cls:'text-bg-danger' },
           'approved': { text:'Approved', cls:'text-bg-success' },
           'returned': { text:'Returned', cls:'text-bg-danger' }
         };
@@ -400,28 +658,79 @@
         return `<span class="badge ${info.cls}">${info.text}</span>`;
       }
 
+      function healthcareStatusBadge(summary){
+        if (!summary) return '<span class="text-body-secondary">—</span>';
+        if (summary.hasReviewable) return statusBadge('needs-review');
+        if (summary.hasExpiring) return statusBadge('expiring');
+        return '<span class="text-body-secondary">—</span>';
+      }
+
       function renderReviews(){
         const q = (reviewSearch?.value || '').toLowerCase();
-        const school = schoolFilter?.value || '';
-        const program = programFilter?.value || '';
+        const programSelections = programFilterControl ? programFilterControl.getSelection() : [];
+        const hasProgramSelections = programSelections.length > 0;
         const validCohorts = new Set([...cohorts.map(c=>c.cohortLabel), '__unassigned__']);
-        const cohortSel = cohortFilterEl && cohortFilterEl.value && validCohorts.has(cohortFilterEl.value) ? cohortFilterEl.value : '';
+        const cohortSelections = cohortFilterControl
+          ? cohortFilterControl.getSelection().filter(val => validCohorts.has(val))
+          : (cohortFilterEl && validCohorts.has(cohortFilterEl.value) && cohortFilterEl.value ? [cohortFilterEl.value] : []);
+        const cohortSet = new Set(cohortSelections);
+        const hasCohortSelections = cohortSet.size > 0;
+        const hcSummaryCache = isHealthcareView ? new Map() : null;
+
+        function getHcSummary(person){
+          if (!isHealthcareView) return null;
+          const key = person.sid || person.studentId || person.email || person.name;
+          if (hcSummaryCache.has(key)) return hcSummaryCache.get(key);
+          const summary = getHealthcareReqSummary(person);
+          hcSummaryCache.set(key, summary);
+          return summary;
+        }
+
+        function getStatusValue(person){
+          if (isHealthcareView){
+            const summary = getHcSummary(person);
+            if (summary?.hasReviewable) return 'needs-review';
+            if (summary?.hasExpiring) return 'expiring';
+            return '';
+          }
+          return getEducationReviewStatus(person);
+        }
 
         const filtered = people.filter(p=>{
-          if (currentStatusChip === 'expiring'){
-            if (!hasExpiringReq(p)) return false;
-          }else if (currentStatusChip !== 'all' && p.status !== currentStatusChip){
-            return false;
-          }
-          if (cohortSel){
-            if (cohortSel === '__unassigned__'){
-              if ((p.cohort || '').trim()) return false;
-            }else{
-              if (p.cohort !== cohortSel) return false;
+          if (isHealthcareView){
+            const matchesAssignment = (p.studentId && assignmentEligibility.ids.has(p.studentId))
+              || assignmentEligibility.sids.has(p.sid);
+            if (!matchesAssignment) return false;
+            const summary = getHcSummary(p);
+            if (currentStatusChip === 'needs-review' && !summary.hasReviewable) return false;
+            if (currentStatusChip === 'expiring' && !summary.hasExpiring) return false;
+          }else{
+            if (programAccessSet.size){
+              const key = `${normalize(p.school)}|${normalizeProgramToken(p.program)}`;
+              if (!programAccessSet.has(key)) return false;
+            }
+            if (currentStatusChip === 'expiring'){
+              if (!hasExpiringReq(p)) return false;
+            }else if (currentStatusChip !== 'all' && getStatusValue(p) !== currentStatusChip){
+              return false;
             }
           }
-          if (school && p.school !== school) return false;
-          if (program && p.program !== program) return false;
+          if (hasCohortSelections){
+            const cohortLabel = (p.cohort || '').trim();
+            const wantsUnassigned = cohortSet.has('__unassigned__');
+            if (!cohortLabel){
+              if (!wantsUnassigned) return false;
+            }else if (!cohortSet.has(cohortLabel)){
+              return false;
+            }
+          }
+          if (hasProgramSelections){
+            const matchesProgram = programSelections.some(sel =>
+              normalize(sel.school) === normalize(p.school)
+              && normalizeProgramToken(sel.program) === normalizeProgramToken(p.program)
+            );
+            if (!matchesProgram) return false;
+          }
           if (q && !`${p.name} ${p.sid} ${p.email}`.toLowerCase().includes(q)) return false;
           return true;
         });
@@ -437,8 +746,8 @@
           if (!field){
             return a.name.localeCompare(b.name);
           }
-          const valA = (a[field] ?? '').toString().toLowerCase();
-          const valB = (b[field] ?? '').toString().toLowerCase();
+          const valA = (field === 'status' ? getStatusValue(a) : (a[field] ?? '')).toString().toLowerCase();
+          const valB = (field === 'status' ? getStatusValue(b) : (b[field] ?? '')).toString().toLowerCase();
           if (valA < valB) return -1 * dir;
           if (valA > valB) return 1 * dir;
           return a.name.localeCompare(b.name);
@@ -455,7 +764,7 @@
           <tr>
             <td class="fw-semibold">${p.name}</td>
             <td>${p.verified ? '✓' : ''}</td>
-            <td>${statusBadge(p.status)}</td>
+            <td>${isHealthcareView ? healthcareStatusBadge(getHcSummary(p)) : statusBadge(getStatusValue(p))}</td>
             <td>${p.program}</td>
             <td>${p.school}</td>
             <td>${p.cohort ? p.cohort : '<span class="text-body-secondary">Unassigned</span>'}</td>
@@ -487,7 +796,7 @@
         });
       });
 
-      [reviewSearch, schoolFilter, programFilter, cohortFilterEl].forEach(el=>{
+      [reviewSearch, cohortFilterEl].forEach(el=>{
         if (!el) return;
         el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', ()=>{
           reviewPage = 1;
@@ -533,12 +842,9 @@
         });
       });
 
-      document.addEventListener('click', (e)=>{
-        const btn = e.target.closest('[data-review]');
-        if (!btn) return;
-        const sid = btn.dataset.review;
-        const person = people.find(p=>p.sid === sid);
+      function openReviewModal(person){
         if (!person) return;
+        const sid = person.sid;
         document.getElementById('reviewModalLabel').textContent = person.name;
         document.getElementById('reviewModalSub').textContent = person.email;
         document.getElementById('modalSchool').textContent = person.school;
@@ -580,13 +886,20 @@
         let reqPage = 1;
         let reqSortKey = 'grouped';
         let reqSortDir = 'asc';
-        const reqRows = buildReqs(person.status === 'needs-review' ? 'needs-review' : 'complete', seedFromPerson(person), person.sid);
-        const orderedReqs = [
-          ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type !== 'eLearning'),
-          ...reqRows.filter(r => r.category === 'Education'),
-          ...reqRows.filter(r => r.category === 'Healthcare'),
-          ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type === 'eLearning')
-        ];
+        const reqRows = buildReqs('complete', seedFromPerson(person), person.sid, person.email);
+        const orderedReqs = isHealthcareView
+          ? [
+            ...reqRows.filter(r => r.category === 'Healthcare'),
+            ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type !== 'eLearning'),
+            ...reqRows.filter(r => r.category === 'Education'),
+            ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type === 'eLearning')
+          ]
+          : [
+            ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type !== 'eLearning'),
+            ...reqRows.filter(r => r.category === 'Education'),
+            ...reqRows.filter(r => r.category === 'Healthcare'),
+            ...reqRows.filter(r => r.category === 'CPNW Clinical Passport' && r.type === 'eLearning')
+          ];
         const reqBody = document.getElementById('reqTableBody');
         const reqTable = document.getElementById('reqTable');
         const reqSortButtons = reqTable ? reqTable.querySelectorAll('.req-sort') : [];
@@ -596,9 +909,19 @@
         const reqPageInfo = document.getElementById('reqPageInfo');
 
         function getEffectiveStatus(r){
-          const saved = getDecisionRecord(person.sid, r.name);
-          const savedStatus = decisionToStatus(saved?.decision);
-          let effectiveStatus = savedStatus || r.status;
+          let effectiveStatus = r.status;
+          if (requirementsStore){
+            const stored = requirementsStore.getStatus(
+              { sid: person.sid, email: person.email },
+              r.name,
+              { category: r.category, isElearning: r.type === 'eLearning' }
+            );
+            if (stored) effectiveStatus = stored;
+          }else{
+            const saved = getDecisionRecord(person.sid, r.name);
+            const savedStatus = decisionToStatus(saved?.decision);
+            if (savedStatus) effectiveStatus = savedStatus;
+          }
           if (r.type === 'eLearning' && !['Not Submitted','Approved','Expired','Expiring Soon'].includes(effectiveStatus)){
             effectiveStatus = 'Not Submitted';
           }
@@ -634,11 +957,17 @@
           if (reqPage > totalPages) reqPage = totalPages;
           const start = (reqPage - 1) * reqPageSize;
           const end = Math.min(start + reqPageSize, total);
-          const groupRank = {
-            'CPNW Clinical Passport': 0,
-            'Education': 1,
-            'Healthcare': 2
-          };
+          const groupRank = isHealthcareView
+            ? {
+              'Healthcare': 0,
+              'CPNW Clinical Passport': 1,
+              'Education': 2
+            }
+            : {
+              'CPNW Clinical Passport': 0,
+              'Education': 1,
+              'Healthcare': 2
+            };
           const sortMap = {
             grouped: (r) => r,
             name: (r) => r.name,
@@ -752,8 +1081,8 @@
         reviewModalEl.dataset.studentName = person.name;
         reviewModalEl.dataset.studentSid = person.sid;
         reviewModalEl.dataset.studentEmail = person.email;
-        currentReqContext = { sid: person.sid, reqName: '', rerenderReqs: renderReqs };
-      });
+        currentReqContext = { sid: person.sid, reqName: '', rerenderReqs: renderReqs, email: person.email };
+      }
 
       function renderThread(){
         const threadWrap = document.getElementById('msgThread');
@@ -840,6 +1169,23 @@
 	        if (uploadEl) uploadEl.value = '';
 	        setUploadedList([]);
 
+	        const decisionWrap = document.getElementById('reqDecisionSave')?.closest('.mb-3');
+	        let decisionNote = document.getElementById('decisionRestrictionNote');
+	        if (!decisionNote && decisionWrap){
+	          decisionNote = document.createElement('div');
+	          decisionNote.id = 'decisionRestrictionNote';
+	          decisionNote.className = 'small text-body-secondary mt-2 d-none';
+	          decisionNote.textContent = 'Review decisions are limited to Healthcare requirements.';
+	          decisionWrap.appendChild(decisionNote);
+	        }
+	        const lockDecisions = isHealthcareView && category !== 'Healthcare';
+	        document.querySelectorAll('.decision-radio').forEach(r=>r.disabled = lockDecisions);
+	        const decisionReason = document.getElementById('decisionReason');
+	        if (decisionReason) decisionReason.disabled = lockDecisions;
+	        const decisionSave = document.getElementById('reqDecisionSave');
+	        if (decisionSave) decisionSave.disabled = lockDecisions;
+	        if (decisionNote) decisionNote.classList.toggle('d-none', !lockDecisions);
+
 	        // Load saved decision if present
 	        if (sid){
 	          const saved = getDecisionRecord(sid, name);
@@ -892,7 +1238,7 @@
 	        const reqModal = new bootstrap.Modal(reqModalEl);
 	        reqModalEl.dataset.reqSid = sid;
 	        reqModalEl.dataset.reqName = name;
-	        currentReqContext = { ...currentReqContext, sid, reqName: name };
+	        currentReqContext = { ...currentReqContext, sid, reqName: name, category };
 
 	        window.__reviewWasOpen = reviewModalEl?.classList.contains('show');
         if (window.__reviewWasOpen && reviewModalInstance){
@@ -902,6 +1248,15 @@
         currentReplyThreadIndex = null;
         renderThread();
         reqModal.show();
+      });
+
+      document.addEventListener('click', (e)=>{
+        const btn = e.target.closest('[data-review]');
+        if (!btn) return;
+        const sid = btn.dataset.review;
+        const person = people.find(p=>p.sid === sid);
+        if (!person) return;
+        openReviewModal(person);
       });
 
       // submission radio toggle
@@ -933,6 +1288,11 @@
         const reqName = modalEl?.dataset?.reqName || document.getElementById('reqDetailModalLabel')?.textContent || '';
         if (!sid || !reqName){
           alert('Unable to save: missing student/requirement context.');
+          return;
+        }
+
+        if (isHealthcareView && currentReqContext?.category !== 'Healthcare'){
+          alert('Healthcare users can only review Healthcare requirements.');
           return;
         }
 
@@ -983,6 +1343,14 @@
         };
 
         saveDecisionRecord(sid, reqName, record);
+        if (requirementsStore && decision){
+          requirementsStore.setDecision(
+            { sid, email: currentReqContext?.email || '' },
+            reqName,
+            decision,
+            { source: 'decision', updatedAt: record.savedAt }
+          );
+        }
         const uploadEl = document.getElementById('reqUpload');
         if (uploadEl) uploadEl.value = '';
         setUploadedList(record.uploads);
@@ -1053,5 +1421,13 @@
       }
 
       renderReviews();
+
+      if (isHealthcareView){
+        const sidParam = new URLSearchParams(window.location.search).get('sid');
+        if (sidParam){
+          const person = people.find(p => String(p.sid) === String(sidParam));
+          if (person) openReviewModal(person);
+        }
+      }
     })();
   

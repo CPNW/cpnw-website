@@ -22,6 +22,7 @@
   const queueTotal = document.getElementById('reviewerQueueTotal');
 
   const DVS_PACKAGES = new Set(['sp-13', 'sp-14', 'my-17', 'my-18']);
+  const requirementsStore = (window.CPNW && window.CPNW.requirementsStore) ? window.CPNW.requirementsStore : null;
   const PROGRAM_PACKAGES = [
     { school: 'CPNW University', program: 'ADN', packageId: 'sp-13' },
     { school: 'CPNW University', program: 'BSN', packageId: 'sp-11' },
@@ -32,7 +33,22 @@
   ];
 
   const dvsPrograms = PROGRAM_PACKAGES.filter(p => DVS_PACKAGES.has(p.packageId));
-  const dvsProgramKeys = new Set(dvsPrograms.map(p => `${p.school}::${p.program}`));
+  function normalizeProgramName(name){
+    const normalized = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (normalized.includes('surg')) return 'SurgTech';
+    if (normalized.includes('rad')) return 'RadTech';
+    if (normalized.includes('bsn')) return 'BSN';
+    if (normalized.includes('adn')) return 'ADN';
+    return String(name || '').trim();
+  }
+
+  function normalizeSchoolName(name){
+    return String(name || '').trim();
+  }
+
+  const dvsProgramKeys = new Set(
+    dvsPrograms.map(p => `${normalizeSchoolName(p.school)}::${normalizeProgramName(p.program)}`)
+  );
 
   const CPNW_REQUIREMENTS = [
     'CPNW: Varicella',
@@ -70,13 +86,14 @@
   }
 
   function resolveProgram(person){
-    const program = person.programs?.[0] || person.profile?.program || '';
-    const school = person.schools?.[0] || person.profile?.school || '';
+    const program = person.program || person.programs?.[0] || person.profile?.program || '';
+    const school = person.school || person.schools?.[0] || person.profile?.school || '';
     return { program, school };
   }
 
   function isDvsProgram(program, school){
-    return dvsProgramKeys.has(`${school}::${program}`);
+    const key = `${normalizeSchoolName(school)}::${normalizeProgramName(program)}`;
+    return dvsProgramKeys.has(key);
   }
 
   function getStudentData(email){
@@ -138,6 +155,12 @@
     const key = `${email}|${reqName}`.toLowerCase();
     store[key] = { status, at: new Date().toISOString() };
     saveJSON('cpnw-reviewer-decisions-v1', store);
+    if (requirementsStore?.setStatus){
+      requirementsStore.setStatus({ email }, reqName, status, {
+        source: 'decision',
+        updatedAt: new Date().toISOString()
+      });
+    }
   }
 
   function getDecision(email, reqName){
@@ -146,10 +169,28 @@
   }
 
   function requirementStatus(email, reqName, submissionKey){
+    if (requirementsStore){
+      const stored = requirementsStore.getRecord(requirementsStore.resolveStudentKey({ email }), reqName);
+      if (stored?.status) return stored.status;
+    }
     const decision = getDecision(email, reqName);
-    if (decision?.status) return decision.status;
+    if (decision?.status){
+      requirementsStore?.setStatus({ email }, reqName, decision.status, {
+        source: 'decision',
+        updatedAt: decision.at || new Date().toISOString()
+      });
+      return decision.status;
+    }
     const submissions = getStudentData(email)?.submissions || {};
-    if (submissions && submissions[submissionKey]) return 'Submitted';
+    if (submissions && submissions[submissionKey]){
+      requirementsStore?.setSubmission({ email }, reqName, {
+        updatedAt: submissions[submissionKey].submittedAt || new Date().toISOString()
+      });
+      return 'Submitted';
+    }
+    if (requirementsStore){
+      return requirementsStore.getStatus({ email }, reqName, { category: 'CPNW Clinical Passport' });
+    }
     return seededStatus(email, reqName);
   }
 
@@ -159,6 +200,10 @@
     if (s === 'conditionally approved') return '<span class="badge text-bg-primary">Conditionally Approved</span>';
     if (s === 'rejected') return '<span class="badge text-bg-danger">Rejected</span>';
     if (s === 'submitted') return '<span class="badge text-bg-info text-dark">Submitted</span>';
+    if (s === 'in review') return '<span class="badge text-bg-warning text-dark">In Review</span>';
+    if (s === 'expired') return '<span class="badge text-bg-dark">Expired</span>';
+    if (s === 'expiring' || s === 'expiring soon') return '<span class="badge text-bg-warning text-dark">Expiring</span>';
+    if (s === 'declination') return '<span class="badge text-bg-danger-subtle text-danger">Declination</span>';
     return '<span class="badge text-bg-secondary">Not Submitted</span>';
   }
 

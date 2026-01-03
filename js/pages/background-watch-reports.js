@@ -201,6 +201,8 @@
       cohorts.forEach((c, idx) => {
         const count = Math.min(12, c.students);
         for (let i = 0; i < count; i++){
+          const studentId = `${idx+1}-${i+1}`;
+          const sid = String(1000 + idx * 50 + i);
           const email = `student${idx+1}${i+1}@demo.cpnw.org`;
           let cohortLabel = c.cohortLabel;
           if (cohortAPI && typeof cohortAPI.getUserCohortLabel === 'function'){
@@ -210,14 +212,25 @@
             }
           }
           const record = getRecord(email);
-          roster.push({
-            name: `Student ${idx+1}-${i+1}`,
+          const entry = {
+            name: `Student ${studentId}`,
             email,
             program: c.program,
             cohort: cohortLabel,
             checkr: record.checkr,
-            watch: record.watch
-          });
+            watch: record.watch,
+            studentId,
+            sid
+          };
+          const rosterEntry = (window.CPNW && typeof window.CPNW.findRosterEntry === 'function')
+            ? window.CPNW.findRosterEntry({ studentId, sid: entry.sid, email: entry.email })
+            : null;
+          if (rosterEntry){
+            entry.name = rosterEntry.name || entry.name;
+            entry.email = rosterEntry.email || entry.email;
+            entry.sid = rosterEntry.sid || entry.sid;
+          }
+          roster.push(entry);
         }
       });
 
@@ -549,4 +562,3 @@
       render();
     })();
   
-

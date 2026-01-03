@@ -52,6 +52,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="review-healthcare.html">Review</a></li>
               <li><a class="dropdown-item" href="reports-healthcare.html">Reports</a></li>
+              <li><a class="dropdown-item" href="clinical-roster-healthcare.html">Clinical Roster</a></li>
               <li><a class="dropdown-item" href="users-healthcare.html">Users</a></li>
             </ul>
           </div>
@@ -80,28 +81,6 @@
               <div class="col-12 col-md-6">
                 <input type="search" class="form-control form-control-sm" placeholder="Search name, email" id="userSearch">
               </div>
-              <div class="col-12 col-md-6">
-                <select class="form-select form-select-sm" id="roleFilter">
-                  <option value="">All roles</option>
-                  <option value="education">Education</option>
-                  <option value="faculty">Faculty</option>
-                  <option value="student">Student</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-6">
-                <select class="form-select form-select-sm" id="programFilter">
-                  <option value="">All programs</option>
-                  <option value="BSN">BSN</option>
-                  <option value="ADN">ADN</option>
-                  <option value="Surg Tech">Surg Tech</option>
-                  <option value="Allied">Allied</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-6">
-                <select class="form-select form-select-sm" id="cohortFilter">
-                  <option value="">All cohorts</option>
-                </select>
-              </div>
             </div>
           </div>
         </div>
@@ -119,7 +98,7 @@
         </div>
         <div class="table-responsive">
 	          <table class="table align-middle mb-0 cpnw-table">
-	            <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+	            <thead class="text-body-secondary small position-sticky top-0 cpnw-table-head">
 	              <tr>
 	                <th scope="col"><input type="checkbox" id="selectAll"></th>
 	                <th scope="col">Name</th>
@@ -136,7 +115,7 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 gap-2">
           <div class="d-flex align-items-center gap-2">
             <label class="small text-body-secondary mb-0" for="pageSize">Show</label>
-            <select class="form-select form-select-sm" id="pageSize" style="width: auto;">
+            <select class="form-select form-select-sm w-auto" id="pageSize">
               <option value="10" selected>10</option>
               <option value="25">25</option>
               <option value="50">50</option>

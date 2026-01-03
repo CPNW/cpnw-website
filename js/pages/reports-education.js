@@ -6,6 +6,7 @@
       const AY_VISIBLE_MIN = CURRENT_AY_START - 3;
       const AY_VISIBLE_MAX = CURRENT_AY_START + 1;
       const TERMS = ['Fall','Winter','Spring','Summer'];
+      const isHealthcareView = window.location.pathname.includes('/healthcare-views/');
       const currentUser = (() => {
         try{
           return JSON.parse(localStorage.getItem('cpnw-current-user') || 'null');
@@ -17,7 +18,16 @@
       const currentPrograms = Array.isArray(currentUser?.programs)
         ? currentUser.programs
         : currentUser?.programs ? [currentUser.programs] : [];
-      const allowedPrograms = currentPrograms.map(p => String(p || '').toLowerCase());
+      const accessPrograms = (window.CPNW && typeof window.CPNW.getProgramAccessPrograms === 'function')
+        ? window.CPNW.getProgramAccessPrograms(currentUser)
+        : currentPrograms;
+      const accessSummary = (window.CPNW && typeof window.CPNW.getProgramAccessSummary === 'function')
+        ? window.CPNW.getProgramAccessSummary(currentUser)
+        : { schools: [], programsBySchool: {}, programs: accessPrograms };
+      const allowedPrograms = accessPrograms.map(p => String(p || '').toLowerCase());
+      const ASSIGNMENTS_KEY = 'cpnw-assignments-v1';
+      const ASSIGNMENT_WINDOW_DAYS = 42;
+      const ASSIGNMENT_GRACE_DAYS = 14;
 
       function normalizeProgramLabel(label){
         const name = String(label || '').toLowerCase();
@@ -27,6 +37,117 @@
         if (name.includes('adn')) return 'adn';
         return name;
       }
+
+      function formatProgramLabel(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'Surg Tech';
+        if (name.includes('rad')) return 'Radiologic Technology';
+        if (name.includes('bsn')) return 'BSN';
+        if (name.includes('adn')) return 'ADN';
+        return String(label || '').trim();
+      }
+
+      function normalizeSchool(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
+      function normalize(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
+      function hydrateAssignments(list){
+        if (!Array.isArray(list)) return [];
+        return list.map(item => {
+          if (!item || typeof item !== 'object') return null;
+          const start = item.start ? new Date(item.start) : null;
+          const end = item.end ? new Date(item.end) : null;
+          return { ...item, start, end };
+        }).filter(Boolean);
+      }
+
+      function loadAssignments(){
+        try{
+          const raw = localStorage.getItem(ASSIGNMENTS_KEY);
+          if (!raw) return [];
+          return hydrateAssignments(JSON.parse(raw));
+        }catch{
+          return [];
+        }
+      }
+
+      function getHealthcareFacilityNames(){
+        if (!currentUser?.permissions?.canCoordinate) return new Set();
+        const names = [
+          currentUser.profile?.program,
+          currentUser.profile?.school,
+          ...(currentUser.programs || []),
+          ...(currentUser.schools || [])
+        ];
+        return new Set(names.map(normalize).filter(Boolean));
+      }
+
+      function assignmentMatchesFacility(assignment, facilityNames){
+        if (!facilityNames.size) return false;
+        return facilityNames.has(normalize(assignment?.location));
+      }
+
+      function assignmentWithinWindow(assignment){
+        const start = assignment?.start instanceof Date ? assignment.start : (assignment?.start ? new Date(assignment.start) : null);
+        const end = assignment?.end instanceof Date ? assignment.end : (assignment?.end ? new Date(assignment.end) : null);
+        if (!(start instanceof Date) || Number.isNaN(start.getTime())) return false;
+        if (!(end instanceof Date) || Number.isNaN(end.getTime())) return false;
+        const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+        const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+        const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+        const upcomingLimit = new Date(today);
+        upcomingLimit.setDate(upcomingLimit.getDate() + ASSIGNMENT_WINDOW_DAYS);
+        const endLimit = new Date(endDay);
+        endLimit.setDate(endLimit.getDate() + ASSIGNMENT_GRACE_DAYS);
+        const startsSoon = startDay >= today && startDay <= upcomingLimit;
+        const activeOrRecent = startDay <= today && endLimit >= today;
+        return startsSoon || activeOrRecent;
+      }
+
+      function buildHealthcareEligibility(){
+        const assignments = loadAssignments();
+        const facilityNames = getHealthcareFacilityNames();
+        const ids = new Set();
+        const sids = new Set();
+        assignments.forEach(assignment => {
+          if (!assignmentMatchesFacility(assignment, facilityNames)) return;
+          if (!assignmentWithinWindow(assignment)) return;
+          if (assignment.studentId) ids.add(String(assignment.studentId));
+          if (assignment.studentSid) sids.add(String(assignment.studentSid));
+        });
+        return { ids, sids };
+      }
+
+      const programToSchools = new Map();
+      Object.entries(accessSummary.programsBySchool || {}).forEach(([school, programs]) => {
+        programs.forEach(program => {
+          const key = normalizeProgramLabel(program);
+          if (!programToSchools.has(key)) programToSchools.set(key, []);
+          const list = programToSchools.get(key);
+          if (!list.includes(school)) list.push(school);
+        });
+      });
+      const programSchoolCursor = new Map();
+      function pickSchoolForProgram(program){
+        const key = normalizeProgramLabel(program);
+        const schools = programToSchools.get(key);
+        if (schools && schools.length){
+          const idx = programSchoolCursor.get(key) || 0;
+          programSchoolCursor.set(key, idx + 1);
+          return schools[idx % schools.length];
+        }
+        return currentUser?.profile?.school || accessSummary.schools?.[0] || 'CPNW Education';
+      }
+      const programAccessSet = new Set();
+      Object.entries(accessSummary.programsBySchool || {}).forEach(([school, programs]) => {
+        programs.forEach(program => {
+          programAccessSet.add(`${normalizeSchool(school)}|${normalizeProgramLabel(program)}`);
+        });
+      });
 
       const programDefs = [
         { id:'BSN', base: 12, aySpan: 2 },
@@ -51,19 +172,23 @@
 	          TERMS.forEach(term=>{
 	            const year = term === 'Fall' ? ay : ay + 1;
 	            const ayStart = term === 'Fall' ? ay : ay - 1;
-	            const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
-	            cohortSeeds.push({
-	              cohortLabel: `${p.id} – ${term} ${year}`,
-	              program: p.id,
-	              ayStart,
-	              students
-	            });
+            const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
+            cohortSeeds.push({
+              cohortLabel: `${p.id} – ${term} ${year}`,
+              program: p.id,
+              school: pickSchoolForProgram(p.id),
+              ayStart,
+              students
+            });
 	          });
 	        });
 	      });
       let cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
-      if (allowedPrograms.length){
-        cohorts = cohorts.filter(c => allowedPrograms.includes(normalizeProgramLabel(c.program)));
+      if (programAccessSet.size && !isHealthcareView){
+        cohorts = cohorts.filter(c => {
+          const key = `${normalizeSchool(c.school)}|${normalizeProgramLabel(c.program)}`;
+          return programAccessSet.has(key);
+        });
       }
 
       // Merge custom cohorts + membership deltas (stored in localStorage via main.js)
@@ -79,19 +204,12 @@
 	          .map(c => ({ ...c }));
 	        cohorts = cohorts.concat(custom);
 	      }
+      cohorts = cohorts.map(c => ({ ...c, school: c.school || pickSchoolForProgram(c.program) }));
 
-      // Populate cohort filter
+      // Cohort filter
       const cohortFilter = document.getElementById('cohortFilter');
-      if (cohortFilter){
-        const opts = ['', '__unassigned__'];
-        cohorts.forEach(c => opts.push(c.cohortLabel));
-        const unique = Array.from(new Set(opts));
-        cohortFilter.innerHTML = unique.map(val => {
-          if (!val) return `<option value="">All cohorts</option>`;
-          if (val === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
-          return `<option value="${val}">${val}</option>`;
-        }).join('');
-      }
+      const cohortFilterWrap = cohortFilter?.closest('[data-cohort-filter]');
+      const cohortFilterMenu = cohortFilterWrap?.querySelector('[data-cohort-menu]');
 
 	      // Build people data
 	      const users = [];
@@ -129,12 +247,16 @@
 	            oig = 'fail';
 	            sam = 'pass';
 	          }
-	          const person = {
-	            name: `Student ${idx+1}-${i+1}`,
-	            email: `student${idx+1}${i+1}@demo.cpnw.org`,
-	            program: c.program,
-	            cohort: c.cohortLabel,
-	            role: 'student',
+          const studentId = `${idx+1}-${i+1}`;
+          const person = {
+            name: `Student ${studentId}`,
+            email: `student${idx+1}${i+1}@demo.cpnw.org`,
+            program: c.program,
+            school: c.school,
+            cohort: c.cohortLabel,
+            role: 'student',
+            studentId,
+            sid: String(1000 + idx * 50 + i),
 	            reqs: {
 	              cpnw: (i % 3) ? 'complete' : 'incomplete',
 	              ed: (i % 4) ? 'complete' : 'incomplete',
@@ -152,6 +274,14 @@
 	              { file:'BLS.pdf', req:'BLS', date:'2025-02-08' }
 	            ]
 	          };
+	          const rosterEntry = (window.CPNW && typeof window.CPNW.findRosterEntry === 'function')
+	            ? window.CPNW.findRosterEntry({ studentId, sid: person.sid, email: person.email })
+	            : null;
+	          if (rosterEntry){
+	            person.name = rosterEntry.name || person.name;
+	            person.email = rosterEntry.email || person.email;
+	            person.sid = rosterEntry.sid || person.sid;
+	          }
 	          // Add some realistic "Expiring" records (expiring within 30 days).
 	          if (expiresInDays && expiresInDays <= 30){
 	            if (i % 9 === 0) person.reqs.cpnw = 'expiring';
@@ -162,12 +292,13 @@
 	          users.push(applyCohortOverride(person));
 	        }
 	        // Add a few faculty and faculty-admin tied to this program
-	        users.push(applyCohortOverride({
-	          name: `Faculty ${c.program} ${idx+1}`,
-	          email: `faculty${idx+1}@demo.cpnw.org`,
-	          program: c.program,
-	          cohort: c.cohortLabel,
-	          role: 'faculty',
+        users.push(applyCohortOverride({
+          name: `Faculty ${c.program} ${idx+1}`,
+          email: `faculty${idx+1}@demo.cpnw.org`,
+          program: c.program,
+          school: c.school,
+          cohort: c.cohortLabel,
+          role: 'faculty',
 	          reqs: {
 	            cpnw: 'complete',
 	            ed: 'complete',
@@ -178,12 +309,13 @@
 	          docs: 1,
 	          docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
 	        }));
-	        users.push(applyCohortOverride({
-	          name: `Faculty Admin ${c.program} ${idx+1}`,
-	          email: `facadmin${idx+1}@demo.cpnw.org`,
-	          program: c.program,
-	          cohort: c.cohortLabel,
-	          role: 'faculty-admin',
+        users.push(applyCohortOverride({
+          name: `Faculty Admin ${c.program} ${idx+1}`,
+          email: `facadmin${idx+1}@demo.cpnw.org`,
+          program: c.program,
+          school: c.school,
+          cohort: c.cohortLabel,
+          role: 'faculty-admin',
 	          reqs: {
 	            cpnw: 'complete',
 	            ed: 'complete',
@@ -201,6 +333,7 @@
         name: 'Fran Faculty',
         email: 'fran.faculty@cpnw.org',
         program: 'BSN',
+        school: pickSchoolForProgram('BSN'),
         cohort: '',
         role: 'faculty',
 	        reqs: {
@@ -227,10 +360,13 @@
         if (!['student', 'faculty'].includes(person.role)) return;
         const exists = users.some(u => u.email.toLowerCase() === person.email.toLowerCase());
         if (exists) return;
+        const program = normalizeProgramDisplay(person.programs?.[0]);
+        const school = person.schools?.[0] || pickSchoolForProgram(program);
         const record = applyCohortOverride({
           name: person.name,
           email: person.email,
-          program: normalizeProgramDisplay(person.programs?.[0]),
+          program,
+          school,
           cohort: person.cohort || '',
           role: person.role,
           reqs: person.reqs || { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
@@ -241,11 +377,26 @@
         users.push(record);
       });
 
-      if (allowedPrograms.length){
-        const allowedSet = new Set(allowedPrograms.map(normalizeProgramLabel));
+      if (programAccessSet.size && !isHealthcareView){
         for (let i = users.length - 1; i >= 0; i--){
-          const programKey = normalizeProgramLabel(users[i].program);
-          if (!allowedSet.has(programKey)){
+          const key = `${normalizeSchool(users[i].school)}|${normalizeProgramLabel(users[i].program)}`;
+          if (!programAccessSet.has(key)){
+            users.splice(i, 1);
+          }
+        }
+      }
+      if (isHealthcareView){
+        const { ids, sids } = buildHealthcareEligibility();
+        for (let i = users.length - 1; i >= 0; i--){
+          const user = users[i];
+          const role = String(user.role || '').toLowerCase();
+          if (!['student','faculty','faculty-admin'].includes(role)){
+            users.splice(i, 1);
+            continue;
+          }
+          const idMatch = user.studentId && ids.has(String(user.studentId));
+          const sidMatch = user.sid && sids.has(String(user.sid));
+          if (!idMatch && !sidMatch){
             users.splice(i, 1);
           }
         }
@@ -266,6 +417,84 @@
       const reqModalBody = document.getElementById('reqModalBody');
       const reqModalLabel = document.getElementById('reqModalLabel');
       const reqModalSub = document.getElementById('reqModalSub');
+      function getProgramsBySchool(){
+        if (Object.keys(accessSummary.programsBySchool || {}).length){
+          return accessSummary.programsBySchool;
+        }
+        return cohorts.reduce((acc, c) => {
+          if (!c.school || !c.program) return acc;
+          acc[c.school] ||= [];
+          acc[c.school].push(c.program);
+          return acc;
+        }, {});
+      }
+
+      const programFilterWrap = programFilterSelect?.closest('[data-program-filter]');
+      const programFilterMenu = programFilterWrap?.querySelector('[data-program-menu]');
+      const programFilterControl = (window.CPNW && typeof window.CPNW.buildProgramFilter === 'function')
+        ? window.CPNW.buildProgramFilter({
+          input: programFilterSelect,
+          menu: programFilterMenu,
+          programsBySchool: getProgramsBySchool(),
+          formatProgramLabel,
+          onChange: () => {
+            reportPage = 1;
+            updateCohortItems();
+            renderReports();
+          }
+        })
+        : null;
+      const cohortFilterControl = (isHealthcareView && window.CPNW && typeof window.CPNW.buildCheckboxMultiSelect === 'function')
+        ? window.CPNW.buildCheckboxMultiSelect({
+          input: cohortFilter,
+          menu: cohortFilterMenu,
+          placeholder: 'All cohorts',
+          onChange: () => {
+            reportPage = 1;
+            renderReports();
+          }
+        })
+        : null;
+
+      function getCohortItems(programSelections = []){
+        const hasProgramSelections = programSelections.length > 0;
+        const filtered = cohorts.filter(c => {
+          if (!hasProgramSelections) return true;
+          return programSelections.some(sel =>
+            normalizeSchool(sel.school) === normalizeSchool(c.school)
+            && normalizeProgramLabel(sel.program) === normalizeProgramLabel(c.program)
+          );
+        });
+        const items = [];
+        const seen = new Set();
+        items.push({ value: '__unassigned__', label: 'Unassigned', group: '' });
+        filtered.forEach(c => {
+          if (seen.has(c.cohortLabel)) return;
+          seen.add(c.cohortLabel);
+          items.push({ value: c.cohortLabel, label: c.cohortLabel, group: c.school || '' });
+        });
+        return items;
+      }
+
+      function updateCohortItems(){
+        if (cohortFilterControl){
+          const selections = programFilterControl ? programFilterControl.getSelection() : [];
+          cohortFilterControl.setItems(getCohortItems(selections));
+          return;
+        }
+        if (cohortFilter){
+          const opts = ['', '__unassigned__'];
+          cohorts.forEach(c => opts.push(c.cohortLabel));
+          const unique = Array.from(new Set(opts));
+          cohortFilter.innerHTML = unique.map(val => {
+            if (!val) return `<option value="">All cohorts</option>`;
+            if (val === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
+            return `<option value="${val}">${val}</option>`;
+          }).join('');
+        }
+      }
+
+      updateCohortItems();
       let currentStatus = 'all';
       let reportPage = 1;
       let reportPageSize = Number(reportPageSizeSelect?.value || 10);
@@ -302,16 +531,30 @@
 
       function renderReports(showOnlySelected = false){
         const q = (reportSearch?.value || '').toLowerCase();
-        const program = programFilterSelect?.value || '';
-        const cohort = cohortFilter?.value || '';
+        const programSelections = programFilterControl ? programFilterControl.getSelection() : [];
+        const hasProgramSelections = programSelections.length > 0;
+        const validCohorts = new Set([...cohorts.map(c => c.cohortLabel), '__unassigned__']);
+        const cohortSelections = cohortFilterControl
+          ? cohortFilterControl.getSelection().filter(val => validCohorts.has(val))
+          : (cohortFilter && validCohorts.has(cohortFilter.value) && cohortFilter.value ? [cohortFilter.value] : []);
+        const cohortSet = new Set(cohortSelections);
+        const hasCohortSelections = cohortSet.size > 0;
 	        const filtered = users.filter(u=>{
 	          if (currentStatus !== 'all' && u.status !== currentStatus) return false;
-	          if (program && u.program !== program) return false;
-          if (cohort){
-            if (cohort === '__unassigned__'){
-              if ((u.cohort || '').trim()) return false;
-            }else{
-              if (u.cohort !== cohort) return false;
+	          if (hasProgramSelections){
+	            const matchesProgram = programSelections.some(sel =>
+	              normalizeSchool(sel.school) === normalizeSchool(u.school)
+	              && normalizeProgramLabel(sel.program) === normalizeProgramLabel(u.program)
+	            );
+	            if (!matchesProgram) return false;
+	          }
+          if (hasCohortSelections){
+            const cohortLabel = (u.cohort || '').trim();
+            const wantsUnassigned = cohortSet.has('__unassigned__');
+            if (!cohortLabel){
+              if (!wantsUnassigned) return false;
+            }else if (!cohortSet.has(cohortLabel)){
+              return false;
             }
           }
           if (showOnlySelected && !selectedIds.has(u.email)) return false;
@@ -366,11 +609,12 @@
         });
       });
 
-      [reportSearch, programFilterSelect, cohortFilter].forEach(el=>{
-        if (el){
-          el.addEventListener('input', () => { reportPage = 1; renderReports(); });
-          if (el.tagName === 'SELECT') el.addEventListener('change', () => { reportPage = 1; renderReports(); });
-        }
+      [reportSearch, cohortFilter].forEach(el=>{
+        if (!el) return;
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', ()=>{
+          reportPage = 1;
+          renderReports();
+        });
       });
 
       if (reportPageSizeSelect){
@@ -484,4 +728,3 @@
       renderReports();
     })();
   
-
