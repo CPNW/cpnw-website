@@ -13,6 +13,25 @@
         { id:'Surg Tech', base: 8, aySpan: 2 }
       ];
       const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
+      const ASSIGNMENTS_KEY = 'cpnw-assignments-v1';
+
+      function loadJSON(key, fallback){
+        try{
+          const raw = localStorage.getItem(key);
+          if (!raw) return fallback;
+          return JSON.parse(raw) ?? fallback;
+        }catch{
+          return fallback;
+        }
+      }
+
+      function saveJSON(key, value){
+        try{
+          localStorage.setItem(key, JSON.stringify(value));
+        }catch{
+          // ignore
+        }
+      }
       const cohortSeeds = [];
       programDefs.forEach(p => {
         Array.from({length:p.aySpan},(_,i)=>CURRENT_AY_START - i).forEach(ay=>{
@@ -33,6 +52,40 @@
       let cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
 
       // Merge custom cohorts + membership deltas (stored in localStorage via main.js)
+      function normalizeProgramLabel(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'surg tech';
+        if (name.includes('rad')) return 'radiologic technology';
+        if (name.includes('bsn')) return 'bsn';
+        if (name.includes('adn')) return 'adn';
+        return name;
+      }
+
+      function normalizeSchool(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
+      function formatProgramLabel(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'Surg Tech';
+        if (name.includes('rad')) return 'Radiologic Technology';
+        if (name.includes('bsn')) return 'BSN';
+        if (name.includes('adn')) return 'ADN';
+        return String(label || '').trim();
+      }
+
+      function formatRoleLabel(role){
+        const value = String(role || '').trim().toLowerCase();
+        if (value === 'faculty-admin') return 'Faculty Admin';
+        if (value === 'faculty') return 'Faculty';
+        if (value === 'student') return 'Student';
+        return String(role || '').trim() || 'Student';
+      }
+
+      function normalizeEmail(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
       const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
       const membershipCounts = cohortAPI ? cohortAPI.getMembershipCounts() : {};
       if (cohortAPI){
@@ -43,6 +96,40 @@
         const custom = cohortAPI.listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX });
         cohorts = cohorts.concat(custom);
       }
+      const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
+        ? window.CPNW.getCurrentUser()
+        : null;
+      const accessPrograms = (window.CPNW && typeof window.CPNW.getProgramAccessPrograms === 'function')
+        ? window.CPNW.getProgramAccessPrograms(currentUser)
+        : [];
+      const accessSummary = (window.CPNW && typeof window.CPNW.getProgramAccessSummary === 'function')
+        ? window.CPNW.getProgramAccessSummary(currentUser)
+        : { schools: [], programsBySchool: {}, programs: accessPrograms };
+      const programToSchools = new Map();
+      Object.entries(accessSummary.programsBySchool || {}).forEach(([school, programs]) => {
+        programs.forEach(program => {
+          const key = normalizeProgramLabel(program);
+          if (!programToSchools.has(key)) programToSchools.set(key, []);
+          const list = programToSchools.get(key);
+          if (!list.includes(school)) list.push(school);
+        });
+      });
+      const programSchoolCursor = new Map();
+      function pickSchoolForProgram(program){
+        const key = normalizeProgramLabel(program);
+        const schools = programToSchools.get(key);
+        if (schools && schools.length){
+          const idx = programSchoolCursor.get(key) || 0;
+          programSchoolCursor.set(key, idx + 1);
+          return schools[idx % schools.length];
+        }
+        return currentUser?.profile?.school || accessSummary.schools?.[0] || 'CPNW Education';
+      }
+      if (accessPrograms.length){
+        const allowed = new Set(accessPrograms.map(normalizeProgramLabel));
+        cohorts = cohorts.filter(c => allowed.has(normalizeProgramLabel(c.program)));
+      }
+      cohorts = cohorts.map(c => ({ ...c, school: c.school || pickSchoolForProgram(c.program) }));
 
       // populate cohort filter
       const cohortFilter = document.getElementById('cohortFilter');
@@ -83,34 +170,113 @@
       const groupError = document.getElementById('groupAssignError');
       const groupSave = document.getElementById('groupAssignSave');
 
+      function getProgramsBySchool(){
+        if (Object.keys(accessSummary.programsBySchool || {}).length){
+          return accessSummary.programsBySchool;
+        }
+        return cohorts.reduce((acc, c) => {
+          if (!c.school || !c.program) return acc;
+          acc[c.school] ||= [];
+          acc[c.school].push(c.program);
+          return acc;
+        }, {});
+      }
+
+      const programFilterWrap = programFilter?.closest('[data-program-filter]');
+      const programFilterMenu = programFilterWrap?.querySelector('[data-program-menu]');
+      const programFilterControl = (window.CPNW && typeof window.CPNW.buildProgramFilter === 'function')
+        ? window.CPNW.buildProgramFilter({
+          input: programFilter,
+          menu: programFilterMenu,
+          programsBySchool: getProgramsBySchool(),
+          formatProgramLabel,
+          onChange: () => {
+            assignmentPage = 1;
+            renderAssignments();
+          }
+        })
+        : null;
+
       const locations = ['CPNW Medical Center','CPNW Healthcare Facility','Evergreen Health','Providence NW'];
       const statusPool = ['approved','pending','rejected'];
       const students = [];
       const assignments = [];
-      cohorts.forEach((c, idx) => {
-        const count = Math.min(10, c.students);
-        for (let i=0;i<count;i++){
-          const studentId = `${idx+1}-${i+1}`;
-          const student = {
-            id: studentId,
-            name: `Student ${studentId}`,
-            sid: String(1000 + idx * 50 + i),
-            email: `student${idx+1}${i+1}@demo.cpnw.org`,
-            role: 'Student',
-            program: c.program,
-            cohort: c.cohortLabel,
-          };
-          if (cohortAPI){
-            const override = typeof cohortAPI.getUserCohortLabel === 'function'
-              ? cohortAPI.getUserCohortLabel(student.email)
-              : null;
-            if (override !== null && override !== undefined){
-              student.cohort = override;
-            }
-          }
-          students.push(student);
+      const seedAssignments = [];
+      const sharedRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+        ? window.CPNW.getSharedRoster()
+        : [];
+      const programAccess = (window.CPNW && typeof window.CPNW.getProgramAccess === 'function')
+        ? window.CPNW.getProgramAccess(currentUser)
+        : [];
+      const programAccessSet = new Set(
+        programAccess.map(item => `${normalizeSchool(item.school)}|${normalizeProgramLabel(item.program)}`)
+      );
+      const hasAccessFilter = programAccessSet.size > 0;
+      const seenStudents = new Set();
+      const fullRosterById = new Map();
+      const fullRosterBySid = new Map();
+      const fullRosterByEmail = new Map();
 
-          // Some students have no current/upcoming assignment (wireframe demo)
+      function buildRosterEntry(person, roleKey){
+        const program = person.program || person.programs?.[0] || '';
+        const rawSchool = person.school || person.schools?.[0] || '';
+        const school = rawSchool || pickSchoolForProgram(program);
+        const id = String(person.studentId || person.sid || person.email || '').trim();
+        const email = String(person.email || '').trim();
+        if (!id && !email) return null;
+        const entry = {
+          id: id || email,
+          name: person.name || 'Student',
+          sid: String(person.sid || ''),
+          email,
+          role: formatRoleLabel(roleKey),
+          program,
+          school,
+          cohort: person.cohort || ''
+        };
+        if (cohortAPI && email){
+          const override = typeof cohortAPI.getUserCohortLabel === 'function'
+            ? cohortAPI.getUserCohortLabel(email)
+            : null;
+          if (override !== null && override !== undefined){
+            entry.cohort = override;
+          }
+        }
+        return entry;
+      }
+
+      function indexRosterEntry(entry){
+        if (!entry) return;
+        if (entry.id && !fullRosterById.has(entry.id)) fullRosterById.set(entry.id, entry);
+        if (entry.sid && !fullRosterBySid.has(entry.sid)) fullRosterBySid.set(entry.sid, entry);
+        if (entry.email){
+          const key = normalizeEmail(entry.email);
+          if (key && !fullRosterByEmail.has(key)) fullRosterByEmail.set(key, entry);
+        }
+      }
+
+      sharedRoster.forEach(person => {
+        const roleKey = String(person?.role || '').trim().toLowerCase();
+        if (!['student','faculty','faculty-admin'].includes(roleKey)) return;
+        const entry = buildRosterEntry(person, roleKey);
+        if (!entry) return;
+        indexRosterEntry(entry);
+        if (hasAccessFilter){
+          const key = `${normalizeSchool(entry.school)}|${normalizeProgramLabel(entry.program)}`;
+          if (!programAccessSet.has(key)) return;
+        }
+        const dedupeKey = entry.id || entry.email;
+        if (seenStudents.has(dedupeKey)) return;
+        seenStudents.add(dedupeKey);
+        students.push(entry);
+      });
+
+      function seedAssignmentsFromStudents(list){
+        list.forEach(student => {
+          const parts = String(student.id || '').split('-');
+          const idx = Number(parts[0]) - 1;
+          const i = Number(parts[1]) - 1;
+          if (!Number.isFinite(idx) || !Number.isFinite(i)) return;
           const hasCurrentUpcoming = ((idx + i) % 5) !== 0;
           const hasPast = ((idx + i) % 3) !== 0;
 
@@ -119,9 +285,11 @@
             startPast.setDate(startPast.getDate() - (120 + idx * 3 + i));
             const endPast = new Date(startPast);
             endPast.setDate(endPast.getDate() + 60);
-            assignments.push({
-              id: `a-past-${studentId}`,
-              studentId,
+            seedAssignments.push({
+              id: `a-past-${student.id}`,
+              studentId: student.id,
+              studentSid: student.sid,
+              studentEmail: student.email,
               location: locations[(i + idx) % locations.length],
               start: startPast,
               end: endPast,
@@ -134,17 +302,111 @@
             start.setDate(start.getDate() + (idx * 8) + i * 2);
             const end = new Date(start);
             end.setDate(end.getDate() + 90);
-            assignments.push({
-              id: `a-cur-${studentId}`,
-              studentId,
+            seedAssignments.push({
+              id: `a-cur-${student.id}`,
+              studentId: student.id,
+              studentSid: student.sid,
+              studentEmail: student.email,
               location: locations[(i + idx + 2) % locations.length],
               start,
               end,
               status: statusPool[(i + idx) % statusPool.length]
             });
           }
-        }
-      });
+        });
+      }
+
+      if (students.length){
+        seedAssignmentsFromStudents(students);
+      }
+
+      function hydrateAssignments(list){
+        if (!Array.isArray(list)) return null;
+        return list.map(item => {
+          if (!item || typeof item !== 'object') return null;
+          const start = item.start ? new Date(item.start) : null;
+          const end = item.end ? new Date(item.end) : null;
+          return { ...item, start, end };
+        }).filter(Boolean);
+      }
+
+      function serializeAssignments(list){
+        return (Array.isArray(list) ? list : []).map(item => ({
+          ...item,
+          start: item.start instanceof Date ? item.start.toISOString() : item.start,
+          end: item.end instanceof Date ? item.end.toISOString() : item.end
+        }));
+      }
+
+      function loadAssignments(lookups){
+        const stored = loadJSON(ASSIGNMENTS_KEY, null);
+        if (!stored || !Array.isArray(stored)) return null;
+        const hydrated = hydrateAssignments(stored);
+        hydrated.forEach(item => {
+          if (!item || typeof item !== 'object') return;
+          const idKey = String(item.studentId || '').trim();
+          const sidKey = String(item.studentSid || '').trim();
+          const emailKey = normalizeEmail(item.studentEmail || item.studentEmailAddress || '');
+          let match = null;
+          if (idKey && lookups.byId.has(idKey)) match = lookups.byId.get(idKey);
+          if (!match && sidKey && lookups.bySid.has(sidKey)) match = lookups.bySid.get(sidKey);
+          if (!match && emailKey && lookups.byEmail.has(emailKey)) match = lookups.byEmail.get(emailKey);
+          if (match){
+            item.studentId = match.id;
+            item.studentSid = match.sid;
+            item.studentEmail = match.email;
+          }
+        });
+        return hydrated;
+      }
+
+      function saveAssignments(){
+        saveJSON(ASSIGNMENTS_KEY, serializeAssignments(assignments));
+      }
+
+      const studentById = new Map(students.map(student => [student.id, student]));
+      const studentBySid = new Map(students.filter(s => s.sid).map(student => [String(student.sid), student]));
+      const studentByEmail = new Map(students.filter(s => s.email).map(student => [normalizeEmail(student.email), student]));
+      const storedAssignments = loadAssignments({ byId: studentById, bySid: studentBySid, byEmail: studentByEmail });
+      function ensureAssignmentRoster(list){
+        if (!Array.isArray(list)) return;
+        list.forEach(item => {
+          if (!item || typeof item !== 'object') return;
+          const idKey = String(item.studentId || '').trim();
+          const sidKey = String(item.studentSid || '').trim();
+          const emailKey = normalizeEmail(item.studentEmail || item.studentEmailAddress || '');
+          let match = null;
+          if (idKey) match = studentById.get(idKey);
+          if (!match && sidKey) match = studentBySid.get(sidKey);
+          if (!match && emailKey) match = studentByEmail.get(emailKey);
+          if (!match){
+            match = fullRosterById.get(idKey)
+              || fullRosterBySid.get(sidKey)
+              || fullRosterByEmail.get(emailKey);
+            if (match){
+              if (match.id && !studentById.has(match.id)) studentById.set(match.id, match);
+              if (match.sid && !studentBySid.has(String(match.sid))) studentBySid.set(String(match.sid), match);
+              if (match.email){
+                const key = normalizeEmail(match.email);
+                if (key && !studentByEmail.has(key)) studentByEmail.set(key, match);
+              }
+              students.push(match);
+            }
+          }
+          if (match){
+            item.studentId = match.id;
+            item.studentSid = match.sid;
+            item.studentEmail = match.email;
+          }
+        });
+      }
+      if (Array.isArray(storedAssignments)){
+        assignments.push(...storedAssignments);
+        ensureAssignmentRoster(assignments);
+      }else{
+        assignments.push(...seedAssignments);
+        saveAssignments();
+      }
 
       const locationAddOptions = ['CPNW Medical Center','CPNW Healthcare Facility'];
 
@@ -199,15 +461,24 @@
         return a?.end instanceof Date && a.end >= TODAY;
       }
 
-      function listCurrentUpcoming(studentId){
+      function assignmentMatchesStudent(assignment, student){
+        if (!assignment || !student) return false;
+        if (assignment.studentId && student.id && String(assignment.studentId) === String(student.id)) return true;
+        if (assignment.studentSid && student.sid && String(assignment.studentSid) === String(student.sid)) return true;
+        if (assignment.studentEmail && student.email
+          && normalizeEmail(assignment.studentEmail) === normalizeEmail(student.email)) return true;
+        return false;
+      }
+
+      function listCurrentUpcoming(student){
         return assignments
-          .filter(a=>a.studentId === studentId && isCurrentUpcoming(a))
+          .filter(a=>assignmentMatchesStudent(a, student) && isCurrentUpcoming(a))
           .sort((a,b)=>a.start - b.start);
       }
 
-      function listPast(studentId){
+      function listPast(student){
         return assignments
-          .filter(a=>a.studentId === studentId && isPast(a))
+          .filter(a=>assignmentMatchesStudent(a, student) && isPast(a))
           .sort((a,b)=>b.end - a.end);
       }
 
@@ -247,7 +518,12 @@
             assignment = assignments.find(a=>a.id === id) || null;
             studentId = assignment?.studentId || '';
           }
-          const student = students.find(s=>s.id === studentId) || null;
+          let student = students.find(s=>s.id === studentId) || null;
+          if (!student && assignment){
+            const sidKey = String(assignment.studentSid || '');
+            const emailKey = normalizeEmail(assignment.studentEmail || '');
+            student = studentBySid.get(sidKey) || studentByEmail.get(emailKey) || null;
+          }
           if (student){
             details.push({ rowId: id, student, assignment });
           }
@@ -298,12 +574,19 @@
 
       function renderAssignments(showOnlySelected = false){
         const q = (assignmentSearch?.value || '').toLowerCase();
-        const program = programFilter?.value || '';
+        const programSelections = programFilterControl ? programFilterControl.getSelection() : [];
+        const hasProgramSelections = programSelections.length > 0;
         const cohortVal = cohortFilter?.value || '';
         const siteVal = siteFilter?.value || '';
         const rows = [];
         students.forEach(s=>{
-          if (program && s.program !== program) return;
+          if (hasProgramSelections){
+            const matchesProgram = programSelections.some(sel =>
+              normalizeSchool(sel.school) === normalizeSchool(s.school)
+              && normalizeProgramLabel(sel.program) === normalizeProgramLabel(s.program)
+            );
+            if (!matchesProgram) return;
+          }
           if (cohortVal){
             if (cohortVal === '__unassigned__'){
               if ((s.cohort || '').trim()) return;
@@ -313,7 +596,7 @@
           }
           if (q && !`${s.name} ${s.sid} ${s.email}`.toLowerCase().includes(q)) return;
 
-          const list = currentRange === 'past' ? listPast(s.id) : listCurrentUpcoming(s.id);
+          const list = currentRange === 'past' ? listPast(s) : listCurrentUpcoming(s);
 
           if (currentRange === 'past'){
             if (!list.length) return;
@@ -528,10 +811,12 @@
         });
       });
 
-      [assignmentSearch, programFilter, cohortFilter, siteFilter].forEach(el=>{
+      [assignmentSearch, cohortFilter, siteFilter].forEach(el=>{
         if (!el) return;
-        const fn = () => { assignmentPage = 1; renderAssignments(); };
-        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', fn);
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
+          assignmentPage = 1;
+          renderAssignments();
+        });
       });
 
       rangeButtons.forEach(btn=>{
@@ -633,6 +918,7 @@
             if (!ok) return;
             const idx = assignments.findIndex(a=>a.id === assignmentId);
             if (idx !== -1) assignments.splice(idx, 1);
+            saveAssignments();
             if (editDraft?.assignmentId === assignmentId) editDraft = null;
             renderAssignments();
           }
@@ -668,7 +954,10 @@
               return;
             }
             const id = `a-added-${studentId}-${Date.now()}`;
-            assignments.push({ id, studentId, location: loc, start, end, status: 'pending' });
+            const studentSid = studentById.get(studentId)?.sid || '';
+            const studentEmail = studentById.get(studentId)?.email || '';
+            assignments.push({ id, studentId, studentSid, studentEmail, location: loc, start, end, status: 'pending' });
+            saveAssignments();
             addDraft = null;
             renderAssignments();
           }
@@ -697,6 +986,7 @@
             a.location = loc;
             a.start = start;
             a.end = end;
+            saveAssignments();
             editDraft = null;
             renderAssignments();
           }
@@ -750,16 +1040,36 @@
 
         groupSelection.forEach((item, idx)=>{
           const id = `a-group-${item.student.id}-${Date.now()}-${idx}`;
-          assignments.push({ id, studentId: item.student.id, location: loc, start, end, status: 'pending' });
+          assignments.push({
+            id,
+            studentId: item.student.id,
+            studentSid: item.student.sid,
+            studentEmail: item.student.email || '',
+            location: loc,
+            start,
+            end,
+            status: 'pending'
+          });
         });
 
         setGroupError('');
+        saveAssignments();
         groupModal?.hide();
         selectedIds.clear();
         if (selectAllAssignments) selectAllAssignments.checked = false;
         document.querySelectorAll('.assignment-row').forEach(cb => {
           cb.checked = false;
         });
+        renderAssignments();
+      });
+
+      window.addEventListener('storage', (event) => {
+        if (event.key !== ASSIGNMENTS_KEY) return;
+        const updated = loadAssignments({ byId: studentById, bySid: studentBySid, byEmail: studentByEmail });
+        if (!Array.isArray(updated)) return;
+        ensureAssignmentRoster(updated);
+        assignments.length = 0;
+        assignments.push(...updated);
         renderAssignments();
       });
 

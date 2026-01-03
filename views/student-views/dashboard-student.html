@@ -142,24 +142,9 @@
                     <th scope="col">Status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody id="studentAssignmentsBody">
                   <tr>
-                    <td class="fw-semibold">Providence Medical Center</td>
-                    <td>Mar 04, 2026</td>
-                    <td>May 30, 2026</td>
-                    <td><span class="badge text-bg-secondary">Pending</span></td>
-                  </tr>
-                  <tr>
-                    <td class="fw-semibold">Evergreen Health</td>
-                    <td>Jan 06, 2026</td>
-                    <td>Mar 01, 2026</td>
-                    <td><span class="badge text-bg-success">Approved</span></td>
-                  </tr>
-                  <tr>
-                    <td class="fw-semibold">CPNW Healthcare Facility</td>
-                    <td>Oct 01, 2025</td>
-                    <td>Dec 15, 2025</td>
-                    <td><span class="badge text-bg-danger">Rejected</span></td>
+                    <td colspan="4" class="text-body-secondary small">Assignments will appear here once scheduled.</td>
                   </tr>
                 </tbody>
               </table>
@@ -174,34 +159,9 @@
                 <p class="text-body-secondary small mb-0">Updates about your requirements and placements.</p>
               </div>
             </div>
-            <ul class="list-group list-group-flush">
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <div class="fw-semibold">BLS expiring soon</div>
-                  <p class="small text-body-secondary mb-0">Expires in 12 days</p>
-                </div>
-                <span class="badge text-bg-warning text-dark">Soon</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <div class="fw-semibold">Immunization update required</div>
-                  <p class="small text-body-secondary mb-0">Upload documentation to avoid delays</p>
-                </div>
-                <span class="badge text-bg-danger">Action</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <div class="fw-semibold">Clinical assignment pending approval</div>
-                  <p class="small text-body-secondary mb-0">Providence Medical Center • Starts Mar 04</p>
-                </div>
-                <span class="badge text-bg-secondary">Pending</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <div class="fw-semibold">eLearning module due</div>
-                  <p class="small text-body-secondary mb-0">Complete “HIPAA Basics” this week</p>
-                </div>
-                <span class="badge text-bg-warning text-dark">Reminder</span>
+            <ul class="list-group list-group-flush" id="studentNotifications">
+              <li class="list-group-item">
+                <div class="text-body-secondary small">No notifications yet.</div>
               </li>
             </ul>
           </div>
@@ -213,7 +173,7 @@
   <div class="modal fade" id="studentReqModal" tabindex="-1" aria-labelledby="studentReqModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header sticky-top" style="background: var(--bs-body-bg); z-index: 5;">
+        <div class="modal-header sticky-top cpnw-modal-header-sticky">
           <div>
             <h5 class="modal-title" id="studentReqModalLabel">Requirements</h5>
             <p class="small text-body-secondary mb-0" id="studentReqModalSub">Select a requirement to view details and submit.</p>
@@ -224,13 +184,13 @@
           <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
             <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
               <label class="small text-body-secondary mb-0" for="studentReqSearch">Search:</label>
-              <input class="form-control form-control-sm" id="studentReqSearch" style="width: min(320px, 70vw);" placeholder="Search requirements…" />
+              <input class="form-control form-control-sm cpnw-w-min-320" id="studentReqSearch" placeholder="Search requirements…" />
             </div>
           </div>
 
-          <div class="table-responsive" style="max-height: 420px; overflow: auto;">
+          <div class="table-responsive cpnw-scroll-420">
             <table class="table align-middle mb-0 cpnw-table">
-              <thead class="text-body-secondary small position-sticky top-0" style="z-index:2; background: color-mix(in srgb, var(--bs-body-bg) 92%, rgba(20,184,166,.12));">
+              <thead class="text-body-secondary small position-sticky top-0 cpnw-table-head">
                 <tr>
                   <th scope="col">Requirement</th>
                   <th scope="col">Frequency</th>
@@ -247,7 +207,7 @@
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
             <div class="d-flex align-items-center gap-2">
               <label class="small text-body-secondary mb-0" for="studentReqPageSize">Show</label>
-              <select class="form-select form-select-sm" id="studentReqPageSize" style="width:auto;">
+              <select class="form-select form-select-sm w-auto" id="studentReqPageSize">
                 <option value="10" selected>10</option>
                 <option value="25">25</option>
                 <option value="50">50</option>
@@ -271,7 +231,7 @@
   <div class="modal fade" id="studentReqDetailModal" tabindex="-1" aria-labelledby="studentReqDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
-        <div class="modal-header sticky-top" style="background: var(--bs-body-bg); z-index: 5;">
+        <div class="modal-header sticky-top cpnw-modal-header-sticky">
           <div class="w-100">
             <div class="small text-body-secondary" id="studentReqDetailTypeLabel">Requirement</div>
             <h5 class="modal-title mb-0" id="studentReqDetailModalLabel"></h5>
@@ -613,7 +573,7 @@
             <div class="col-12 col-lg-5">
               <div class="mb-0">
                 <div class="fw-semibold mb-1">Message</div>
-                <div class="border rounded p-2 mb-2" style="max-height: 200px; overflow-y: auto;" id="studentReqMessages"></div>
+                <div class="border rounded p-2 mb-2 cpnw-scroll-200" id="studentReqMessages"></div>
                 <div class="text-body-secondary small mb-1">Send to (select one or more)</div>
                 <div class="d-flex flex-wrap gap-3 mb-2">
                   <div class="form-check">

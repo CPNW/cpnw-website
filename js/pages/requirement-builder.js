@@ -139,7 +139,7 @@
             li.className = 'd-flex justify-content-between align-items-center py-1 border-bottom';
             const safeName = escapeHTML(f.name || 'File');
             li.innerHTML = `
-              <div class="text-truncate" style="max-width: 70%;">
+              <div class="text-truncate cpnw-maxw-70">
                 <span class="fw-semibold">${safeName}</span>
                 <span class="small text-body-secondary">${f.url ? ` • ${escapeHTML(f.url)}` : ''}</span>
               </div>
@@ -385,4 +385,3 @@
       updatePreview();
     })();
   
-

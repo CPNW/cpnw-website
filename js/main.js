@@ -854,6 +854,470 @@ const cpnwAccessCatalog = (() => {
   return { roles, schools, programs, programLookup };
 })();
 
+// Program access helpers (program permissions are scoped to a school).
+window.CPNW = window.CPNW || {};
+(function(){
+  function normalize(value){
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function normalizeProgramToken(value){
+    const name = normalize(value).replace(/[^a-z0-9]/g, '');
+    if (name.includes('surg')) return 'surgtech';
+    if (name.includes('rad')) return 'radtech';
+    if (name.includes('bsn')) return 'bsn';
+    if (name.includes('adn')) return 'adn';
+    return name;
+  }
+
+  function asArray(value){
+    if (Array.isArray(value)) return value.filter(Boolean);
+    return value ? [value] : [];
+  }
+
+  function flattenAccess(entries){
+    const list = [];
+    if (!Array.isArray(entries)) return list;
+    entries.forEach(entry => {
+      if (!entry) return;
+      const school = entry.school || entry.schoolName || entry.name || '';
+      const programs = asArray(entry.programs || entry.program || entry.programName);
+      programs.forEach(program => {
+        if (!school || !program) return;
+        list.push({ school, program });
+      });
+    });
+    return list;
+  }
+
+  function deriveProgramAccess(user){
+    if (!user) return [];
+    const rawAccess = flattenAccess(user.programAccess);
+    if (rawAccess.length) return rawAccess;
+
+    const schools = asArray(user.schools);
+    const programs = asArray(user.programs);
+    const programTokens = new Set(programs.map(normalizeProgramToken));
+    const access = [];
+
+    if (schools.length){
+      schools.forEach((schoolName) => {
+        const school = cpnwAccessCatalog.schools.find(s => normalize(s.name) === normalize(schoolName));
+        if (school){
+          if (!programTokens.size) return;
+          school.programs.forEach((program) => {
+            const token = normalizeProgramToken(program.abbr || program.name);
+            if (programTokens.has(token)){
+              access.push({ school: school.name, program: program.abbr || program.name });
+            }
+          });
+        }else if (programs.length){
+          programs.forEach(program => access.push({ school: schoolName, program }));
+        }
+      });
+    }else if (programs.length){
+      const fallbackSchool = user.profile?.school || '';
+      programs.forEach(program => access.push({ school: fallbackSchool, program }));
+    }
+
+    return access;
+  }
+
+  window.CPNW.getProgramAccess = (userOverride) => {
+    const user = userOverride || (window.CPNW.getCurrentUser ? window.CPNW.getCurrentUser() : null);
+    return deriveProgramAccess(user);
+  };
+
+  window.CPNW.getProgramAccessPrograms = (userOverride) => {
+    const access = window.CPNW.getProgramAccess(userOverride);
+    return Array.from(new Set(access.map(item => item.program).filter(Boolean)));
+  };
+
+  window.CPNW.getProgramAccessSummary = (userOverride) => {
+    const access = window.CPNW.getProgramAccess(userOverride);
+    const bySchool = new Map();
+    access.forEach(item => {
+      const school = String(item?.school || '').trim();
+      const program = String(item?.program || '').trim();
+      if (!school || !program) return;
+      const key = normalize(school);
+      if (!bySchool.has(key)){
+        bySchool.set(key, { school, programs: new Set() });
+      }
+      bySchool.get(key).programs.add(program);
+    });
+    const schools = Array.from(bySchool.values())
+      .map(entry => ({
+        school: entry.school,
+        programs: Array.from(entry.programs).sort((a, b) => a.localeCompare(b))
+      }))
+      .sort((a, b) => a.school.localeCompare(b.school));
+    const programs = Array.from(new Set(
+      schools.flatMap(entry => entry.programs)
+    )).sort((a, b) => a.localeCompare(b));
+    const programsBySchool = schools.reduce((acc, entry) => {
+      acc[entry.school] = entry.programs.slice();
+      return acc;
+    }, {});
+    return { schools: schools.map(s => s.school), programsBySchool, programs };
+  };
+
+  window.CPNW.isProgramAllowed = ({ school, program, user } = {}) => {
+    const access = window.CPNW.getProgramAccess(user);
+    if (!access.length) return true;
+    const schoolKey = normalize(school);
+    const programKey = normalizeProgramToken(program);
+    return access.some(item => normalize(item.school) === schoolKey && normalizeProgramToken(item.program) === programKey);
+  };
+})();
+
+// School/program filter dropdown with nested checkboxes.
+(function(){
+  window.CPNW = window.CPNW || {};
+
+  function toLabel(value){
+    return String(value || '').trim();
+  }
+
+  function uniq(list){
+    const seen = new Set();
+    const out = [];
+    list.forEach(item => {
+      const value = toLabel(item);
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      out.push(value);
+    });
+    return out;
+  }
+
+  window.CPNW.buildProgramFilter = ({
+    input,
+    menu,
+    programsBySchool,
+    formatProgramLabel,
+    onChange,
+    placeholder
+  } = {}) => {
+    if (!input || !menu) return null;
+    const wrapper = input.closest('[data-program-filter]') || input.parentElement;
+    const selection = new Map();
+    let schoolPrograms = new Map();
+    const placeholderText = placeholder || input.placeholder || 'All programs';
+    const baseId = input.id || `program-filter-${Math.random().toString(36).slice(2, 8)}`;
+
+    function programLabel(value){
+      const label = formatProgramLabel ? formatProgramLabel(value) : value;
+      return toLabel(label);
+    }
+
+    function buildPrograms(){
+      schoolPrograms = new Map();
+      Object.entries(programsBySchool || {}).forEach(([school, programs]) => {
+        const schoolName = toLabel(school);
+        if (!schoolName) return;
+        const programList = uniq(Array.isArray(programs) ? programs : []);
+        if (!programList.length) return;
+        schoolPrograms.set(schoolName, programList);
+      });
+    }
+
+    function getSelection(){
+      const list = [];
+      selection.forEach((programs, school) => {
+        programs.forEach(program => list.push({ school, program }));
+      });
+      return list;
+    }
+
+    function updateSummary(){
+      const selections = getSelection();
+      if (!selections.length){
+        input.value = placeholderText;
+        input.title = placeholderText;
+        return;
+      }
+      const detail = selections.map(sel => `${sel.school}: ${programLabel(sel.program)}`);
+      const summary = selections.length <= 2
+        ? detail.join(', ')
+        : `${selections.length} programs selected`;
+      input.value = summary;
+      input.title = detail.join(', ');
+    }
+
+    function setProgramSelected(school, program, checked){
+      const schoolName = toLabel(school);
+      const programName = toLabel(program);
+      if (!schoolName || !programName) return;
+      if (!selection.has(schoolName)) selection.set(schoolName, new Set());
+      const set = selection.get(schoolName);
+      if (checked){
+        set.add(programName);
+      }else{
+        set.delete(programName);
+      }
+      if (!set.size){
+        selection.delete(schoolName);
+      }
+    }
+
+    function syncSchoolState(schoolKey){
+      const programChecks = Array.from(menu.querySelectorAll(`[data-program-check][data-school-key="${schoolKey}"]`));
+      const schoolCheck = menu.querySelector(`[data-school-check][data-school-key="${schoolKey}"]`);
+      if (!schoolCheck) return;
+      const checkedCount = programChecks.filter(check => check.checked).length;
+      schoolCheck.checked = checkedCount > 0 && checkedCount === programChecks.length;
+      schoolCheck.indeterminate = checkedCount > 0 && checkedCount < programChecks.length;
+    }
+
+    function renderMenu(){
+      buildPrograms();
+      if (!schoolPrograms.size){
+        menu.innerHTML = '<div class="cpnw-program-empty text-body-secondary small">No programs available</div>';
+        updateSummary();
+        return;
+      }
+      const schools = Array.from(schoolPrograms.keys()).sort((a, b) => a.localeCompare(b));
+      const html = schools.map((school, idx) => {
+        const schoolKey = encodeURIComponent(school);
+        const schoolId = `${baseId}-school-${idx}`;
+        const programs = schoolPrograms.get(school) || [];
+        const programItems = programs.map((program, pIdx) => {
+          const label = programLabel(program);
+          const programId = `${baseId}-program-${idx}-${pIdx}`;
+          return `
+            <label class="form-check cpnw-program-item" for="${programId}">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="${programId}"
+                data-program-check
+                data-school-key="${schoolKey}"
+                data-school-name="${school}"
+                data-program-name="${program}"
+              />
+              <span class="form-check-label">${label}</span>
+            </label>
+          `;
+        }).join('');
+
+        return `
+          <div class="cpnw-program-school" data-school-key="${schoolKey}" data-school-name="${school}">
+            <label class="form-check cpnw-program-school-check" for="${schoolId}">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="${schoolId}"
+                data-school-check
+                data-school-key="${schoolKey}"
+                data-school-name="${school}"
+              />
+              <span class="form-check-label">${school}</span>
+            </label>
+            <div class="cpnw-program-submenu">
+              ${programItems || '<div class="cpnw-program-empty text-body-secondary small">No programs</div>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      menu.innerHTML = `<div class="cpnw-program-menu-list">${html}</div>`;
+    }
+
+    function setOpen(next){
+      if (!wrapper) return;
+      wrapper.classList.toggle('is-open', next);
+      input.setAttribute('aria-expanded', next ? 'true' : 'false');
+    }
+
+    input.value = placeholderText;
+    updateSummary();
+    renderMenu();
+
+    input.addEventListener('click', (event) => {
+      event.preventDefault();
+      setOpen(!wrapper?.classList.contains('is-open'));
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape'){
+        setOpen(false);
+      }
+      if (event.key === 'Enter' || event.key === ' '){
+        event.preventDefault();
+        setOpen(!wrapper?.classList.contains('is-open'));
+      }
+    });
+
+    menu.addEventListener('change', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.dataset.schoolCheck !== undefined){
+        const schoolKey = target.dataset.schoolKey || '';
+        const schoolName = target.dataset.schoolName || decodeURIComponent(schoolKey);
+        const programChecks = Array.from(menu.querySelectorAll(`[data-program-check][data-school-key="${schoolKey}"]`));
+        programChecks.forEach(check => {
+          check.checked = target.checked;
+          const programName = check.dataset.programName || '';
+          setProgramSelected(schoolName, programName, target.checked);
+        });
+        syncSchoolState(schoolKey);
+        updateSummary();
+        if (typeof onChange === 'function') onChange(getSelection());
+        return;
+      }
+      if (target.dataset.programCheck !== undefined){
+        const schoolKey = target.dataset.schoolKey || '';
+        const schoolName = target.dataset.schoolName || decodeURIComponent(schoolKey);
+        const programName = target.dataset.programName || '';
+        setProgramSelected(schoolName, programName, target.checked);
+        syncSchoolState(schoolKey);
+        updateSummary();
+        if (typeof onChange === 'function') onChange(getSelection());
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!wrapper || wrapper.contains(event.target)) return;
+      setOpen(false);
+    });
+
+    return { getSelection };
+  };
+
+  window.CPNW.buildCheckboxMultiSelect = ({
+    input,
+    menu,
+    items,
+    placeholder,
+    onChange
+  } = {}) => {
+    if (!input || !menu) return null;
+    const wrapper = input.closest('[data-cohort-filter]') || input.closest('[data-multi-filter]') || input.parentElement;
+    const selection = new Set();
+    let available = [];
+    const placeholderText = placeholder || input.placeholder || 'All';
+    const baseId = input.id || `multi-filter-${Math.random().toString(36).slice(2, 8)}`;
+
+    function updateSummary(){
+      const selections = Array.from(selection);
+      if (!selections.length){
+        input.value = placeholderText;
+        input.title = placeholderText;
+        return;
+      }
+      const labels = available
+        .filter(item => selection.has(item.value))
+        .map(item => item.label);
+      const summary = labels.length <= 2
+        ? labels.join(', ')
+        : `${labels.length} selected`;
+      input.value = summary;
+      input.title = labels.join(', ');
+    }
+
+    function renderMenu(){
+      if (!available.length){
+        menu.innerHTML = '<div class="cpnw-program-empty text-body-secondary small">No options available</div>';
+        updateSummary();
+        return;
+      }
+      const groups = new Map();
+      available.forEach(item => {
+        const group = item.group || '';
+        if (!groups.has(group)) groups.set(group, []);
+        groups.get(group).push(item);
+      });
+      const html = Array.from(groups.entries()).map(([group, groupItems], gIdx) => {
+        const heading = group ? `<div class="small text-body-secondary fw-semibold mt-2">${group}</div>` : '';
+        const list = groupItems.map((item, idx) => {
+          const id = `${baseId}-${gIdx}-${idx}`;
+          return `
+            <label class="form-check cpnw-program-item" for="${id}">
+              <input class="form-check-input" type="checkbox" id="${id}" data-multi-check value="${item.value}" ${selection.has(item.value) ? 'checked' : ''} />
+              <span class="form-check-label">${item.label}</span>
+            </label>
+          `;
+        }).join('');
+        return `${heading}${list}`;
+      }).join('');
+      menu.innerHTML = `<div class="cpnw-program-menu-list">${html}</div>`;
+      updateSummary();
+    }
+
+    function setOpen(next){
+      if (!wrapper) return;
+      wrapper.classList.toggle('is-open', next);
+      input.setAttribute('aria-expanded', next ? 'true' : 'false');
+    }
+
+    function setItems(nextItems){
+      available = Array.isArray(nextItems) ? nextItems : [];
+      const allowed = new Set(available.map(item => item.value));
+      let changed = false;
+      selection.forEach(value => {
+        if (!allowed.has(value)){
+          selection.delete(value);
+          changed = true;
+        }
+      });
+      renderMenu();
+      if (changed && typeof onChange === 'function'){
+        onChange(getSelection());
+      }
+    }
+
+    function getSelection(){
+      return Array.from(selection);
+    }
+
+    function setSelection(values){
+      selection.clear();
+      (Array.isArray(values) ? values : []).forEach(value => selection.add(value));
+      renderMenu();
+      if (typeof onChange === 'function') onChange(getSelection());
+    }
+
+    input.value = placeholderText;
+    setItems(items);
+
+    input.addEventListener('click', (event) => {
+      event.preventDefault();
+      setOpen(!wrapper?.classList.contains('is-open'));
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape'){
+        setOpen(false);
+      }
+      if (event.key === 'Enter' || event.key === ' '){
+        event.preventDefault();
+        setOpen(!wrapper?.classList.contains('is-open'));
+      }
+    });
+
+    menu.addEventListener('change', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.dataset.multiCheck === undefined) return;
+      if (target.checked){
+        selection.add(target.value);
+      }else{
+        selection.delete(target.value);
+      }
+      updateSummary();
+      if (typeof onChange === 'function') onChange(getSelection());
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!wrapper || wrapper.contains(event.target)) return;
+      setOpen(false);
+    });
+
+    return { getSelection, setItems, setSelection };
+  };
+})();
+
 const cpnwDemoPeople = [
   {
     email: 'reviewer.cpnw@cpnw.org',
@@ -1289,43 +1753,345 @@ const cpnwDemoPeople = [
 
 window.CPNW = window.CPNW || {};
 window.CPNW.demoPeople = cpnwDemoPeople;
-window.CPNW.reviewerRoster = (() => {
-  const roster = [];
+window.CPNW.buildSharedRoster = function(){
   const demoPeople = Array.isArray(cpnwDemoPeople) ? cpnwDemoPeople : [];
+  const roster = [];
+  const seen = new Set();
+
+  const FIRST_NAMES = [
+    'Ada','Alan','Grace','Katherine','Marie','Louis','Florence','Gregor','Rosalind','Nikola',
+    'Galileo','Albert','Niels','James','Jane','Rachel','Linus','Hedy','Sally','Mae',
+    'Carl','Neil','Dorothy','Barbara','Vera','Chien','Tu','Lynn','George','Harriet',
+    'Samuel','Lise','Annie','Elizabeth','Isaac','Maya','Noah','Olivia','Eli','Amelia'
+  ];
+  const LAST_NAMES = [
+    'Curie','Fleming','Salk','Lovelace','Goodall','Franklin','Watson','Crick','Hippocrates','Herschel',
+    'Kepler','Darwin','Newton','Feynman','Turing','Hopper','McClintock','Mead','Sagan','Hubble',
+    'Bohr','Tesla','Pasteur','Galen','Harvey','Nightingale','Mendel','Snow','Haldane','Goddard',
+    'Burnett','Salk','Ramirez','Patel','Nguyen','Morgan','Baker','Carter','Lee','Stone'
+  ];
+
+  function stringSeed(value){
+    return Array.from(String(value || '')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  }
+
+  function nameFromSeed(seed){
+    const safeSeed = Math.abs(Number(seed) || 0);
+    const first = FIRST_NAMES[safeSeed % FIRST_NAMES.length];
+    const last = LAST_NAMES[Math.floor(safeSeed / FIRST_NAMES.length) % LAST_NAMES.length];
+    return `${first} ${last}`;
+  }
+
+  const nameCounts = new Map();
+  function uniqueRosterName(base){
+    const clean = String(base || '').trim() || 'Student';
+    const key = clean.toLowerCase();
+    const count = nameCounts.get(key) || 0;
+    const next = count + 1;
+    nameCounts.set(key, next);
+    if (count === 0) return clean;
+    return `${clean} ${next}`;
+  }
+
+  function addPerson(person){
+    const key = `${String(person.email || '').toLowerCase()}|${String(person.sid || '').toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const uniqueName = uniqueRosterName(person.name);
+    roster.push({ ...person, name: uniqueName });
+  }
+
   demoPeople.forEach((person) => {
-    if (['student','faculty'].includes(person.role)){
-      roster.push(person);
-    }
+    if (!['student','faculty','faculty-admin'].includes(person.role)) return;
+    const sidSeed = stringSeed(person.email || person.name || '');
+    const sid = person.sid || person.profile?.sid || `SID-${9000 + (sidSeed % 1000)}`;
+    const studentId = person.studentId || person.profile?.studentId || `demo-${sidSeed % 9000}`;
+    const program = person.programs?.[0] || person.profile?.program || '';
+    const school = person.schools?.[0] || person.profile?.school || '';
+    addPerson({
+      ...person,
+      sid,
+      studentId,
+      program,
+      school,
+      cohort: person.cohort || person.profile?.cohort || '',
+      verified: typeof person.verified === 'boolean' ? person.verified : sidSeed % 3 === 0,
+      phone: person.profile?.primaryPhone || `(555) 01${sidSeed % 10}${sidSeed % 7}-${1000 + (sidSeed % 900)}`,
+      emergName: person.profile?.emergencyName || `Contact ${person.name?.split(' ')[0] || 'CPNW'}`,
+      emergPhone: person.profile?.emergencyPhone || `(555) 02${sidSeed % 9}${sidSeed % 8}-${1200 + (sidSeed % 700)}`,
+      dob: person.dob || new Date(1993 + (sidSeed % 10), sidSeed % 12, (sidSeed % 25) + 1)
+    });
   });
 
   const TODAY = new Date();
   const FALL_START_MONTH = 7;
   const CURRENT_AY_START = TODAY.getMonth() >= FALL_START_MONTH ? TODAY.getFullYear() : TODAY.getFullYear() - 1;
-  const TERMS = ['Fall', 'Winter', 'Spring', 'Summer'];
-  const termAdjust = { Fall: 3, Winter: 1, Spring: 0, Summer: -2 };
+  const AY_VISIBLE_MIN = CURRENT_AY_START - 3;
+  const AY_VISIBLE_MAX = CURRENT_AY_START + 1;
+  const TERMS = ['Fall','Winter','Spring','Summer'];
+  const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
   const programDefs = [
-    { id: 'adn', name: 'ADN', base: 10 },
-    { id: 'bsn', name: 'BSN', base: 12 }
+    { id:'BSN', base: 12, aySpan: 2 },
+    { id:'ADN', base: 10, aySpan: 2 },
+    { id:'Surg Tech', base: 8, aySpan: 2 }
   ];
 
-  programDefs.forEach((p, idx) => {
-    TERMS.forEach((term, termIdx) => {
-      const count = Math.max(8, p.base + termAdjust[term]);
-      for (let i = 0; i < count; i++){
-        const id = `dvs-${p.id}-${idx}-${termIdx}-${i + 1}`;
-        roster.push({
-          name: `Student ${id.toUpperCase()}`,
-          email: `student.${p.id}.${termIdx}.${i + 1}@dvs.cpnw.org`,
-          role: 'student',
-          schools: [p.id === 'adn' ? 'CPNW University' : 'CPNW Education'],
-          programs: [p.name],
-          profile: { school: p.id === 'adn' ? 'CPNW University' : 'CPNW Education', program: p.name }
+  const cohortSeeds = [];
+  programDefs.forEach(p => {
+    Array.from({length:p.aySpan},(_,i)=>CURRENT_AY_START - i).forEach(ay=>{
+      TERMS.forEach(term=>{
+        const year = term === 'Fall' ? ay : ay + 1;
+        const ayStart = term === 'Fall' ? ay : ay - 1;
+        const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
+        const school = p.id === 'ADN' ? 'CPNW University' : 'CPNW Education';
+        cohortSeeds.push({
+          cohortLabel: `${p.id} – ${term} ${year}`,
+          program: p.id,
+          ayStart,
+          students,
+          school
         });
-      }
+      });
     });
+  });
+  let cohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
+
+  const cohortAPI = window.CPNW && window.CPNW.cohorts ? window.CPNW.cohorts : null;
+  const membershipCounts = cohortAPI ? cohortAPI.getMembershipCounts() : {};
+  if (cohortAPI){
+    cohorts = cohorts.map(c => {
+      const delta = membershipCounts[cohortAPI.seedKeyForLabel(c.cohortLabel)] || 0;
+      return { ...c, students: c.students + delta };
+    });
+    const schoolForProgram = (program) => (String(program || '').toUpperCase() === 'ADN' ? 'CPNW University' : 'CPNW Education');
+    const custom = cohortAPI
+      .listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX })
+      .map(c => ({ ...c, school: schoolForProgram(c.program) }));
+    cohorts = cohorts.concat(custom);
+  }
+
+  cohorts.forEach((c, idx) => {
+    const count = Math.min(10, c.students);
+    for (let i = 0; i < count; i++){
+      const studentId = `${idx + 1}-${i + 1}`;
+      const sid = String(1000 + idx * 50 + i);
+      const seed = stringSeed(`${studentId}|${c.cohortLabel}|${sid}`);
+      const name = nameFromSeed(seed);
+      const email = `student${idx + 1}${i + 1}@demo.cpnw.org`;
+      const emergName = nameFromSeed(seed + 17);
+      const dob = new Date(1995 + (seed % 10), seed % 12, (seed % 27) + 1);
+      const person = {
+        name,
+        email,
+        role: 'student',
+        studentId,
+        program: c.program,
+        school: c.school,
+        cohort: c.cohortLabel,
+        sid,
+        verified: seed % 3 === 0,
+        phone: `(555) 01${seed % 10}${seed % 7}-${1000 + (seed % 900)}`,
+        emergName,
+        emergPhone: `(555) 02${seed % 9}${seed % 8}-${1200 + (seed % 700)}`,
+        dob
+      };
+      if (cohortAPI){
+        const override = typeof cohortAPI.getUserCohortLabel === 'function'
+          ? cohortAPI.getUserCohortLabel(person.email)
+          : null;
+        if (override !== null && override !== undefined){
+          person.cohort = override;
+        }
+      }
+      addPerson(person);
+    }
   });
 
   return roster;
+};
+
+window.CPNW.getSharedRoster = function(){
+  window.CPNW.__sharedRoster = window.CPNW.__sharedRoster || window.CPNW.buildSharedRoster();
+  return window.CPNW.__sharedRoster;
+};
+
+window.CPNW.findRosterEntry = function({ email, sid, studentId } = {}){
+  const roster = window.CPNW.getSharedRoster();
+  const emailKey = String(email || '').toLowerCase();
+  const sidKey = String(sid || '').toLowerCase();
+  const studentIdKey = String(studentId || '').toLowerCase();
+  return roster.find(person => {
+    if (sidKey && String(person.sid || '').toLowerCase() === sidKey) return true;
+    if (emailKey && String(person.email || '').toLowerCase() === emailKey) return true;
+    if (studentIdKey && String(person.studentId || '').toLowerCase() === studentIdKey) return true;
+    return false;
+  }) || null;
+};
+
+window.CPNW.reviewerRoster = window.CPNW.getSharedRoster();
+
+window.CPNW.requirementsStore = (() => {
+  const STORE_KEY = 'cpnw-requirements-status-v1';
+  const DEFAULT_STATUS_POOL = [
+    'Not Submitted','Submitted','In Review','Approved','Conditionally Approved',
+    'Rejected','Declination','Expired','Expiring','Expiring Soon'
+  ];
+  const ELEARNING_POOL = ['Not Submitted','Approved','Expired','Expiring Soon'];
+  const CPNW_ELEARNING = [
+    'Bloodborne Pathogens and Workplace Safety',
+    'Emergency Procedures',
+    'Patient Rights',
+    'Infection Prevention and Standard Precautions',
+    'Fall Risk Prevention',
+    'Patient Safety',
+    'Infectious Medical Waste',
+    'Magnetic Resonance Imaging Safety',
+    'Chemical Hazard Communication',
+    'Compliance'
+  ];
+  const CPNW_REQUIREMENTS = [
+    'CPNW: Varicella',
+    'CPNW: Influenza',
+    'CPNW: Tetanus, Diphtheria, & Pertussis',
+    'CPNW: Criminal History Disclosure',
+    'CPNW: BLS Provider Course',
+    'CPNW: Tuberculin',
+    'CPNW: Hepatitis B',
+    'CPNW: Measles, Mumps, and Rubella',
+    'CPNW: COVID-19',
+    'CPNW: Independent Background Check',
+    'CPNW: Independent WATCH'
+  ];
+
+  function stringSeed(value){
+    return Array.from(String(value || '')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  }
+
+  function normalizeKey(value){
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function loadStore(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    }catch{
+      return {};
+    }
+  }
+
+  let cachedStore = null;
+
+  function getStore(){
+    if (!cachedStore) cachedStore = loadStore();
+    return cachedStore;
+  }
+
+  function saveStore(store){
+    cachedStore = store;
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify(store));
+    }catch{
+      // ignore
+    }
+  }
+
+  function resolveStudentKey(input){
+    if (!input) return '';
+    if (typeof input === 'string') return normalizeKey(input);
+    const email = input.email || input.mail || '';
+    const sid = input.sid || input.studentSid || '';
+    if (sid) return normalizeKey(sid);
+    if (email){
+      const rosterEntry = window.CPNW.findRosterEntry({ email });
+      if (rosterEntry?.sid) return normalizeKey(rosterEntry.sid);
+      return normalizeKey(email);
+    }
+    return '';
+  }
+
+  function recordKey(studentKey, reqName){
+    return `${normalizeKey(studentKey)}|${normalizeKey(reqName)}`;
+  }
+
+  function inferCategory(reqName){
+    if (CPNW_ELEARNING.includes(reqName)) return { group: 'CPNW Clinical Passport', isElearning: true };
+    if (CPNW_REQUIREMENTS.includes(reqName) || /^CPNW:/i.test(reqName)) return { group: 'CPNW Clinical Passport', isElearning: false };
+    if (/^Education/i.test(reqName)) return { group: 'Education', isElearning: false };
+    if (/^Healthcare/i.test(reqName)) return { group: 'Healthcare', isElearning: false };
+    return { group: 'Education', isElearning: false };
+  }
+
+  function seededStatus(studentKey, reqName, opts = {}){
+    const category = opts.category || inferCategory(reqName).group;
+    const isElearning = typeof opts.isElearning === 'boolean' ? opts.isElearning : inferCategory(reqName).isElearning;
+    const pool = isElearning ? ELEARNING_POOL : DEFAULT_STATUS_POOL;
+    const seed = stringSeed(studentKey) + stringSeed(reqName) + stringSeed(category);
+    return pool[Math.abs(seed) % pool.length];
+  }
+
+  function getRecord(studentKey, reqName){
+    const key = recordKey(studentKey, reqName);
+    const store = getStore();
+    return store[key] || null;
+  }
+
+  function setRecord(studentKey, reqName, record){
+    if (!studentKey || !reqName) return;
+    const key = recordKey(studentKey, reqName);
+    const store = getStore();
+    store[key] = { ...record };
+    saveStore(store);
+  }
+
+  function getStatus(studentInput, reqName, opts = {}){
+    const studentKey = resolveStudentKey(studentInput);
+    if (!studentKey || !reqName) return '';
+    const stored = getRecord(studentKey, reqName);
+    if (stored?.status) return stored.status;
+    return seededStatus(studentKey, reqName, opts);
+  }
+
+  function setStatus(studentInput, reqName, status, meta = {}){
+    const studentKey = resolveStudentKey(studentInput);
+    if (!studentKey || !reqName) return;
+    setRecord(studentKey, reqName, {
+      status,
+      source: meta.source || 'manual',
+      updatedAt: meta.updatedAt || new Date().toISOString(),
+      meta: meta.meta || null
+    });
+  }
+
+  function setSubmission(studentInput, reqName, meta = {}){
+    setStatus(studentInput, reqName, 'Submitted', { ...meta, source: meta.source || 'submission' });
+  }
+
+  function setDecision(studentInput, reqName, decision, meta = {}){
+    const dec = String(decision || '').toLowerCase();
+    const status = dec === 'approve' || dec === 'approved'
+      ? 'Approved'
+      : (dec === 'conditional' || dec === 'conditionally approved' || dec === 'conditionallyapprove' || dec === 'conditionally')
+        ? 'Conditionally Approved'
+        : (dec === 'reject' || dec === 'rejected')
+          ? 'Rejected'
+          : '';
+    if (!status) return;
+    setStatus(studentInput, reqName, status, { ...meta, source: meta.source || 'decision' });
+  }
+
+  return {
+    resolveStudentKey,
+    inferCategory,
+    seededStatus,
+    getRecord,
+    getStatus,
+    setStatus,
+    setSubmission,
+    setDecision
+  };
 })();
 
 (function(){
@@ -2078,8 +2844,7 @@ window.CPNW.reviewerRoster = (() => {
               <div class="d-grid gap-3">
                 <div class="d-flex gap-3 align-items-start">
                   <div
-                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0"
-                    style="width: 40px; height: 40px;"
+                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0 cpnw-size-40"
                     aria-hidden="true"
                   >
                     <span class="fw-semibold">1</span>
@@ -2092,7 +2857,7 @@ window.CPNW.reviewerRoster = (() => {
                       on the registration page.
                     </p>
                   </div>
-                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px;">
+                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0 cpnw-size-56">
                     <svg width="46" height="46" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="1.5"/>
                       <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -2104,8 +2869,7 @@ window.CPNW.reviewerRoster = (() => {
 
                 <div class="d-flex gap-3 align-items-start">
                   <div
-                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0"
-                    style="width: 40px; height: 40px;"
+                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0 cpnw-size-40"
                     aria-hidden="true"
                   >
                     <span class="fw-semibold">2</span>
@@ -2118,7 +2882,7 @@ window.CPNW.reviewerRoster = (() => {
                       contact the coordinator listed in your confirmation email.
                     </p>
                   </div>
-                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px;">
+                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0 cpnw-size-56">
                     <svg width="46" height="46" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M4 5h16v10H4z" stroke="currentColor" stroke-width="1.5" />
                       <path d="M9 19h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
@@ -2131,8 +2895,7 @@ window.CPNW.reviewerRoster = (() => {
 
                 <div class="d-flex gap-3 align-items-start">
                   <div
-                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0"
-                    style="width: 40px; height: 40px;"
+                    class="rounded-circle border d-flex align-items-center justify-content-center flex-shrink-0 cpnw-size-40"
                     aria-hidden="true"
                   >
                     <span class="fw-semibold">3</span>
@@ -2144,7 +2907,7 @@ window.CPNW.reviewerRoster = (() => {
                       email. Two-step verification is an extra layer of security to protect your personal information.
                     </p>
                   </div>
-                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0" style="width: 56px;">
+                  <div class="d-none d-md-flex align-items-center justify-content-center flex-shrink-0 cpnw-size-56">
                     <svg width="46" height="46" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path d="M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.5"/>
                       <path d="M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>

@@ -12,6 +12,7 @@
       const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
         ? window.CPNW.getCurrentUser()
         : null;
+      const requirementsStore = (window.CPNW && window.CPNW.requirementsStore) ? window.CPNW.requirementsStore : null;
       const demoPeople = (window.CPNW && Array.isArray(window.CPNW.demoPeople)) ? window.CPNW.demoPeople : [];
       const demoPerson = currentUser
         ? demoPeople.find(p => p.email.toLowerCase() === currentUser.email.toLowerCase())
@@ -19,6 +20,10 @@
       const STUDENT_DATA_KEY = currentUser?.email
         ? `cpnw-student-data-${currentUser.email.toLowerCase()}`
         : 'cpnw-student-data-v1';
+      const ASSIGNMENTS_KEY = 'cpnw-assignments-v1';
+
+      const assignmentTableBody = document.getElementById('studentAssignmentsBody');
+      const notificationsList = document.getElementById('studentNotifications');
 
       const nameTarget = document.querySelector('[data-current-user-name]');
       if (nameTarget && currentUser?.name){
@@ -112,6 +117,127 @@
         saveJSON(STUDENT_DATA_KEY, next);
       }
 
+      function hydrateAssignments(list){
+        if (!Array.isArray(list)) return [];
+        return list.map(item => {
+          if (!item || typeof item !== 'object') return null;
+          const start = item.start ? new Date(item.start) : null;
+          const end = item.end ? new Date(item.end) : null;
+          return { ...item, start, end };
+        }).filter(Boolean);
+      }
+
+      function loadAssignments(){
+        try{
+          const raw = localStorage.getItem(ASSIGNMENTS_KEY);
+          if (!raw) return [];
+          return hydrateAssignments(JSON.parse(raw));
+        }catch{
+          return [];
+        }
+      }
+
+      function resolveStudentKeys(){
+        const rosterMatch = (window.CPNW && typeof window.CPNW.findRosterEntry === 'function' && currentUser)
+          ? window.CPNW.findRosterEntry({ email: currentUser.email }) || null
+          : null;
+        const ids = new Set([
+          rosterMatch?.studentId,
+          currentUser?.studentId,
+          currentUser?.profile?.studentId
+        ].filter(Boolean).map(String));
+        const sids = new Set([
+          rosterMatch?.sid,
+          currentUser?.sid,
+          currentUser?.profile?.sid
+        ].filter(Boolean).map(String));
+        return { ids, sids };
+      }
+
+      function assignmentStatusBadge(status){
+        const norm = String(status || 'pending').toLowerCase();
+        if (norm === 'approved') return '<span class="badge text-bg-success">Approved</span>';
+        if (norm === 'rejected') return '<span class="badge text-bg-danger">Rejected</span>';
+        return '<span class="badge text-bg-secondary">Pending</span>';
+      }
+
+      function renderAssignmentsAndNotifications(){
+        const { ids, sids } = resolveStudentKeys();
+        const assignments = loadAssignments()
+          .filter(a => (a.studentId && ids.has(String(a.studentId))) || (a.studentSid && sids.has(String(a.studentSid))))
+          .sort((a, b) => {
+            const aTime = a.start instanceof Date ? a.start.getTime() : 0;
+            const bTime = b.start instanceof Date ? b.start.getTime() : 0;
+            return bTime - aTime;
+          });
+
+        if (assignmentTableBody){
+          assignmentTableBody.innerHTML = assignments.map(a => `
+            <tr>
+              <td class="fw-semibold">${a.location || '—'}</td>
+              <td>${fmtDate(a.start) || '—'}</td>
+              <td>${fmtDate(a.end) || '—'}</td>
+              <td>${assignmentStatusBadge(a.status)}</td>
+            </tr>
+          `).join('') || '<tr><td colspan="4" class="text-body-secondary small">Assignments will appear here once scheduled.</td></tr>';
+        }
+
+        if (notificationsList){
+          const notifications = [];
+          assignments.forEach(a => {
+            const status = String(a.status || 'pending').toLowerCase();
+            if (status === 'rejected'){
+              const reason = a.rejectionReason ? ` • ${a.rejectionReason}` : '';
+              notifications.push({
+                title: 'Assignment rejected',
+                detail: `${a.location || 'Clinical site'}${reason}`,
+                badge: 'Rejected',
+                badgeClass: 'text-bg-danger',
+                priority: 0
+              });
+              return;
+            }
+            if (status === 'pending'){
+              const startLabel = a.start instanceof Date ? fmtDate(a.start) : 'TBD';
+              notifications.push({
+                title: 'Assignment pending approval',
+                detail: `${a.location || 'Clinical site'} • Starts ${startLabel}`,
+                badge: 'Pending',
+                badgeClass: 'text-bg-secondary',
+                priority: 1
+              });
+              return;
+            }
+            if (status === 'approved'){
+              const startLabel = a.start instanceof Date ? fmtDate(a.start) : 'TBD';
+              notifications.push({
+                title: 'Assignment approved',
+                detail: `${a.location || 'Clinical site'} • Starts ${startLabel}`,
+                badge: 'Approved',
+                badgeClass: 'text-bg-success',
+                priority: 2
+              });
+            }
+          });
+
+          const visible = notifications
+            .sort((a, b) => a.priority - b.priority)
+            .slice(0, 4);
+
+          notificationsList.innerHTML = visible.length
+            ? visible.map(note => `
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">${note.title}</div>
+                  <p class="small text-body-secondary mb-0">${note.detail}</p>
+                </div>
+                <span class="badge ${note.badgeClass}">${note.badge}</span>
+              </li>
+            `).join('')
+            : '<li class="list-group-item"><div class="text-body-secondary small">No notifications yet.</div></li>';
+        }
+      }
+
       function fmtDate(d){
         if (!(d instanceof Date)) return '';
         return d.toLocaleDateString(undefined, { month:'short', day:'2-digit', year:'numeric' });
@@ -122,11 +248,29 @@
         if (norm === 'complete') return '<span class="badge text-bg-success">Approved</span>';
         if (norm === 'approved') return '<span class="badge text-bg-success">Approved</span>';
         if (norm === 'submitted') return '<span class="badge text-bg-info">Submitted</span>';
+        if (norm === 'in review') return '<span class="badge text-bg-warning text-dark">In Review</span>';
+        if (norm === 'conditionally approved') return '<span class="badge text-bg-primary">Conditionally Approved</span>';
+        if (norm === 'rejected') return '<span class="badge text-bg-danger">Rejected</span>';
+        if (norm === 'declination') return '<span class="badge text-bg-danger-subtle text-danger">Declination</span>';
         if (norm === 'expiring') return '<span class="badge text-bg-warning text-dark">Expiring</span>';
         if (norm === 'expiring soon') return '<span class="badge text-bg-warning text-dark">Expiring soon</span>';
         if (norm === 'expired') return '<span class="badge text-bg-danger">Expired</span>';
         if (norm === 'not submitted') return '<span class="badge text-bg-secondary">Not submitted</span>';
         return '<span class="badge text-bg-secondary">Incomplete</span>';
+      }
+
+      function toStoreStatus(status){
+        const norm = String(status || '').toLowerCase();
+        if (norm === 'approved' || norm === 'complete') return 'Approved';
+        if (norm === 'submitted') return 'Submitted';
+        if (norm === 'in review') return 'In Review';
+        if (norm === 'conditionally approved') return 'Conditionally Approved';
+        if (norm === 'rejected') return 'Rejected';
+        if (norm === 'declination') return 'Declination';
+        if (norm === 'expiring') return 'Expiring';
+        if (norm === 'expiring soon') return 'Expiring Soon';
+        if (norm === 'expired') return 'Expired';
+        return 'Not Submitted';
       }
 
       function normalizeDay(d){
@@ -351,10 +495,12 @@
         saveStudentData(studentData);
       }
 
+      renderAssignmentsAndNotifications();
+
       function rebuildRequirements(){
         // Non-eLearning student submissions (files/notes) count as Submitted.
         const submissions = studentData.submissions || {};
-        return buildRequirements().map(r => {
+        const list = buildRequirements().map(r => {
           if (r.group === 'elearning') return r;
           const sub = submissions[r.id];
           if (!sub || typeof sub !== 'object') return r;
@@ -371,6 +517,23 @@
           }
           return { ...r, status: 'submitted' };
         });
+        if (requirementsStore && currentUser?.email){
+          const studentContext = { email: currentUser.email, sid: currentUser.sid || '' };
+          const studentKey = requirementsStore.resolveStudentKey(studentContext);
+          return list.map(r => {
+            const stored = requirementsStore.getRecord(studentKey, r.label);
+            if (stored?.status){
+              return { ...r, status: stored.status };
+            }
+            const nextStatus = toStoreStatus(r.status);
+            requirementsStore.setStatus(studentContext, r.label, nextStatus, {
+              source: 'student-data',
+              updatedAt: new Date().toISOString()
+            });
+            return { ...r, status: nextStatus };
+          });
+        }
+        return list;
       }
 
       let requirements = rebuildRequirements();
@@ -384,7 +547,7 @@
             // eLearning completion means a passing score (80+) and not expired.
             return s === 'approved' || s === 'expiring soon';
           }
-          return s === 'complete' || s === 'approved' || s === 'submitted' || s === 'expiring';
+          return ['complete','approved','submitted','in review','conditionally approved','expiring','expiring soon'].includes(s);
         }).length;
         return { completed, total };
       }
@@ -406,7 +569,7 @@
           if (group === 'elearning'){
             return s === 'not submitted';
           }
-          return !['complete','approved','submitted','expiring','expired'].includes(s);
+          return !['complete','approved','submitted','in review','conditionally approved','expiring','expiring soon'].includes(s);
         }).length;
       }
 
@@ -1078,7 +1241,6 @@
 
         const notes = (notesEl?.value || '').trim();
         const files = Array.from(filesEl?.files || []).map(f => f.name);
-        const nextStatus = req.group === 'elearning' ? 'complete' : 'submitted';
         const submissionMode = isTdapRequirement(req)
           ? 'tdap'
           : (isCriminalDisclosureRequirement(req)
@@ -1125,7 +1287,14 @@
         saveStudentData(nextStudentData);
         studentData = nextStudentData;
 
-        requirements = requirements.map(r => r.id === req.id ? { ...r, status: nextStatus } : r);
+        if (requirementsStore && currentUser?.email){
+          requirementsStore.setSubmission(
+            { email: currentUser.email, sid: currentUser.sid || '' },
+            req.label,
+            { source: 'student', updatedAt: new Date().toISOString() }
+          );
+        }
+        requirements = rebuildRequirements();
         renderCards();
         setAlert(detailSaved, 'Submitted.');
 

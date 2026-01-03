@@ -9,6 +9,7 @@
       const AY_VISIBLE_MAX = CURRENT_AY_START + 1;
       const TERMS = ['Fall', 'Winter', 'Spring', 'Summer'];
       const termAdjust = { Fall: 3, Winter: 1, Spring: 0, Summer: -2 };
+      const isHealthcareView = window.location.pathname.includes('/healthcare-views/');
       const programDefs = [
         { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
         { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
@@ -24,7 +25,13 @@
       const currentPrograms = Array.isArray(currentUser?.programs)
         ? currentUser.programs
         : currentUser?.programs ? [currentUser.programs] : [];
-      const allowedPrograms = currentPrograms.map(p => String(p || '').toLowerCase());
+      const accessPrograms = (window.CPNW && typeof window.CPNW.getProgramAccessPrograms === 'function')
+        ? window.CPNW.getProgramAccessPrograms(currentUser)
+        : currentPrograms;
+      const accessSummary = (window.CPNW && typeof window.CPNW.getProgramAccessSummary === 'function')
+        ? window.CPNW.getProgramAccessSummary(currentUser)
+        : { schools: [], programsBySchool: {}, programs: accessPrograms };
+      const allowedPrograms = accessPrograms.map(p => String(p || '').toLowerCase());
 
       // DOM refs
       const statusChips = document.querySelectorAll('[data-status-chip]');
@@ -58,6 +65,77 @@
       const assignApproveBtn = document.getElementById('assignApproveBtn');
       const assignError = document.getElementById('assignError');
 
+      function normalizeProgramKey(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'surg tech';
+        if (name.includes('rad')) return 'radiologic technology';
+        if (name.includes('bsn')) return 'bsn';
+        if (name.includes('adn')) return 'adn';
+        return name;
+      }
+
+      function formatProgramLabel(label){
+        const name = String(label || '').toLowerCase();
+        if (name.includes('surg')) return 'Surg Tech';
+        if (name.includes('rad')) return 'Radiologic Technology';
+        if (name.includes('bsn')) return 'BSN';
+        if (name.includes('adn')) return 'ADN';
+        return String(label || '').trim();
+      }
+
+      function normalizeSchool(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
+      const programToSchools = new Map();
+      Object.entries(accessSummary.programsBySchool || {}).forEach(([school, programs]) => {
+        programs.forEach(program => {
+          const key = normalizeProgramKey(program);
+          if (!programToSchools.has(key)) programToSchools.set(key, []);
+          const list = programToSchools.get(key);
+          if (!list.includes(school)) list.push(school);
+        });
+      });
+      const programSchoolCursor = new Map();
+      function pickSchoolForProgram(program){
+        const key = normalizeProgramKey(program);
+        const schools = programToSchools.get(key);
+        if (schools && schools.length){
+          const idx = programSchoolCursor.get(key) || 0;
+          programSchoolCursor.set(key, idx + 1);
+          return schools[idx % schools.length];
+        }
+        return currentUser?.profile?.school || accessSummary.schools?.[0] || 'CPNW Education';
+      }
+
+      const programAccessSet = new Set();
+      Object.entries(accessSummary.programsBySchool || {}).forEach(([school, programs]) => {
+        programs.forEach(program => {
+          programAccessSet.add(`${normalizeSchool(school)}|${normalizeProgramKey(program)}`);
+        });
+      });
+
+      function getProgramsBySchool(){
+        return Object.keys(accessSummary.programsBySchool || {}).length
+          ? accessSummary.programsBySchool
+          : {};
+      }
+
+      const programFilterWrap = programFilter?.closest('[data-program-filter]');
+      const programFilterMenu = programFilterWrap?.querySelector('[data-program-menu]');
+      const programFilterControl = (window.CPNW && typeof window.CPNW.buildProgramFilter === 'function')
+        ? window.CPNW.buildProgramFilter({
+          input: programFilter,
+          menu: programFilterMenu,
+          programsBySchool: getProgramsBySchool(),
+          formatProgramLabel,
+          onChange: () => {
+            currentPage = 1;
+            updateTable();
+          }
+        })
+        : null;
+
       function deriveAY(term, startYear){
         const year = Number(startYear);
         const isFall = term.toLowerCase() === 'fall';
@@ -80,6 +158,7 @@
               programName: p.name,
               term,
               year: term === 'Fall' ? ay : ay + 1,
+              school: pickSchoolForProgram(p.name),
               students: students + delta,
               ayStart: deriveAY(term, term === 'Fall' ? ay : ay + 1).ayStart
             });
@@ -98,19 +177,16 @@
           seed: true
         }))
         .concat(customCohorts);
+      activeCohorts = activeCohorts.map(c => ({
+        ...c,
+        school: c.school || pickSchoolForProgram(c.program || c.programName)
+      }));
 
-      function normalizeProgramKey(label){
-        const name = String(label || '').toLowerCase();
-        if (name.includes('surg')) return 'surg tech';
-        if (name.includes('rad')) return 'radiologic technology';
-        if (name.includes('bsn')) return 'bsn';
-        if (name.includes('adn')) return 'adn';
-        return name;
-      }
-
-      if (allowedPrograms.length){
-        const allowedSet = new Set(allowedPrograms.map(normalizeProgramKey));
-        activeCohorts = activeCohorts.filter(c => allowedSet.has(normalizeProgramKey(c.program)));
+      if (programAccessSet.size && !isHealthcareView){
+        activeCohorts = activeCohorts.filter(c => {
+          const key = `${normalizeSchool(c.school)}|${normalizeProgramKey(c.program)}`;
+          return programAccessSet.has(key);
+        });
       }
 
       function applyStoredCohort(item){
@@ -124,6 +200,10 @@
 
       // Build cohort filter options
       if (cohortFilter){
+        if (isHealthcareView){
+          cohortFilter.innerHTML = '<option value="">All cohorts</option>';
+          cohortFilter.disabled = true;
+        }else{
         const opts = ['', '__unassigned__'];
         activeCohorts.forEach(c => opts.push(c.cohortLabel));
         const unique = Array.from(new Set(opts));
@@ -132,6 +212,7 @@
           if (val === '__unassigned__') return `<option value="__unassigned__">Unassigned</option>`;
           return `<option value="${val}">${val}</option>`;
         }).join('');
+        }
       }
 
       const data = [];
@@ -146,52 +227,95 @@
         return label || 'BSN';
       }
 
-      demoPeople.forEach(person => {
-        const role = String(person.role || '').toLowerCase();
-        if (role === 'cpnw-reviewer' || role === 'healthcare') return;
-        if (!['student','faculty','education'].includes(role)) return;
-        const program = normalizeProgramLabel(person.programs?.[0]);
-        data.push(applyStoredCohort({
-          name: person.name,
-          email: person.email,
-          program,
-          role: person.role,
-          status: 'active',
-          date: '2025-02-15',
-          cohortLabel: person.cohort || ''
-        }));
-      });
+      if (isHealthcareView){
+        const accessProgramSet = new Set(accessPrograms.map(p => normalizeProgramKey(p)));
+        const accessSchoolSet = new Set((accessSummary.schools || []).map(normalizeSchool));
+        demoPeople.forEach(person => {
+          const role = String(person.role || '').toLowerCase();
+          if (role !== 'healthcare') return;
+          if (!person.permissions?.canCoordinate) return;
+          const programs = Array.isArray(person.programs) ? person.programs : (person.programs ? [person.programs] : []);
+          const schools = Array.isArray(person.schools) ? person.schools : (person.schools ? [person.schools] : []);
+          const programMatch = programs.find(p => accessProgramSet.has(normalizeProgramKey(p)));
+          if (accessProgramSet.size && !programMatch) return;
+          const schoolMatch = schools.find(s => accessSchoolSet.has(normalizeSchool(s))) || schools[0] || person.profile?.school || programMatch || 'CPNW Healthcare Facility';
+          const programLabel = programMatch || programs[0] || person.profile?.program || schoolMatch;
+          data.push(applyStoredCohort({
+            name: person.name,
+            email: person.email,
+            program: programLabel,
+            school: schoolMatch,
+            role: person.role,
+            status: 'active',
+            date: '2025-02-15',
+            cohortLabel: ''
+          }));
+        });
+      }else{
+        demoPeople.forEach(person => {
+          const role = String(person.role || '').toLowerCase();
+          if (role === 'cpnw-reviewer' || role === 'healthcare') return;
+          if (!['student','faculty','education'].includes(role)) return;
+          const program = normalizeProgramLabel(person.programs?.[0]);
+          const school = person.schools?.[0] || pickSchoolForProgram(program);
+          data.push(applyStoredCohort({
+            name: person.name,
+            email: person.email,
+            program,
+            school,
+            role: person.role,
+            status: 'active',
+            date: '2025-02-15',
+            cohortLabel: person.cohort || ''
+          }));
+        });
+      }
 
-      if (allowedPrograms.length){
-        const allowedSet = new Set(allowedPrograms.map(normalizeProgramKey));
+      if (programAccessSet.size){
         for (let i = data.length - 1; i >= 0; i--){
-          if (!allowedSet.has(normalizeProgramKey(data[i].program))){
+          const key = `${normalizeSchool(data[i].school)}|${normalizeProgramKey(data[i].program)}`;
+          if (!programAccessSet.has(key)){
             data.splice(i, 1);
           }
         }
       }
-      // Generate active students from the same cohort-based roster used across pages
-      activeCohorts.forEach((c, idx) => {
-        const count = Math.min(12, Math.max(0, Number(c.students) || 0));
-        for (let i = 0; i < count; i++){
-          data.push(applyStoredCohort({
-            name: `Student ${idx+1}-${i+1}`,
-            email: `student${idx+1}${i+1}@demo.cpnw.org`,
-            program: c.program || c.programName || 'BSN',
-            role: 'student',
-            status: 'active',
-            date: '2025-02-20',
-            cohortLabel: c.cohortLabel
-          }));
-        }
-      });
-      // Requests, inactive samples
-      const cohortLabelsCycle = activeCohorts.map(c => c.cohortLabel);
-      data.push(
-        applyStoredCohort({ name: 'Riley Request', email: 'riley.req@cpnw.org', program: 'Surg Tech', role: 'student', status: 'request-new', date: '2025-02-16', cohortLabel: cohortLabelsCycle[0] || '' }),
-        applyStoredCohort({ name: 'Casey Return', email: 'casey.ret@cpnw.org', program: 'BSN', role: 'faculty', status: 'request-returned', date: '2025-02-12', cohortLabel: cohortLabelsCycle[1] || '' }),
-        applyStoredCohort({ name: 'Taylor Inactive', email: 'taylor.inactive@cpnw.org', program: 'ADN', role: 'student', status: 'inactive', date: '2025-01-20', cohortLabel: cohortLabelsCycle[2] || '' })
-      );
+      if (!isHealthcareView){
+        // Generate active students from the same cohort-based roster used across pages
+        activeCohorts.forEach((c, idx) => {
+          const count = Math.min(12, Math.max(0, Number(c.students) || 0));
+          for (let i = 0; i < count; i++){
+            const studentId = `${idx+1}-${i+1}`;
+            const entry = {
+              name: `Student ${studentId}`,
+              email: `student${idx+1}${i+1}@demo.cpnw.org`,
+              program: c.program || c.programName || 'BSN',
+              school: c.school || pickSchoolForProgram(c.program || c.programName),
+              role: 'student',
+              status: 'active',
+              date: '2025-02-20',
+              cohortLabel: c.cohortLabel,
+              studentId,
+              sid: String(1000 + idx * 50 + i)
+            };
+            const rosterEntry = (window.CPNW && typeof window.CPNW.findRosterEntry === 'function')
+              ? window.CPNW.findRosterEntry({ studentId, sid: entry.sid, email: entry.email })
+              : null;
+            if (rosterEntry){
+              entry.name = rosterEntry.name || entry.name;
+              entry.email = rosterEntry.email || entry.email;
+              entry.sid = rosterEntry.sid || entry.sid;
+            }
+            data.push(applyStoredCohort(entry));
+          }
+        });
+        // Requests, inactive samples
+        const cohortLabelsCycle = activeCohorts.map(c => c.cohortLabel);
+        data.push(
+          applyStoredCohort({ name: 'Riley Request', email: 'riley.req@cpnw.org', program: 'Surg Tech', school: pickSchoolForProgram('Surg Tech'), role: 'student', status: 'request-new', date: '2025-02-16', cohortLabel: cohortLabelsCycle[0] || '' }),
+          applyStoredCohort({ name: 'Casey Return', email: 'casey.ret@cpnw.org', program: 'BSN', school: pickSchoolForProgram('BSN'), role: 'faculty', status: 'request-returned', date: '2025-02-12', cohortLabel: cohortLabelsCycle[1] || '' }),
+          applyStoredCohort({ name: 'Taylor Inactive', email: 'taylor.inactive@cpnw.org', program: 'ADN', school: pickSchoolForProgram('ADN'), role: 'student', status: 'inactive', date: '2025-01-20', cohortLabel: cohortLabelsCycle[2] || '' })
+        );
+      }
 
       let currentStatus = 'active';
       let currentPage = 1;
@@ -207,23 +331,30 @@
 	        }
 	      }
 
-	      function cohortActionLabel(item){
-	        const label = (item.cohortLabel || '').trim();
-	        return label ? 'Reassign Cohort' : 'Assign to Cohort';
-	      }
+      function cohortActionLabel(item){
+        const label = (item.cohortLabel || '').trim();
+        return label ? 'Reassign Cohort' : 'Assign to Cohort';
+      }
 
-	      function canAssignCohort(item){
-	        // Education coordinators/admin accounts are not assigned to cohorts/facilities.
-	        return String(item?.role || '').toLowerCase() !== 'education';
-	      }
+      function canAssignCohort(item){
+        // Education coordinators/admin accounts are not assigned to cohorts/facilities.
+        if (isHealthcareView) return false;
+        return String(item?.role || '').toLowerCase() !== 'education';
+      }
 
-	      function actionsFor(item){
-	        if (item.status === 'active'){
-	          return [
-	            ...(canAssignCohort(item) ? [{ key: 'cohort', label: cohortActionLabel(item) }] : []),
-	            { key: 'deactivate', label: 'Deactivate' },
-	          ];
-	        }
+      function actionsFor(item){
+        if (isHealthcareView){
+          if (item.status === 'inactive'){
+            return [{ key: 'reactivate', label: 'Reactivate' }];
+          }
+          return [{ key: 'deactivate', label: 'Deactivate' }];
+        }
+        if (item.status === 'active'){
+          return [
+            ...(canAssignCohort(item) ? [{ key: 'cohort', label: cohortActionLabel(item) }] : []),
+            { key: 'deactivate', label: 'Deactivate' },
+          ];
+        }
 	        if (item.status.startsWith('request')){
 	          return [
 	            { key: 'approve', label: 'Approve' },
@@ -242,19 +373,26 @@
       function updateTable(){
         const query = (userSearch?.value || '').toLowerCase();
         const role = roleFilter?.value || '';
-        const program = programFilter?.value || '';
+        const programSelections = programFilterControl ? programFilterControl.getSelection() : [];
+        const hasProgramSelections = programSelections.length > 0;
         const cohort = cohortFilter?.value || '';
 
 	        const filtered = data.filter(item => {
 	          if (currentStatus === 'requests'){
 	            if (!(item.status === 'request-new' || item.status === 'request-returned')) return false;
 	          } else {
-	            if (currentStatus === 'active' && item.status !== 'active') return false;
-	            if (currentStatus === 'inactive' && item.status !== 'inactive') return false;
-	          }
+	          if (currentStatus === 'active' && item.status !== 'active') return false;
+	          if (currentStatus === 'inactive' && item.status !== 'inactive') return false;
+	        }
 	          if (role && item.role !== role) return false;
-	          if (program && item.program !== program) return false;
-          if (cohort){
+	          if (hasProgramSelections){
+	            const matchesProgram = programSelections.some(sel =>
+	              normalizeSchool(sel.school) === normalizeSchool(item.school)
+	              && normalizeProgramKey(sel.program) === normalizeProgramKey(item.program)
+	            );
+	            if (!matchesProgram) return false;
+	          }
+          if (cohort && !isHealthcareView){
             if (cohort === '__unassigned__'){
               if (item.cohortLabel && item.cohortLabel.trim()) return false;
             }else{
@@ -324,9 +462,12 @@
         });
       });
 
-      [userSearch, roleFilter, programFilter, cohortFilter].forEach(el => {
-        if (el) el.addEventListener('input', () => { currentPage = 1; updateTable(); });
-        if (el && el.tagName === 'SELECT') el.addEventListener('change', () => { currentPage = 1; updateTable(); });
+      [userSearch, roleFilter, cohortFilter].forEach(el => {
+        if (!el) return;
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
+          currentPage = 1;
+          updateTable();
+        });
       });
 
 	      bulkAction?.addEventListener('click', () => {
