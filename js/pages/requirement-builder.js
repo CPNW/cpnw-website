@@ -154,8 +154,13 @@
         const norm = String(status || '').toLowerCase();
         if (norm === 'active') return { text: 'Active', cls: 'text-bg-success' };
         if (norm === 'inactive') return { text: 'Inactive', cls: 'text-bg-secondary' };
-        if (norm === 'retired') return { text: 'Retired', cls: 'text-bg-secondary' };
-        return { text: status || '—', cls: 'text-bg-secondary' };
+        return { text: 'Inactive', cls: 'text-bg-secondary' };
+      }
+
+      function normalizeStatus(status){
+        const norm = String(status || '').toLowerCase();
+        if (norm === 'inactive' || norm === 'retired') return 'Inactive';
+        return 'Active';
       }
 
       function updatePreview(){
@@ -166,7 +171,7 @@
           (reqFrequency?.value || 'Once'),
           (reqUserType?.value || 'Student')
         ].filter(Boolean).join(' • ');
-        const status = reqStatus?.value || 'Active';
+        const status = normalizeStatus(reqStatus?.value || 'Active');
         const badge = statusBadge(status);
 
         if (pvName) pvName.textContent = name;
@@ -290,7 +295,7 @@
         reqFrequency.value = record.frequency || '';
         reqAbbr.value = record.abbr || '';
         reqUserType.value = record.userType || '';
-        reqStatus.value = record.status || 'Active';
+        reqStatus.value = normalizeStatus(record.status || 'Active');
         reqInstructions.innerHTML = record.instructionsHTML || '';
         linkedFiles = Array.isArray(record.linkedFiles) ? record.linkedFiles.slice() : [];
         updateFilesUI();
@@ -312,7 +317,7 @@
           frequency: reqFrequency.value || '',
           abbr: (reqAbbr.value || '').trim().slice(0, 5),
           userType: reqUserType.value || '',
-          status: reqStatus.value || 'Active',
+          status: normalizeStatus(reqStatus.value || 'Active'),
           instructionsHTML: sanitizeInstructions(reqInstructions.innerHTML || ''),
           linkedFiles: linkedFiles.slice()
         };
@@ -335,13 +340,11 @@
         const existing = editingId ? list.find(r => r.id === editingId) : null;
         const id = editingId || generateId(payload.name);
         const createdAt = existing?.createdAt || nowISO();
-        const retiredAt = payload.status === 'Retired' ? (existing?.retiredAt || nowISO()) : '';
 
         const next = {
           id,
           ...payload,
-          createdAt,
-          retiredAt
+          createdAt
         };
 
         const idx = list.findIndex(r => r.id === id);

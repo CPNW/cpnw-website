@@ -182,6 +182,62 @@
           </div>
         </div>
       </div>
+
+      <div class="row g-3 g-lg-4 mt-1">
+        <div class="col-12">
+          <div class="cpnw-shell p-3 p-md-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h2 class="h5 fw-bold mb-0">Cohort readiness</h2>
+                <p class="text-body-secondary small mb-0">Students assigned to your facility, grouped by cohort.</p>
+              </div>
+              <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="hcReadinessToggle">View all</button>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+              <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-multi-filter>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="hcReadinessSchoolFilter"
+                  placeholder="All schools"
+                  readonly
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                />
+                <label for="hcReadinessSchoolFilter">Schools</label>
+                <div class="cpnw-program-menu" data-readiness-school-menu role="listbox"></div>
+              </div>
+              <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-multi-filter>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="hcReadinessProgramFilter"
+                  placeholder="All programs"
+                  readonly
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                />
+                <label for="hcReadinessProgramFilter">Programs</label>
+                <div class="cpnw-program-menu" data-readiness-program-menu role="listbox"></div>
+              </div>
+            </div>
+            <div class="table-responsive cpnw-scroll-260" id="hcReadinessWrapper">
+              <table class="table align-middle mb-0 cpnw-table">
+                <thead class="text-body-secondary small position-sticky top-0 cpnw-table-head">
+                  <tr>
+                    <th scope="col">Cohort</th>
+                    <th scope="col">Students</th>
+                    <th scope="col">Ready</th>
+                    <th scope="col">Pending</th>
+                    <th scope="col">Expiring</th>
+                  </tr>
+                </thead>
+                <tbody id="hcReadinessTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 

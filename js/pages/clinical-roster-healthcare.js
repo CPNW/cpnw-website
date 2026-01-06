@@ -447,6 +447,22 @@
         normalizedAssignments = true;
       }
     }
+    const assignmentNormalizer = window.CPNW && typeof window.CPNW.normalizeAssignments === 'function'
+      ? window.CPNW.normalizeAssignments
+      : null;
+    if (assignmentNormalizer){
+      const normalized = assignmentNormalizer(assignments, rosterList, { maxCurrent: 1, maxPast: 1 });
+      if (normalized && Array.isArray(normalized.list)){
+        if (normalized.changed){
+          assignments.length = 0;
+          assignments.push(...normalized.list);
+          normalizedAssignments = true;
+        }else if (normalized.list !== assignments){
+          assignments.length = 0;
+          assignments.push(...normalized.list);
+        }
+      }
+    }
   }
   if (normalizedAssignments){
     saveAssignments(assignments);

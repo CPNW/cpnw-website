@@ -16,6 +16,7 @@
       const REVIEW_DECISIONS_KEY = 'cpnw-review-decisions-v1';
       const requirementsStore = (window.CPNW && window.CPNW.requirementsStore) ? window.CPNW.requirementsStore : null;
       const HEALTHCARE_REVIEWABLE_STATUSES = new Set(['Submitted', 'In Review']);
+      const HEALTHCARE_EXPIRING_STATUSES = new Set(['Expired', 'Expiring', 'Expiring Soon']);
       const reqStatusPool = [
         'Not Submitted',
         'Submitted',
@@ -267,6 +268,16 @@
         return buildHealthcareReqs(person).some(r => HEALTHCARE_REVIEWABLE_STATUSES.has(r.status));
       }
 
+      function getHealthcareReadinessSummary(person){
+        const rows = buildHealthcareReqs(person);
+        const hasReviewable = rows.some(r => HEALTHCARE_REVIEWABLE_STATUSES.has(r.status));
+        const hasExpiring = rows.some(r => HEALTHCARE_EXPIRING_STATUSES.has(r.status));
+        const ready = rows.length > 0
+          && rows.every(r => r.status === 'Approved' || r.status === 'Conditionally Approved')
+          && !hasExpiring;
+        return { hasReviewable, hasExpiring, ready };
+      }
+
       function assignmentWithinWindow(assignment){
         const end = assignment?.end instanceof Date ? assignment.end : (assignment?.end ? new Date(assignment.end) : null);
         if (!(end instanceof Date) || Number.isNaN(end.getTime())) return false;
@@ -314,6 +325,17 @@
         return { ids, sids, emails };
       }
 
+      function buildReadinessRoster(people, eligibility){
+        if (!eligibility) return [];
+        return (people || []).filter(person => {
+          if (String(person.role || '').toLowerCase() !== 'student') return false;
+          const idMatch = person.studentId && eligibility.ids.has(String(person.studentId));
+          const sidMatch = person.sid && eligibility.sids.has(String(person.sid));
+          const emailMatch = person.email && eligibility.emails.has(normalizeEmail(person.email));
+          return idMatch || sidMatch || emailMatch;
+        });
+      }
+
       function buildReviewPeople(){
         const baseRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
           ? window.CPNW.getSharedRoster()
@@ -321,28 +343,6 @@
         const people = baseRoster
           .filter(person => ['student','faculty','faculty-admin'].includes(person.role))
           .map(person => ({ ...person }));
-        people.push(
-          {
-            name: 'Fran Faculty',
-            email: 'fran.faculty@cpnw.org',
-            program: 'BSN',
-            school: 'CPNW Education',
-            cohort: '',
-            sid: 'EID-FF-001',
-            verified: true,
-            status: ''
-          },
-          {
-            name: 'Faculty Admin (Demo)',
-            email: 'facadmin@cpnw.org',
-            program: 'BSN',
-            school: 'CPNW Education',
-            cohort: '',
-            sid: 'EID-FA-001',
-            verified: true,
-            status: ''
-          }
-        );
         return people;
       }
 
@@ -368,17 +368,164 @@
       const metricRejectedNote = document.getElementById('metricRejectedNote');
       const metricExpiring = document.getElementById('metricExpiring');
       const metricExpiringNote = document.getElementById('metricExpiringNote');
+      const readinessTableBody = document.getElementById('hcReadinessTableBody');
+      const readinessWrapper = document.getElementById('hcReadinessWrapper');
+      const readinessToggle = document.getElementById('hcReadinessToggle');
+      const readinessSchoolInput = document.getElementById('hcReadinessSchoolFilter');
+      const readinessProgramInput = document.getElementById('hcReadinessProgramFilter');
+      const readinessSchoolMenu = readinessSchoolInput?.closest('[data-multi-filter]')?.querySelector('[data-readiness-school-menu]');
+      const readinessProgramMenu = readinessProgramInput?.closest('[data-multi-filter]')?.querySelector('[data-readiness-program-menu]');
+      const buildMultiSelect = (window.CPNW && typeof window.CPNW.buildCheckboxMultiSelect === 'function')
+        ? window.CPNW.buildCheckboxMultiSelect
+        : null;
 
       if (!filters) return;
 
       const reviewPeople = buildReviewPeople();
       const storedAssignments = loadAssignments();
       const assignments = storedAssignments || seedAssignmentsFromPeople(reviewPeople);
-      if (!storedAssignments){
+      const assignmentNormalizer = window.CPNW && typeof window.CPNW.normalizeAssignments === 'function'
+        ? window.CPNW.normalizeAssignments
+        : null;
+      if (assignmentNormalizer){
+        const normalized = assignmentNormalizer(assignments, reviewPeople, { maxCurrent: 1, maxPast: 1 });
+        if (normalized && Array.isArray(normalized.list)){
+          if (normalized.changed){
+            assignments.length = 0;
+            assignments.push(...normalized.list);
+            saveAssignments(assignments);
+          }else if (normalized.list !== assignments){
+            assignments.length = 0;
+            assignments.push(...normalized.list);
+          }
+        }
+      }else if (!storedAssignments){
         saveAssignments(assignments);
       }
       const facilityNames = getHealthcareFacilityNames();
       const assignmentEligibility = buildAssignmentEligibility(assignments, facilityNames);
+      const readinessRoster = buildReadinessRoster(reviewPeople, assignmentEligibility);
+      const readinessSchoolProgramMap = buildReadinessSchoolProgramMap(readinessRoster);
+      let readinessSchoolControl = null;
+      let readinessProgramControl = null;
+
+      function buildReadinessSchoolProgramMap(people){
+        const map = new Map();
+        (people || []).forEach(person => {
+          const school = person.school || '';
+          const program = person.program || '';
+          if (!school || !program) return;
+          if (!map.has(school)) map.set(school, new Set());
+          map.get(school).add(program);
+        });
+        return map;
+      }
+
+      function buildReadinessSchoolItems(){
+        return Array.from(readinessSchoolProgramMap.keys())
+          .sort((a,b) => a.localeCompare(b))
+          .map(school => ({ value: school, label: school }));
+      }
+
+      function buildReadinessProgramItems(selectedSchools = []){
+        const schools = selectedSchools.length
+          ? selectedSchools
+          : Array.from(readinessSchoolProgramMap.keys()).sort((a,b) => a.localeCompare(b));
+        const items = [];
+        schools.forEach((school) => {
+          const programs = Array.from(readinessSchoolProgramMap.get(school) || [])
+            .sort((a,b) => a.localeCompare(b));
+          programs.forEach((program) => {
+            items.push({
+              value: `${school}||${program}`,
+              label: program,
+              group: school
+            });
+          });
+        });
+        return items;
+      }
+
+      function getReadinessSelections(){
+        return {
+          schools: readinessSchoolControl ? readinessSchoolControl.getSelection() : [],
+          programs: readinessProgramControl ? readinessProgramControl.getSelection() : []
+        };
+      }
+
+      function renderReadinessTable(){
+        if (!readinessTableBody) return;
+        const { schools, programs } = getReadinessSelections();
+        const hasSchoolFilter = schools.length > 0;
+        const hasProgramFilter = programs.length > 0;
+        const readinessMap = new Map();
+        readinessRoster.forEach(person => {
+          if (hasSchoolFilter && !schools.includes(person.school)) return;
+          if (hasProgramFilter){
+            const programKey = `${person.school}||${person.program}`;
+            if (!programs.includes(programKey)) return;
+          }
+          const cohortLabel = (person.cohort || '').trim() || 'Unassigned';
+          const entry = readinessMap.get(cohortLabel) || { label: cohortLabel, students: 0, ready: 0, pending: 0, expiring: 0 };
+          const summary = getHealthcareReadinessSummary(person);
+          entry.students += 1;
+          if (summary.ready) entry.ready += 1;
+          if (summary.hasReviewable) entry.pending += 1;
+          if (summary.hasExpiring) entry.expiring += 1;
+          readinessMap.set(cohortLabel, entry);
+        });
+        const rows = Array.from(readinessMap.values())
+          .sort((a,b) => {
+            if (b.pending !== a.pending) return b.pending - a.pending;
+            if (b.students !== a.students) return b.students - a.students;
+            return a.label.localeCompare(b.label);
+          })
+          .map(item => `
+            <tr>
+              <td class="fw-semibold">${item.label}</td>
+              <td>${item.students}</td>
+              <td><span class="text-success fw-semibold">${item.ready}</span></td>
+              <td>${item.pending}</td>
+              <td>${item.expiring}</td>
+            </tr>
+          `)
+          .join('');
+        readinessTableBody.innerHTML = rows || '<tr><td colspan="5" class="text-body-secondary small">No cohorts match your filters.</td></tr>';
+      }
+
+      function refreshReadinessPrograms(){
+        if (!readinessProgramControl) return;
+        const { schools } = getReadinessSelections();
+        readinessProgramControl.setItems(buildReadinessProgramItems(schools));
+      }
+
+      function initReadinessFilters(){
+        if (!buildMultiSelect) return;
+        if (readinessSchoolInput && readinessSchoolMenu){
+          readinessSchoolControl = buildMultiSelect({
+            input: readinessSchoolInput,
+            menu: readinessSchoolMenu,
+            items: buildReadinessSchoolItems(),
+            placeholder: 'All schools',
+            onChange: () => {
+              refreshReadinessPrograms();
+              renderReadinessTable();
+            }
+          });
+        }
+        if (readinessProgramInput && readinessProgramMenu){
+          readinessProgramControl = buildMultiSelect({
+            input: readinessProgramInput,
+            menu: readinessProgramMenu,
+            items: buildReadinessProgramItems([]),
+            placeholder: 'All programs',
+            onChange: () => {
+              renderReadinessTable();
+            }
+          });
+        }
+        refreshReadinessPrograms();
+      }
 
       if (summaryStartInput && !summaryStartInput.value){
         summaryStartInput.value = toDateInputValue(TODAY);
@@ -609,6 +756,8 @@
 
       renderProgramFilters('');
       summarize();
+      initReadinessFilters();
+      renderReadinessTable();
 
       filters.addEventListener('change', summarize);
       programSearch?.addEventListener('input', (e) => {
@@ -625,5 +774,14 @@
       });
       summaryStartInput?.addEventListener('change', summarize);
       summaryEndInput?.addEventListener('change', summarize);
+
+      if (readinessToggle && readinessWrapper){
+        readinessToggle.addEventListener('click', () => {
+          const expanded = readinessWrapper.dataset.expanded === 'true';
+          readinessWrapper.dataset.expanded = (!expanded).toString();
+          readinessWrapper.style.maxHeight = expanded ? '260px' : '520px';
+          readinessToggle.textContent = expanded ? 'View all' : 'Collapse';
+        });
+      }
     })();
   

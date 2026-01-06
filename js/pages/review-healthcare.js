@@ -353,49 +353,6 @@
         .map(person => ({ ...person }));
 
       // Include faculty + faculty-admin accounts (education-role users are intentionally excluded from this table)
-      function addPerson(raw){
-        const person = { ...raw };
-        if (cohortAPI){
-          const override = typeof cohortAPI.getUserCohortLabel === 'function'
-            ? cohortAPI.getUserCohortLabel(person.email)
-            : null;
-          if (override !== null && override !== undefined){
-            person.cohort = override;
-          }
-        }
-        people.push(person);
-      }
-
-      addPerson({
-        name: 'Fran Faculty',
-        email: 'fran.faculty@cpnw.org',
-        program: 'BSN',
-        school: 'CPNW Education',
-        cohort: '',
-        sid: 'EID-FF-001',
-        verified: true,
-        status: '',
-        phone: '(555) 010-2000',
-        emergName: '',
-        emergPhone: '',
-        dob: new Date(1988, 5, 12)
-      });
-
-      addPerson({
-        name: 'Faculty Admin (Demo)',
-        email: 'facadmin@cpnw.org',
-        program: 'BSN',
-        school: 'CPNW Education',
-        cohort: '',
-        sid: 'EID-FA-001',
-        verified: true,
-        status: '',
-        phone: '(555) 010-2001',
-        emergName: '',
-        emergPhone: '',
-        dob: new Date(1985, 9, 3)
-      });
-
       const storedAssignments = loadAssignments();
       const assignments = storedAssignments || seedAssignmentsFromPeople(people);
       if (!storedAssignments){
@@ -1445,6 +1402,11 @@
                   exp = null;
                 }
               }
+            }
+            if (storedRecord?.meta?.expiration && frequency !== 'Once'
+              && (status === 'Approved' || status === 'Conditionally Approved')){
+              const expDate = new Date(storedRecord.meta.expiration);
+              if (!Number.isNaN(expDate.getTime())) exp = expDate;
             }
             const type = !isElearning && isImmunizationRequirement(name) ? 'Immunization' : baseType;
 
