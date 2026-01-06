@@ -48,7 +48,10 @@
         { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
         { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
         { id: 'surg', name: 'Surg Tech', base: 8, aySpan: 2 },
-        { id: 'rad', name: 'Radiologic Technology', base: 6, aySpan: 2 }
+        { id: 'rad', name: 'Radiologic Technology', base: 6, aySpan: 2 },
+        { id: 'resp', name: 'Respiratory Care', base: 7, aySpan: 2 },
+        { id: 'med', name: 'Medical Assistant', base: 6, aySpan: 2 },
+        { id: 'sono', name: 'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
       ];
 
       const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
@@ -66,6 +69,9 @@
         if (n.includes('adn')) return 'adn';
         if (n.includes('surg')) return 'surg';
         if (n.includes('rad')) return 'rad';
+        if (n.includes('resp')) return 'resp';
+        if (n.includes('medassistant') || n.includes('medassist')) return 'med';
+        if (n.includes('sonography') || n.includes('sono') || n.includes('dms')) return 'sono';
         return '';
       }
 
@@ -81,6 +87,9 @@
         const name = String(label || '').toLowerCase();
         if (name.includes('surg')) return 'surg tech';
         if (name.includes('rad')) return 'radiologic technology';
+        if (name.includes('resp')) return 'respiratory care';
+        if (name.includes('sonography') || name.includes('sono') || name.includes('dms')) return 'diagnostic medical sonography';
+        if (name.includes('medassistant') || name.includes('medassist')) return 'medical assistant';
         if (name.includes('bsn')) return 'bsn';
         if (name.includes('adn')) return 'adn';
         return name;
@@ -90,6 +99,9 @@
         const name = normalize(value).replace(/[^a-z0-9]/g, '');
         if (name.includes('surg')) return 'surgtech';
         if (name.includes('rad')) return 'radtech';
+        if (name.includes('resp')) return 'respcare';
+        if (name.includes('sonography') || name.includes('sono') || name.includes('dms')) return 'sonography';
+        if (name.includes('medassistant') || name.includes('medassist')) return 'medicalassistant';
         if (name.includes('bsn')) return 'bsn';
         if (name.includes('adn')) return 'adn';
         return name;
@@ -261,9 +273,17 @@
         const reviewPrograms = [
           { id: 'BSN', base: 12, aySpan: 2 },
           { id: 'ADN', base: 10, aySpan: 2 },
-          { id: 'Surg Tech', base: 8, aySpan: 2 }
+          { id: 'Surg Tech', base: 8, aySpan: 2 },
+          { id: 'Radiologic Technology', base: 6, aySpan: 2 },
+          { id: 'Respiratory Care', base: 7, aySpan: 2 },
+          { id: 'Medical Assistant', base: 6, aySpan: 2 },
+          { id: 'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
         ];
-        const schoolForProgram = (program) => (program === 'ADN' ? 'CPNW University' : 'CPNW Education');
+        const schoolForProgram = (program) => {
+          const token = normalizeProgramToken(program);
+          if (token === 'adn' || token === 'surgtech' || token === 'respcare') return 'CPNW University';
+          return 'CPNW Education';
+        };
         const seeds = [];
         reviewPrograms.forEach(p => {
           const ayStarts = Array.from({length: p.aySpan}, (_, i) => CURRENT_AY_START - i);
@@ -555,7 +575,10 @@
           { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
           { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
           { id: 'surg', name: 'Surg Tech', base: 8, aySpan: 2 },
-          { id: 'rad', name: 'Radiologic Technology', base: 6, aySpan: 2 }
+          { id: 'rad', name: 'Radiologic Technology', base: 6, aySpan: 2 },
+          { id: 'resp', name: 'Respiratory Care', base: 7, aySpan: 2 },
+          { id: 'med', name: 'Medical Assistant', base: 6, aySpan: 2 },
+          { id: 'sono', name: 'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
         ];
         const cohortSeeds = [];
         rosterPrograms.forEach(p => {
@@ -615,6 +638,9 @@
             const name = String(person.programs?.[0] || '').toLowerCase();
             if (name.includes('surg')) return 'Surg Tech';
             if (name.includes('rad')) return 'Radiologic Technology';
+            if (name.includes('resp')) return 'Respiratory Care';
+            if (name.includes('sonography') || name.includes('sono') || name.includes('dms')) return 'Diagnostic Medical Sonography';
+            if (name.includes('medassistant') || name.includes('medassist')) return 'Medical Assistant';
             if (name.includes('bsn')) return 'BSN';
             if (name.includes('adn')) return 'ADN';
             return person.programs?.[0] || 'BSN';
@@ -660,7 +686,11 @@
         const assignmentPrograms = [
           { id: 'BSN', base: 12, aySpan: 2 },
           { id: 'ADN', base: 10, aySpan: 2 },
-          { id: 'Surg Tech', base: 8, aySpan: 2 }
+          { id: 'Surg Tech', base: 8, aySpan: 2 },
+          { id: 'Radiologic Technology', base: 6, aySpan: 2 },
+          { id: 'Respiratory Care', base: 7, aySpan: 2 },
+          { id: 'Medical Assistant', base: 6, aySpan: 2 },
+          { id: 'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
         ];
         const locations = ['CPNW Medical Center','CPNW Healthcare Facility','Evergreen Health','Providence NW'];
         const statusPool = ['approved','pending','rejected'];

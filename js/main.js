@@ -818,7 +818,8 @@ const cpnwAccessCatalog = (() => {
       programs: [
         { code: '10011', abbr: 'ADN', name: 'Associate Degree in Nursing' },
         { code: '10012', abbr: 'BSN', name: 'Bachelor of Science in Nursing' },
-        { code: '10013', abbr: 'SurgTech', name: 'Surgical Technology' }
+        { code: '10013', abbr: 'SurgTech', name: 'Surgical Technology' },
+        { code: '10014', abbr: 'RespCare', name: 'Respiratory Care' }
       ]
     },
     {
@@ -827,7 +828,9 @@ const cpnwAccessCatalog = (() => {
       programs: [
         { code: '10111', abbr: 'ADN', name: 'Associate Degree in Nursing' },
         { code: '10112', abbr: 'BSN', name: 'Bachelor of Science in Nursing' },
-        { code: '10113', abbr: 'RadTech', name: 'Radiologic Technology' }
+        { code: '10113', abbr: 'RadTech', name: 'Radiologic Technology' },
+        { code: '10114', abbr: 'MedAssist', name: 'Medical Assistant' },
+        { code: '10115', abbr: 'DMS', name: 'Diagnostic Medical Sonography' }
       ]
     }
   ];
@@ -865,6 +868,9 @@ window.CPNW = window.CPNW || {};
     const name = normalize(value).replace(/[^a-z0-9]/g, '');
     if (name.includes('surg')) return 'surgtech';
     if (name.includes('rad')) return 'radtech';
+    if (name.includes('resp')) return 'respcare';
+    if (name.includes('sonography') || name.includes('sono') || name.includes('dms')) return 'sonography';
+    if (name.includes('medassistant') || name.includes('medassist')) return 'medicalassistant';
     if (name.includes('bsn')) return 'bsn';
     if (name.includes('adn')) return 'adn';
     return name;
@@ -1325,7 +1331,7 @@ const cpnwDemoPeople = [
     role: 'cpnw-reviewer',
     permissions: { canCoordinate: false, canDelete: false },
     schools: ['CPNW University', 'CPNW Education'],
-    programs: ['ADN', 'BSN', 'SurgTech', 'RadTech'],
+    programs: ['ADN', 'BSN', 'SurgTech', 'RadTech', 'RespCare', 'MedAssist', 'DMS'],
     profile: {
       firstName: 'Riley',
       lastName: 'Reviewer',
@@ -1348,7 +1354,7 @@ const cpnwDemoPeople = [
     role: 'education',
     permissions: { canCoordinate: true, canDelete: true },
     schools: ['CPNW University', 'CPNW Education'],
-    programs: ['ADN', 'BSN', 'SurgTech', 'RadTech'],
+    programs: ['ADN', 'BSN', 'SurgTech', 'RadTech', 'RespCare', 'MedAssist', 'DMS'],
     profile: {
       firstName: 'Alex',
       lastName: 'Educator',
@@ -1371,7 +1377,7 @@ const cpnwDemoPeople = [
     role: 'education',
     permissions: { canCoordinate: true, canDelete: false },
     schools: ['CPNW University'],
-    programs: ['ADN', 'BSN', 'SurgTech'],
+    programs: ['ADN', 'BSN', 'SurgTech', 'RespCare'],
     profile: {
       firstName: 'Jamie',
       lastName: 'Coordinator',
@@ -1417,7 +1423,7 @@ const cpnwDemoPeople = [
     role: 'education',
     permissions: { canCoordinate: false, canDelete: false },
     schools: ['CPNW Education'],
-    programs: ['ADN', 'BSN', 'RadTech'],
+    programs: ['ADN', 'BSN', 'RadTech', 'MedAssist', 'DMS'],
     profile: {
       firstName: 'Morgan',
       lastName: 'Coordinator',
@@ -1594,6 +1600,84 @@ const cpnwDemoPeople = [
     }
   },
   {
+    email: 'student.respcare.uni@cpnw.org',
+    name: 'Harper Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW University'],
+    programs: ['RespCare'],
+    cohort: 'Respiratory Care – Fall 2025',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'TB-Test.pdf', req: 'TB Test', date: '2025-02-06' }],
+    profile: {
+      firstName: 'Harper',
+      lastName: 'Student',
+      emailUsername: 'student.respcare.uni@cpnw.org',
+      altEmail: 'harper.student@cpnw.org',
+      primaryPhone: '(206) 555-0173',
+      school: 'CPNW University',
+      program: 'RespCare',
+      emergencyName: 'Mia Student',
+      emergencyPhone: '(206) 555-0189',
+      address: '120 Boren Ave',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98104'
+    }
+  },
+  {
+    email: 'student.medassist.edu@cpnw.org',
+    name: 'Jules Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['MedAssist'],
+    cohort: 'Medical Assistant – Spring 2026',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'CPR.pdf', req: 'CPR', date: '2025-02-09' }],
+    profile: {
+      firstName: 'Jules',
+      lastName: 'Student',
+      emailUsername: 'student.medassist.edu@cpnw.org',
+      altEmail: 'jules.student@cpnw.org',
+      primaryPhone: '(253) 555-0146',
+      school: 'CPNW Education',
+      program: 'MedAssist',
+      emergencyName: 'Rory Student',
+      emergencyPhone: '(253) 555-0187',
+      address: '515 Commerce St',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
+    email: 'student.sono.edu@cpnw.org',
+    name: 'Tess Student',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['DMS'],
+    cohort: 'Diagnostic Medical Sonography – Winter 2026',
+    reqs: { cpnw: 'complete', ed: 'incomplete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'HIPAA.pdf', req: 'HIPAA', date: '2025-02-05' }],
+    profile: {
+      firstName: 'Tess',
+      lastName: 'Student',
+      emailUsername: 'student.sono.edu@cpnw.org',
+      altEmail: 'tess.student@cpnw.org',
+      primaryPhone: '(253) 555-0178',
+      school: 'CPNW Education',
+      program: 'DMS',
+      emergencyName: 'Ari Student',
+      emergencyPhone: '(253) 555-0198',
+      address: '1204 Broadway',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
     email: 'faculty.adn.uni@cpnw.org',
     name: 'Pat Faculty',
     role: 'faculty',
@@ -1748,6 +1832,84 @@ const cpnwDemoPeople = [
       state: 'WA',
       zip: '98101'
     }
+  },
+  {
+    email: 'faculty.respcare.uni@cpnw.org',
+    name: 'Addison Faculty',
+    role: 'faculty',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW University'],
+    programs: ['RespCare'],
+    cohort: 'Respiratory Care – Fall 2025',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'FacultyCert.pdf', req: 'Faculty Credential', date: '2025-02-07' }],
+    profile: {
+      firstName: 'Addison',
+      lastName: 'Faculty',
+      emailUsername: 'faculty.respcare.uni@cpnw.org',
+      altEmail: 'addison.faculty@cpnw.org',
+      primaryPhone: '(425) 555-0182',
+      school: 'CPNW University',
+      program: 'RespCare',
+      emergencyName: 'Terry Faculty',
+      emergencyPhone: '(425) 555-0194',
+      address: '410 Lake St',
+      city: 'Seattle',
+      state: 'WA',
+      zip: '98109'
+    }
+  },
+  {
+    email: 'faculty.medassist.edu@cpnw.org',
+    name: 'Blake Faculty',
+    role: 'faculty',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['MedAssist'],
+    cohort: 'Medical Assistant – Spring 2026',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'FacultyCert.pdf', req: 'Faculty Credential', date: '2025-02-08' }],
+    profile: {
+      firstName: 'Blake',
+      lastName: 'Faculty',
+      emailUsername: 'faculty.medassist.edu@cpnw.org',
+      altEmail: 'blake.faculty@cpnw.org',
+      primaryPhone: '(253) 555-0184',
+      school: 'CPNW Education',
+      program: 'MedAssist',
+      emergencyName: 'Quinn Faculty',
+      emergencyPhone: '(253) 555-0199',
+      address: '402 Market St',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
+    email: 'facadmin.sono.edu@cpnw.org',
+    name: 'Robin Faculty Admin',
+    role: 'faculty-admin',
+    permissions: { canCoordinate: true, canDelete: true },
+    schools: ['CPNW Education'],
+    programs: ['DMS'],
+    cohort: 'Diagnostic Medical Sonography – Winter 2026',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'AdminAccess.pdf', req: 'Admin Approval', date: '2025-02-10' }],
+    profile: {
+      firstName: 'Robin',
+      lastName: 'Faculty',
+      emailUsername: 'facadmin.sono.edu@cpnw.org',
+      altEmail: 'robin.faculty@cpnw.org',
+      primaryPhone: '(253) 555-0190',
+      school: 'CPNW Education',
+      program: 'DMS',
+      emergencyName: 'Drew Faculty',
+      emergencyPhone: '(253) 555-0176',
+      address: '700 Pacific Ave',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
   }
 ];
 
@@ -1831,9 +1993,13 @@ window.CPNW.buildSharedRoster = function(){
   const TERMS = ['Fall','Winter','Spring','Summer'];
   const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
   const programDefs = [
-    { id:'BSN', base: 12, aySpan: 2 },
-    { id:'ADN', base: 10, aySpan: 2 },
-    { id:'Surg Tech', base: 8, aySpan: 2 }
+    { id:'BSN', base: 12, aySpan: 2, school: 'CPNW Education' },
+    { id:'ADN', base: 10, aySpan: 2, school: 'CPNW University' },
+    { id:'Surg Tech', base: 8, aySpan: 2, school: 'CPNW University' },
+    { id:'Radiologic Technology', base: 6, aySpan: 2, school: 'CPNW Education' },
+    { id:'Respiratory Care', base: 7, aySpan: 2, school: 'CPNW University' },
+    { id:'Medical Assistant', base: 6, aySpan: 2, school: 'CPNW Education' },
+    { id:'Diagnostic Medical Sonography', base: 6, aySpan: 2, school: 'CPNW Education' }
   ];
 
   const cohortSeeds = [];
@@ -1843,7 +2009,7 @@ window.CPNW.buildSharedRoster = function(){
         const year = term === 'Fall' ? ay : ay + 1;
         const ayStart = term === 'Fall' ? ay : ay - 1;
         const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
-        const school = p.id === 'ADN' ? 'CPNW University' : 'CPNW Education';
+        const school = p.school || 'CPNW Education';
         cohortSeeds.push({
           cohortLabel: `${p.id} – ${term} ${year}`,
           program: p.id,
@@ -1863,7 +2029,17 @@ window.CPNW.buildSharedRoster = function(){
       const delta = membershipCounts[cohortAPI.seedKeyForLabel(c.cohortLabel)] || 0;
       return { ...c, students: c.students + delta };
     });
-    const schoolForProgram = (program) => (String(program || '').toUpperCase() === 'ADN' ? 'CPNW University' : 'CPNW Education');
+    const schoolForProgram = (program) => {
+      const token = String(program || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (token.includes('adn')) return 'CPNW University';
+      if (token.includes('surg')) return 'CPNW University';
+      if (token.includes('resp')) return 'CPNW University';
+      if (token.includes('rad')) return 'CPNW Education';
+      if (token.includes('sonography') || token.includes('sono') || token.includes('dms')) return 'CPNW Education';
+      if (token.includes('medassistant') || token.includes('medassist')) return 'CPNW Education';
+      if (token.includes('bsn')) return 'CPNW Education';
+      return 'CPNW Education';
+    };
     const custom = cohortAPI
       .listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX })
       .map(c => ({ ...c, school: schoolForProgram(c.program) }));
@@ -1962,6 +2138,14 @@ window.CPNW.requirementsStore = (() => {
     'CPNW: Independent Background Check',
     'CPNW: Independent WATCH'
   ];
+  const AUTO_APPROVED_EMAILS = [
+    'student.adn.edu@cpnw.org',
+    'faculty.adn.uni@cpnw.org',
+    'student.respcare.uni@cpnw.org',
+    'student.medassist.edu@cpnw.org',
+    'facadmin.sono.edu@cpnw.org'
+  ];
+  const AUTO_APPROVED_KEYS = new Set();
 
   function stringSeed(value){
     return Array.from(String(value || '')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
@@ -1970,6 +2154,15 @@ window.CPNW.requirementsStore = (() => {
   function normalizeKey(value){
     return String(value || '').trim().toLowerCase();
   }
+
+  function registerAutoApproved(email){
+    const normalized = normalizeKey(email);
+    if (normalized) AUTO_APPROVED_KEYS.add(normalized);
+    const rosterEntry = window.CPNW?.findRosterEntry ? window.CPNW.findRosterEntry({ email }) : null;
+    if (rosterEntry?.sid) AUTO_APPROVED_KEYS.add(normalizeKey(rosterEntry.sid));
+  }
+
+  AUTO_APPROVED_EMAILS.forEach(registerAutoApproved);
 
   function loadStore(){
     try{
@@ -2029,6 +2222,7 @@ window.CPNW.requirementsStore = (() => {
     const isElearning = typeof opts.isElearning === 'boolean' ? opts.isElearning : inferCategory(reqName).isElearning;
     const pool = isElearning ? ELEARNING_POOL : DEFAULT_STATUS_POOL;
     const seed = stringSeed(studentKey) + stringSeed(reqName) + stringSeed(category);
+    if (AUTO_APPROVED_KEYS.has(normalizeKey(studentKey))) return 'Approved';
     return pool[Math.abs(seed) % pool.length];
   }
 

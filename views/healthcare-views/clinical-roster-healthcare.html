@@ -66,11 +66,12 @@
           <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Admin</p>
           <h1 class="h3 fw-semibold mb-1">Clinical Roster</h1>
           <p class="text-body-secondary mb-0">Upcoming and active clinical assignments for your facilities.</p>
+          <p class="small text-body-secondary mb-0" id="statusFilterNote"></p>
         </div>
       </div>
 
       <div class="row g-3 mb-3">
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-2">
           <div class="form-floating">
             <select class="form-select" id="locationFilter">
               <option value="">All locations</option>
@@ -78,8 +79,23 @@
             <label for="locationFilter">Locations</label>
           </div>
         </div>
-        <div class="col-12 col-md-3">
-          <div class="form-floating cpnw-program-filter" data-program-filter>
+        <div class="col-12 col-md-2">
+          <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-school-filter>
+            <input
+              type="text"
+              class="form-control"
+              id="schoolFilter"
+              placeholder="All schools"
+              readonly
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            />
+            <label for="schoolFilter">Schools</label>
+            <div class="cpnw-program-menu" data-school-menu role="listbox"></div>
+          </div>
+        </div>
+        <div class="col-12 col-md-2">
+          <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-program-filter>
             <input
               type="text"
               class="form-control"
@@ -89,12 +105,12 @@
               aria-haspopup="listbox"
               aria-expanded="false"
             />
-            <label for="programFilter">School / Program</label>
+            <label for="programFilter">Programs</label>
             <div class="cpnw-program-menu" data-program-menu role="listbox"></div>
           </div>
         </div>
-        <div class="col-12 col-md-3">
-          <div class="form-floating cpnw-program-filter" data-cohort-filter>
+        <div class="col-12 col-md-2">
+          <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-cohort-filter>
             <input
               type="text"
               class="form-control"
@@ -108,12 +124,19 @@
             <div class="cpnw-program-menu" data-cohort-menu role="listbox"></div>
           </div>
         </div>
-        <div class="col-12 col-md-3">
-          <div class="form-floating">
-            <select class="form-select" id="startDateFilter">
-              <option value="">All start dates</option>
-            </select>
+        <div class="col-12 col-md-2">
+          <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-start-date-filter>
+            <input
+              type="text"
+              class="form-control"
+              id="startDateFilter"
+              placeholder="All start dates"
+              readonly
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            />
             <label for="startDateFilter">Clinical start date</label>
+            <div class="cpnw-program-menu" data-start-date-menu role="listbox"></div>
           </div>
         </div>
       </div>
@@ -124,9 +147,17 @@
           <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="showSelected">Show Selected</button>
           <button class="btn btn-outline-success btn-sm btn-cpnw" type="button" id="approveSelected">Approve Selected</button>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <label class="small text-body-secondary mb-0" for="rosterSearch">Search:</label>
-          <input type="search" class="form-control form-control-sm" id="rosterSearch" placeholder="Search..." />
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Status filter">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" data-status-filter="">All statuses</button>
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" data-status-filter="pending">Pending</button>
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" data-status-filter="approved">Approved</button>
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" data-status-filter="rejected">Rejected</button>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="rosterSearch">Search:</label>
+            <input type="search" class="form-control form-control-sm" id="rosterSearch" placeholder="Search..." />
+          </div>
         </div>
       </div>
 

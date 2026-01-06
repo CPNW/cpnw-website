@@ -27,9 +27,12 @@
     { school: 'CPNW University', program: 'ADN', packageId: 'sp-13' },
     { school: 'CPNW University', program: 'BSN', packageId: 'sp-11' },
     { school: 'CPNW University', program: 'SurgTech', packageId: 'sp-12' },
+    { school: 'CPNW University', program: 'RespCare', packageId: 'sp-14' },
     { school: 'CPNW Education', program: 'ADN', packageId: 'sp-12' },
     { school: 'CPNW Education', program: 'BSN', packageId: 'my-17' },
-    { school: 'CPNW Education', program: 'RadTech', packageId: 'sp-11' }
+    { school: 'CPNW Education', program: 'RadTech', packageId: 'sp-11' },
+    { school: 'CPNW Education', program: 'MedAssist', packageId: 'my-18' },
+    { school: 'CPNW Education', program: 'DMS', packageId: 'sp-13' }
   ];
 
   const dvsPrograms = PROGRAM_PACKAGES.filter(p => DVS_PACKAGES.has(p.packageId));
@@ -37,6 +40,9 @@
     const normalized = String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     if (normalized.includes('surg')) return 'SurgTech';
     if (normalized.includes('rad')) return 'RadTech';
+    if (normalized.includes('resp')) return 'RespCare';
+    if (normalized.includes('sonography') || normalized.includes('sono') || normalized.includes('dms')) return 'DMS';
+    if (normalized.includes('medassistant') || normalized.includes('medassist')) return 'MedAssist';
     if (normalized.includes('bsn')) return 'BSN';
     if (normalized.includes('adn')) return 'ADN';
     return String(name || '').trim();
@@ -210,14 +216,15 @@
   function buildRows(){
     const roster = (window.CPNW && Array.isArray(window.CPNW.reviewerRoster)) ? window.CPNW.reviewerRoster : [];
     const selectedSchools = Array.from(schoolFilter?.querySelectorAll('input[type=\"checkbox\"]:checked') || []).map(el => el.value);
-    const selectedPrograms = Array.from(programFilter?.querySelectorAll('input[type=\"checkbox\"]:checked') || []).map(el => el.value);
+    const selectedPrograms = Array.from(programFilter?.querySelectorAll('input[type=\"checkbox\"]:checked') || [])
+      .map(el => normalizeProgramName(el.value));
 
     const filtered = roster.filter((person) => {
       const { program, school } = resolveProgram(person);
       if (!program || !school) return false;
       if (!isDvsProgram(program, school)) return false;
       if (selectedSchools.length && !selectedSchools.includes(school)) return false;
-      if (selectedPrograms.length && !selectedPrograms.includes(program)) return false;
+      if (selectedPrograms.length && !selectedPrograms.includes(normalizeProgramName(program))) return false;
       return true;
     });
 
@@ -246,11 +253,12 @@
     });
 
     const selectedSchools = Array.from(schoolFilter?.querySelectorAll('input[type="checkbox"]:checked') || []).map(el => el.value);
-    const selectedPrograms = Array.from(programFilter?.querySelectorAll('input[type="checkbox"]:checked') || []).map(el => el.value);
+    const selectedPrograms = Array.from(programFilter?.querySelectorAll('input[type="checkbox"]:checked') || [])
+      .map(el => normalizeProgramName(el.value));
     const filteredEligible = eligible.filter((person) => {
       const { program, school } = resolveProgram(person);
       if (selectedSchools.length && !selectedSchools.includes(school)) return false;
-      if (selectedPrograms.length && !selectedPrograms.includes(program)) return false;
+      if (selectedPrograms.length && !selectedPrograms.includes(normalizeProgramName(program))) return false;
       return true;
     });
 
@@ -266,7 +274,7 @@
       CPNW_REQUIREMENTS.forEach((req, idx) => {
         const submissionKey = `cpnw_${idx + 1}`;
         const status = requirementStatus(person.email, req, submissionKey);
-        if (status === 'Submitted' || status === 'In Review') hasNeedsReview = true;
+        if (status === 'Submitted') hasNeedsReview = true;
       });
       if (hasNeedsReview) needsReview += 1;
 

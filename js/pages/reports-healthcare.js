@@ -61,6 +61,10 @@
         return String(value || '').trim().toLowerCase();
       }
 
+      function normalizeEmail(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
       function hydrateAssignments(list){
         if (!Array.isArray(list)) return [];
         return list.map(item => {
@@ -90,6 +94,79 @@
           ...(currentUser.schools || [])
         ];
         return new Set(names.map(normalize).filter(Boolean));
+      }
+
+      function getHealthcareFacilityLabels(){
+        if (!currentUser?.permissions?.canCoordinate) return [];
+        const names = [
+          currentUser.profile?.program,
+          currentUser.profile?.school,
+          ...(currentUser.programs || []),
+          ...(currentUser.schools || [])
+        ];
+        const unique = new Map();
+        names.forEach(name => {
+          const label = String(name || '').trim();
+          const key = normalize(label);
+          if (!label || unique.has(key)) return;
+          unique.set(key, label);
+        });
+        return Array.from(unique.values()).sort((a, b) => a.localeCompare(b));
+      }
+
+      const facilityNames = getHealthcareFacilityNames();
+      const facilityLabels = getHealthcareFacilityLabels();
+
+      function isFacilityName(value){
+        return facilityNames.has(normalize(value));
+      }
+
+      function getFallbackSchools(){
+        const accessSchools = (accessSummary.schools || [])
+          .map(school => String(school || '').trim())
+          .filter(Boolean)
+          .filter(school => !isFacilityName(school));
+        if (accessSchools.length) return accessSchools;
+        const roster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+          ? window.CPNW.getSharedRoster()
+          : [];
+        const rosterSchools = Array.from(new Set(
+          roster
+            .map(entry => String(entry.school || '').trim())
+            .filter(Boolean)
+            .filter(school => !isFacilityName(school))
+        ));
+        if (rosterSchools.length) return rosterSchools;
+        return ['CPNW Education', 'CPNW University'];
+      }
+
+      const fallbackSchools = getFallbackSchools();
+
+      function sanitizeSchool(value){
+        const label = String(value || '').trim();
+        if (!label || isFacilityName(label)){
+          return fallbackSchools[0] || 'CPNW Education';
+        }
+        return label;
+      }
+
+      function buildAssignmentLocationMap(assignments, facilityNames){
+        const map = new Map();
+        (assignments || []).forEach(assignment => {
+          if (!assignmentWithinWindow(assignment)) return;
+          if (facilityNames?.size && !assignmentMatchesFacility(assignment, facilityNames)) return;
+          const location = String(assignment.location || '').trim();
+          if (!location) return;
+          const keys = [];
+          if (assignment.studentId) keys.push(`id:${assignment.studentId}`);
+          if (assignment.studentSid) keys.push(`sid:${assignment.studentSid}`);
+          if (assignment.studentEmail) keys.push(`email:${normalizeEmail(assignment.studentEmail)}`);
+          keys.forEach(key => {
+            if (!map.has(key)) map.set(key, new Set());
+            map.get(key).add(location);
+          });
+        });
+        return map;
       }
 
       function assignmentMatchesFacility(assignment, facilityNames){
@@ -130,6 +207,7 @@
 
       const programToSchools = new Map();
       Object.entries(accessSummary.programsBySchool || {}).forEach(([school, programs]) => {
+        if (isFacilityName(school)) return;
         programs.forEach(program => {
           const key = normalizeProgramLabel(program);
           if (!programToSchools.has(key)) programToSchools.set(key, []);
@@ -141,15 +219,17 @@
       function pickSchoolForProgram(program){
         const key = normalizeProgramLabel(program);
         const schools = programToSchools.get(key);
+        const idx = programSchoolCursor.get(key) || 0;
+        programSchoolCursor.set(key, idx + 1);
         if (schools && schools.length){
-          const idx = programSchoolCursor.get(key) || 0;
-          programSchoolCursor.set(key, idx + 1);
-          return schools[idx % schools.length];
+          return sanitizeSchool(schools[idx % schools.length]);
         }
-        return currentUser?.profile?.school || accessSummary.schools?.[0] || 'CPNW Education';
+        const fallback = fallbackSchools.length ? fallbackSchools : ['CPNW Education'];
+        return sanitizeSchool(fallback[idx % fallback.length]);
       }
       const programAccessSet = new Set();
       Object.entries(accessSummary.programsBySchool || {}).forEach(([school, programs]) => {
+        if (isFacilityName(school)) return;
         programs.forEach(program => {
           programAccessSet.add(`${normalizeSchool(school)}|${normalizeProgramLabel(program)}`);
         });
@@ -185,7 +265,7 @@
             cohortSeeds.push({
               cohortLabel: `${p.id} – ${term} ${year}`,
               program: p.id,
-              school: pickSchoolForProgram(p.id),
+              school: sanitizeSchool(pickSchoolForProgram(p.id)),
               ayStart,
               students
             });
@@ -213,7 +293,7 @@
 	          .map(c => ({ ...c }));
 	        cohorts = cohorts.concat(custom);
 	      }
-      cohorts = cohorts.map(c => ({ ...c, school: c.school || pickSchoolForProgram(c.program) }));
+      cohorts = cohorts.map(c => ({ ...c, school: sanitizeSchool(c.school || pickSchoolForProgram(c.program)) }));
 
       // Cohort filter
       const cohortFilter = document.getElementById('cohortFilter');
@@ -290,6 +370,9 @@
 	            person.name = rosterEntry.name || person.name;
 	            person.email = rosterEntry.email || person.email;
 	            person.sid = rosterEntry.sid || person.sid;
+	            if (rosterEntry.school){
+	              person.school = sanitizeSchool(rosterEntry.school);
+	            }
 	          }
 	          // Add some realistic "Expiring" records (expiring within 30 days).
 	          if (expiresInDays && expiresInDays <= 30){
@@ -342,7 +425,7 @@
         name: 'Fran Faculty',
         email: 'fran.faculty@cpnw.org',
         program: 'BSN',
-        school: pickSchoolForProgram('BSN'),
+        school: sanitizeSchool(pickSchoolForProgram('BSN')),
         cohort: '',
         role: 'faculty',
 	        reqs: {
@@ -373,7 +456,7 @@
         const exists = users.some(u => u.email.toLowerCase() === person.email.toLowerCase());
         if (exists) return;
         const program = normalizeProgramDisplay(person.programs?.[0]);
-        const school = person.schools?.[0] || pickSchoolForProgram(program);
+        const school = sanitizeSchool(person.schools?.[0] || pickSchoolForProgram(program));
         const record = applyCohortOverride({
           name: person.name,
           email: person.email,
@@ -416,7 +499,8 @@
 
       const statusButtons = document.querySelectorAll('[data-status]');
       const reportSearch = document.getElementById('reportSearch');
-      const locationFilter = document.getElementById('locationFilter'); // placeholder, not applied to sample data
+      const locationFilter = document.getElementById('locationFilter');
+      const schoolFilter = document.getElementById('schoolFilter');
       const programFilterSelect = document.getElementById('programFilter');
       const reportTableBody = document.getElementById('reportTableBody');
       const selectAllReports = document.getElementById('selectAllReports');
@@ -429,6 +513,18 @@
       const reqModalBody = document.getElementById('reqModalBody');
       const reqModalLabel = document.getElementById('reqModalLabel');
       const reqModalSub = document.getElementById('reqModalSub');
+      const buildMultiSelect = (window.CPNW && typeof window.CPNW.buildCheckboxMultiSelect === 'function')
+        ? window.CPNW.buildCheckboxMultiSelect
+        : null;
+      const useSeparateFilters = isHealthcareView && schoolFilter && !!buildMultiSelect;
+      const assignmentLocationMap = buildAssignmentLocationMap(loadAssignments(), facilityNames);
+
+      if (locationFilter){
+        locationFilter.innerHTML = [
+          '<option value="">All locations</option>',
+          ...facilityLabels.map(loc => `<option value="${loc}">${loc}</option>`)
+        ].join('');
+      }
       function getProgramsBySchool(){
         if (Object.keys(accessSummary.programsBySchool || {}).length){
           return accessSummary.programsBySchool;
@@ -440,9 +536,18 @@
           return acc;
         }, {});
       }
+
+      function handleFilterChange(){
+        reportPage = 1;
+        updateCohortItems();
+        renderReports();
+      }
+
+      const schoolFilterWrap = schoolFilter?.closest('[data-school-filter]');
+      const schoolFilterMenu = schoolFilterWrap?.querySelector('[data-school-menu]');
       const programFilterWrap = programFilterSelect?.closest('[data-program-filter]');
       const programFilterMenu = programFilterWrap?.querySelector('[data-program-menu]');
-      const programFilterControl = (window.CPNW && typeof window.CPNW.buildProgramFilter === 'function')
+      const programFilterControl = (!useSeparateFilters && window.CPNW && typeof window.CPNW.buildProgramFilter === 'function')
         ? window.CPNW.buildProgramFilter({
           input: programFilterSelect,
           menu: programFilterMenu,
@@ -455,15 +560,31 @@
           }
         })
         : null;
-      const cohortFilterControl = (isHealthcareView && window.CPNW && typeof window.CPNW.buildCheckboxMultiSelect === 'function')
-        ? window.CPNW.buildCheckboxMultiSelect({
+      const schoolFilterControl = (useSeparateFilters && buildMultiSelect)
+        ? buildMultiSelect({
+          input: schoolFilter,
+          menu: schoolFilterMenu,
+          items: [],
+          placeholder: 'All schools',
+          onChange: handleFilterChange
+        })
+        : null;
+      const programMultiFilterControl = (useSeparateFilters && buildMultiSelect)
+        ? buildMultiSelect({
+          input: programFilterSelect,
+          menu: programFilterMenu,
+          items: [],
+          placeholder: 'All programs',
+          onChange: handleFilterChange
+        })
+        : null;
+      const cohortFilterControl = (isHealthcareView && buildMultiSelect)
+        ? buildMultiSelect({
           input: cohortFilter,
           menu: cohortFilterMenu,
+          items: [],
           placeholder: 'All cohorts',
-          onChange: () => {
-            reportPage = 1;
-            renderReports();
-          }
+          onChange: handleFilterChange
         })
         : null;
 
@@ -488,6 +609,55 @@
       }
 
       function updateCohortItems(){
+        if (useSeparateFilters && schoolFilterControl && programMultiFilterControl && cohortFilterControl){
+          const source = users.slice();
+          const schoolItems = new Map();
+          source.forEach(user => {
+            const label = String(user.school || '').trim();
+            if (!label) return;
+            const value = normalizeSchool(label);
+            if (!schoolItems.has(value)) schoolItems.set(value, label);
+          });
+          schoolFilterControl.setItems(Array.from(schoolItems.entries())
+            .sort((a, b) => a[1].localeCompare(b[1]))
+            .map(([value, label]) => ({ value, label })));
+
+          const schoolSelections = new Set(schoolFilterControl.getSelection());
+          const schoolFiltered = schoolSelections.size
+            ? source.filter(user => schoolSelections.has(normalizeSchool(user.school)))
+            : source;
+
+          const programItems = new Map();
+          schoolFiltered.forEach(user => {
+            const label = String(user.program || '').trim();
+            if (!label) return;
+            const value = normalizeProgramLabel(label);
+            if (!value) return;
+            if (!programItems.has(value)) programItems.set(value, formatProgramLabel(label));
+          });
+          programMultiFilterControl.setItems(Array.from(programItems.entries())
+            .sort((a, b) => a[1].localeCompare(b[1]))
+            .map(([value, label]) => ({ value, label })));
+
+          const programSelections = new Set(programMultiFilterControl.getSelection());
+          const programFiltered = programSelections.size
+            ? schoolFiltered.filter(user => programSelections.has(normalizeProgramLabel(user.program)))
+            : schoolFiltered;
+
+          const cohortItems = new Map();
+          cohortItems.set('__unassigned__', { value: '__unassigned__', label: 'Unassigned', group: '' });
+          programFiltered.forEach(user => {
+            const raw = String(user.cohort || '').trim();
+            const value = raw || '__unassigned__';
+            if (cohortItems.has(value)) return;
+            const label = raw || 'Unassigned';
+            const group = formatProgramLabel(user.program || '') || '';
+            cohortItems.set(value, { value, label, group });
+          });
+          cohortFilterControl.setItems(Array.from(cohortItems.values())
+            .sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label)));
+          return;
+        }
         if (cohortFilterControl){
           const selections = programFilterControl ? programFilterControl.getSelection() : [];
           cohortFilterControl.setItems(getCohortItems(selections));
@@ -503,6 +673,21 @@
             return `<option value="${val}">${val}</option>`;
           }).join('');
         }
+      }
+
+      function getUserLocations(user){
+        if (!assignmentLocationMap.size) return new Set();
+        const keys = [];
+        if (user.studentId) keys.push(`id:${user.studentId}`);
+        if (user.sid) keys.push(`sid:${user.sid}`);
+        if (user.email) keys.push(`email:${normalizeEmail(user.email)}`);
+        const locations = new Set();
+        keys.forEach(key => {
+          const set = assignmentLocationMap.get(key);
+          if (!set) return;
+          set.forEach(loc => locations.add(loc));
+        });
+        return locations;
       }
 
       updateCohortItems();
@@ -542,17 +727,33 @@
 
       function renderReports(showOnlySelected = false){
         const q = (reportSearch?.value || '').toLowerCase();
-        const programSelections = programFilterControl ? programFilterControl.getSelection() : [];
+        const schoolSelections = useSeparateFilters && schoolFilterControl
+          ? schoolFilterControl.getSelection()
+          : [];
+        const programSelections = useSeparateFilters
+          ? (programMultiFilterControl ? programMultiFilterControl.getSelection() : [])
+          : (programFilterControl ? programFilterControl.getSelection() : []);
         const hasProgramSelections = programSelections.length > 0;
-        const validCohorts = new Set([...cohorts.map(c => c.cohortLabel), '__unassigned__']);
+        const hasSchoolSelections = schoolSelections.length > 0;
+        const schoolSet = useSeparateFilters ? new Set(schoolSelections) : null;
+        const programSet = useSeparateFilters ? new Set(programSelections) : null;
+        const validCohorts = new Set([
+          ...cohorts.map(c => c.cohortLabel),
+          ...users.map(u => u.cohort).filter(Boolean),
+          '__unassigned__'
+        ]);
         const cohortSelections = cohortFilterControl
           ? cohortFilterControl.getSelection().filter(val => validCohorts.has(val))
           : (cohortFilter && validCohorts.has(cohortFilter.value) && cohortFilter.value ? [cohortFilter.value] : []);
         const cohortSet = new Set(cohortSelections);
         const hasCohortSelections = cohortSet.size > 0;
+        const locationSelection = isHealthcareView ? String(locationFilter?.value || '').trim() : '';
 	        const filtered = users.filter(u=>{
 	          if (currentStatus !== 'all' && u.status !== currentStatus) return false;
-          if (hasProgramSelections){
+          if (useSeparateFilters){
+            if (hasSchoolSelections && !schoolSet.has(normalizeSchool(u.school))) return false;
+            if (hasProgramSelections && !programSet.has(normalizeProgramLabel(u.program))) return false;
+          }else if (hasProgramSelections){
             const matchesProgram = programSelections.some(sel =>
               normalizeSchool(sel.school) === normalizeSchool(u.school)
               && normalizeProgramLabel(sel.program) === normalizeProgramLabel(u.program)
@@ -567,6 +768,11 @@
             }else if (!cohortSet.has(cohortLabel)){
               return false;
             }
+          }
+          if (locationSelection){
+            const locations = getUserLocations(u);
+            if (locations.size && !locations.has(locationSelection)) return false;
+            if (!locations.size) return false;
           }
           if (showOnlySelected && !selectedIds.has(u.email)) return false;
           if (q && !`${u.name} ${u.email}`.toLowerCase().includes(q)) return false;
@@ -620,7 +826,7 @@
         });
       });
 
-      [reportSearch, cohortFilter].forEach(el=>{
+      [reportSearch, cohortFilter, locationFilter].forEach(el=>{
         if (!el) return;
         el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', ()=>{
           reportPage = 1;

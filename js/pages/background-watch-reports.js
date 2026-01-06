@@ -151,7 +151,11 @@
       const programDefs = [
         { id:'BSN', base: 12, aySpan: 2 },
         { id:'ADN', base: 10, aySpan: 2 },
-        { id:'Surg Tech', base: 8, aySpan: 2 }
+        { id:'Surg Tech', base: 8, aySpan: 2 },
+        { id:'Radiologic Technology', base: 6, aySpan: 2 },
+        { id:'Respiratory Care', base: 7, aySpan: 2 },
+        { id:'Medical Assistant', base: 6, aySpan: 2 },
+        { id:'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
       ];
       const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
       const cohortSeeds = [];

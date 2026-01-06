@@ -54,6 +54,9 @@
         if (n.includes('adn')) return 'adn';
         if (n.includes('surg')) return 'surg';
         if (n.includes('rad')) return 'rad';
+        if (n.includes('resp')) return 'resp';
+        if (n.includes('medassistant') || n.includes('medassist')) return 'med';
+        if (n.includes('sonography') || n.includes('sono') || n.includes('dms')) return 'sono';
         return '';
       }
 
@@ -63,7 +66,10 @@
         bsn: { background: 'CPNW: Independent Background Check', watch: 'CPNW: Independent WATCH' },
         adn: { background: 'CPNW: Checkr Background Check', watch: 'CPNW: CPNW WATCH' },
         surg: { background: 'CPNW: Checkr Background Check', watch: 'CPNW: Independent WATCH' },
-        rad: { background: 'CPNW: Independent Background Check', watch: 'CPNW: CPNW WATCH' }
+        rad: { background: 'CPNW: Independent Background Check', watch: 'CPNW: CPNW WATCH' },
+        resp: { background: 'CPNW: Checkr Background Check', watch: 'CPNW: CPNW WATCH' },
+        med: { background: 'CPNW: Checkr Background Check', watch: 'CPNW: Independent WATCH' },
+        sono: { background: 'CPNW: Independent Background Check', watch: 'CPNW: Independent WATCH' }
       };
 
       const CPNW_REQUIREMENTS = [
@@ -359,6 +365,12 @@
           const label = CPNW_REQUIREMENTS[i - 1] || `CPNW Requirement ${i}`;
           const isTdap = String(label || '').toLowerCase().includes('tetanus') && String(label || '').toLowerCase().includes('pertussis');
           const isCriminalDisclosure = String(label || '').toLowerCase().includes('criminal history disclosure');
+          const isVaricella = String(label || '').toLowerCase().includes('varicella');
+          const isMmr = String(label || '').toLowerCase().includes('measles') && String(label || '').toLowerCase().includes('mumps') && String(label || '').toLowerCase().includes('rubella');
+          const isInfluenza = String(label || '').toLowerCase().includes('influenza');
+          const isTuberculin = String(label || '').toLowerCase().includes('tuberculin');
+          const isBls = String(label || '').toLowerCase().includes('bls') && String(label || '').toLowerCase().includes('provider');
+          const isCovid = String(label || '').toLowerCase().includes('covid');
           if (isCriminalDisclosure && override.status === 'complete') override.status = 'approved';
           const tdapInstructions = [
             '<p class="fw-semibold mb-1">Instructions</p>',
@@ -376,6 +388,82 @@
             '<p>A newly completed Criminal History Disclosure form is required each year a student is in program.</p>',
             '<p>Utilize the provided document link, complete the form, and upload document to meet this requirement.</p>'
           ].join('');
+          const varicellaInstructions = [
+            '<p>You must meet the Varicella requirement by either providing two vaccination records or proof of immunity through a titer blood draw.</p>',
+            '<p><strong>Note:</strong> A verbal or written history of having had chickenpox is not accepted as proof of immunity.</p>',
+            '<p class="fw-semibold mb-1">Option 1: Vaccination Dates</p>',
+            '<ul><li>Submit documentation showing two doses of the Varicella vaccine.</li></ul>',
+            '<p class="fw-semibold mb-1">Option 2: Proof of Immunity by Titer</p>',
+            '<ul><li>Submit a positive Varicella titer result from a blood draw.</li></ul>',
+            '<p class="mb-0"><strong>Important:</strong> If the titer result is negative or non-immune, you must receive a booster dose.</p>'
+          ].join('');
+          const mmrInstructions = [
+            '<p>The MMR (Measles, Mumps, and Rubella) or MMRV (Measles, Mumps, Rubella, and Varicella) vaccine is required for clinical participation. You meet this requirement by providing vaccination records and proof of immunity through titers.</p>',
+            '<p class="fw-semibold mb-1">Option 1: Vaccination</p>',
+            '<p>Submit: Two doses of the MMR or MMRV vaccine.</p>',
+            '<p class="fw-semibold mb-1">Option 2: Proof of Immunity by Titers</p>',
+            '<p>Submit lab results showing positive titers for each of the following: Measles (Rubeola), Mumps, Rubella.</p>',
+            '<p>Most labs will draw one blood sample and report three separate results (plus Varicella, if tested).</p>',
+            '<p class="mb-0"><strong>Important:</strong> If any one of the three titers are negative or non-immune, you must receive a booster dose for that component.</p>'
+          ].join('');
+          const influenzaInstructions = [
+            '<p class="fw-semibold mb-1">CPNW Influenza (flu)</p>',
+            '<p>Vaccines received prior to August 1st of the current year will expire on October 1st of the current year. Vaccines received after August 1st of the current year will expire on October 1st of the following year.</p>',
+            '<p>An annual influenza vaccine is required for each current flu season, typically due by the end of September, to remain compliant for clinical participation.</p>',
+            '<p class="fw-semibold mb-1">Vaccination Documentation</p>',
+            '<p>Submit a record showing you received the current season’s flu vaccine.</p>',
+            '<p class="mb-1">Accepted forms of vaccination include:</p>',
+            '<ul>',
+            '<li>Flu vaccine (injectable)</li>',
+            '<li>Nasal spray flu vaccine, administered in-office by a healthcare professional</li>',
+            '<li>Home/self-administered nasal spray options are not accepted.</li>',
+            '</ul>',
+            '<p class="mb-1">Your documentation must include:</p>',
+            '<ul>',
+            '<li>The date of vaccination</li>',
+            '<li>Location you received the vaccination (CVS, provider’s office, clinic)</li>',
+            '</ul>'
+          ].join('');
+          const tuberculinInstructions = [
+            '<p>To meet the TB requirement, you must provide proof of screening results that are no older than one year from the start date of your program.</p>',
+            '<p>Proof of screening is completed by either a two-step TB skin test or a TB blood test called an Interferon Gamma Release Assays (IGRA) to confirm you do not have active tuberculosis.</p>',
+            '<p class="fw-semibold mb-1">Option 1: 2-Step TB Skin Test</p>',
+            '<p>The two-step TB skin test involves two separate tests administered 1–3 weeks apart, requiring a total of four office visits and approximately three weeks to complete.</p>',
+            '<p class="fw-semibold mb-1">Option 2: TB Blood Test</p>',
+            '<p>The TB blood test (IGRA) is a single blood draw and typically requires only one visit. It is an acceptable alternative to the skin test.</p>',
+            '<p class="fw-semibold mb-1">Option 3: History of or a new positive result on either test</p>',
+            '<p>You must complete a medical evaluation by a licensed healthcare provider.</p>',
+            '<p>You are required to upload all applicable documentation, including provider notes, diagnostic exams, chest x-rays, and/or treatment records.</p>',
+            '<p class="mb-0">If you have a history of positive TB test results, you must also complete and upload the Tuberculosis Symptom Screening form attached to this requirement.</p>'
+          ].join('');
+          const blsInstructions = [
+            '<p>All students and faculty must maintain a current American Heart Association (AHA) BLS certification. You may meet this requirement through one of the following AHA-approved options:</p>',
+            '<ul>',
+            '<li>AHA BLS Provider Course (fully in-person)</li>',
+            '<li>AHA HeartCode® BLS Provider Course (online + in-person skills check)</li>',
+            '<li>AHA BLS Resuscitation Quality Improvement (RQI) Program</li>',
+            '</ul>',
+            '<p>Upload the full PDF that shows both your next RQI date and the 2-year certification date at the bottom.</p>',
+            '<p class="fw-semibold mb-1">Requirements</p>',
+            '<p>Each of these certification options include training in:</p>',
+            '<p>Adult, child, and infant CPR, AED use, choking response, single- and multi-rescuer scenarios.</p>',
+            '<p>Provide Date of Issue as shown on card or eCard.</p>',
+            '<p>Upload your current course card or eCard.</p>',
+            '<p class="mb-0">No other providers or courses are acceptable, outside of those mentioned above.</p>'
+          ].join('');
+          const covidInstructions = [
+            '<p>All students and faculty are required to upload their full COVID-19 vaccination history.</p>',
+            '<p>Please note: Some clinical sites may update their policies and require an annual COVID-19 vaccination/booster as a condition of participation.</p>',
+            '<p class="fw-semibold mb-1">Option 1: No Vaccination History</p>',
+            '<p>If you have never received a COVID-19 vaccine, check the option labeled “NA Check Box”.</p>',
+            '<p class="fw-semibold mb-1">Option 2: Vaccination Documentation</p>',
+            '<p>Submit all available vaccination record that includes:</p>',
+            '<ul>',
+            '<li>Vaccine manufacturer (e.g., Pfizer, Moderna, Johnson & Johnson)</li>',
+            '<li>Dates associated with receiving either a one-dose or two-dose series</li>',
+            '<li>The date(s) of administration, including subsequent boosters, if applicable</li>',
+            '</ul>'
+          ].join('');
           list.push({
             id: `cpnw_${i}`,
             group: 'cpnw',
@@ -387,7 +475,21 @@
             due: addDays(14 + i),
             instructionsHTML: isTdap
               ? tdapInstructions
-              : (isCriminalDisclosure ? disclosureInstructions : `<p>Upload the required documentation for ${label}.</p>`)
+              : (isCriminalDisclosure
+                ? disclosureInstructions
+                : (isVaricella
+                    ? varicellaInstructions
+                    : (isMmr
+                      ? mmrInstructions
+                      : (isInfluenza
+                        ? influenzaInstructions
+                        : (isTuberculin
+                          ? tuberculinInstructions
+                          : (isBls
+                            ? blsInstructions
+                            : (isCovid
+                              ? covidInstructions
+                              : `<p>Upload the required documentation for ${label}.</p>`)))))))
           });
         }
         // Education (6)
@@ -631,12 +733,14 @@
       const listModal = listModalEl ? new bootstrap.Modal(listModalEl) : null;
       const listLabel = document.getElementById('studentReqModalLabel');
       const listSub = document.getElementById('studentReqModalSub');
+      const listHead = document.getElementById('studentReqTableHead');
       const listBody = document.getElementById('studentReqTableBody');
       const listSearch = document.getElementById('studentReqSearch');
       const pageSizeSelect = document.getElementById('studentReqPageSize');
       const pageInfo = document.getElementById('studentReqPageInfo');
       const prevBtn = document.getElementById('studentReqPrev');
       const nextBtn = document.getElementById('studentReqNext');
+      const reviewerDisplayName = demoPeople.find(p => p.role === 'cpnw-reviewer')?.name || 'CPNW Reviewer';
 
       const detailModalEl = document.getElementById('studentReqDetailModal');
       const detailModal = detailModalEl ? new bootstrap.Modal(detailModalEl) : null;
@@ -712,6 +816,66 @@
       const hepBIpSeries1Three = document.getElementById('hepBIpSeries1Three');
       const hepBIpSeries1TwoFields = document.getElementById('hepBIpSeries1TwoFields');
       const hepBIpSeries1ThreeFields = document.getElementById('hepBIpSeries1ThreeFields');
+      const varicellaSubmissionWrap = document.getElementById('varicellaSubmissionWrap');
+      const varicellaRadios = document.querySelectorAll('input[name="varicellaSubmission"]');
+      const varicellaOptionMilitary = document.getElementById('varicellaOptionMilitary');
+      const varicellaOptionVaccination = document.getElementById('varicellaOptionVaccination');
+      const varicellaOptionTiter = document.getElementById('varicellaOptionTiter');
+      const varicellaVaccinationFields = document.getElementById('varicellaVaccinationFields');
+      const varicellaDose1Date = document.getElementById('varicellaDose1Date');
+      const varicellaDose2Date = document.getElementById('varicellaDose2Date');
+      const varicellaTiterFields = document.getElementById('varicellaTiterFields');
+      const varicellaTiterDate = document.getElementById('varicellaTiterDate');
+      const varicellaTiterPositive = document.getElementById('varicellaTiterPositive');
+      const varicellaTiterNegative = document.getElementById('varicellaTiterNegative');
+      const mmrSubmissionWrap = document.getElementById('mmrSubmissionWrap');
+      const mmrRadios = document.querySelectorAll('input[name="mmrSubmission"]');
+      const mmrOptionMilitary = document.getElementById('mmrOptionMilitary');
+      const mmrOptionVaccination = document.getElementById('mmrOptionVaccination');
+      const mmrOptionTiter = document.getElementById('mmrOptionTiter');
+      const mmrVaccinationFields = document.getElementById('mmrVaccinationFields');
+      const mmrDose1Date = document.getElementById('mmrDose1Date');
+      const mmrDose2Date = document.getElementById('mmrDose2Date');
+      const mmrTiterFields = document.getElementById('mmrTiterFields');
+      const mmrMeaslesGroup = mmrSubmissionWrap?.querySelector('[data-mmr-group="measles"]') || null;
+      const mmrMumpsGroup = mmrSubmissionWrap?.querySelector('[data-mmr-group="mumps"]') || null;
+      const mmrRubellaGroup = mmrSubmissionWrap?.querySelector('[data-mmr-group="rubella"]') || null;
+      const influenzaSubmissionWrap = document.getElementById('influenzaSubmissionWrap');
+      const influenzaVaccinations = document.getElementById('influenzaVaccinations');
+      const influenzaAdd = document.getElementById('influenzaAdd');
+      const influenzaDate0 = document.getElementById('influenzaDate0');
+      const influenzaLocation0 = document.getElementById('influenzaLocation0');
+      const tuberculinSubmissionWrap = document.getElementById('tuberculinSubmissionWrap');
+      const tuberculinOptionTwoStep = document.getElementById('tuberculinOptionTwoStep');
+      const tuberculinOptionIgra = document.getElementById('tuberculinOptionIgra');
+      const tuberculinOptionHistory = document.getElementById('tuberculinOptionHistory');
+      const tuberculinTwoStepFields = document.getElementById('tuberculinTwoStepFields');
+      const tuberculinIgraFields = document.getElementById('tuberculinIgraFields');
+      const tuberculinHistoryFields = document.getElementById('tuberculinHistoryFields');
+      const tuberculinTest1Place = document.getElementById('tuberculinTest1Place');
+      const tuberculinTest1Read = document.getElementById('tuberculinTest1Read');
+      const tuberculinTest1Mm = document.getElementById('tuberculinTest1Mm');
+      const tuberculinTest1Neg = document.getElementById('tuberculinTest1Neg');
+      const tuberculinTest1Pos = document.getElementById('tuberculinTest1Pos');
+      const tuberculinTest2Place = document.getElementById('tuberculinTest2Place');
+      const tuberculinTest2Read = document.getElementById('tuberculinTest2Read');
+      const tuberculinTest2Mm = document.getElementById('tuberculinTest2Mm');
+      const tuberculinTest2Neg = document.getElementById('tuberculinTest2Neg');
+      const tuberculinTest2Pos = document.getElementById('tuberculinTest2Pos');
+      const tuberculinIgraDate = document.getElementById('tuberculinIgraDate');
+      const tuberculinIgraNeg = document.getElementById('tuberculinIgraNeg');
+      const tuberculinIgraPos = document.getElementById('tuberculinIgraPos');
+      const tuberculinChestDate = document.getElementById('tuberculinChestDate');
+      const tuberculinChestNeg = document.getElementById('tuberculinChestNeg');
+      const tuberculinChestPos = document.getElementById('tuberculinChestPos');
+      const tuberculinDownload = document.getElementById('tuberculinDownload');
+      const covidSubmissionWrap = document.getElementById('covidSubmissionWrap');
+      const covidNoVaccination = document.getElementById('covidNoVaccination');
+      const covidDetails = document.getElementById('covidDetails');
+      const covidManufacturer = document.getElementById('covidManufacturer');
+      const covidDoseList = document.getElementById('covidDoseList');
+      const covidDose1 = document.getElementById('covidDose1');
+      const covidAddBooster = document.getElementById('covidAddBooster');
       const msgList = document.getElementById('studentReqMessages');
       const msgInput = document.getElementById('studentReqMessageInput');
       const msgSend = document.getElementById('studentReqMessageSend');
@@ -725,6 +889,14 @@
       const uploadedList = document.getElementById('studentReqUploadedList');
       const submitBtn = document.getElementById('studentReqSubmitBtn');
 
+      if (detailModalEl && listModal){
+        detailModalEl.addEventListener('hidden.bs.modal', () => {
+          if (listModalEl && !listModalEl.classList.contains('show')){
+            listModal.show();
+          }
+        });
+      }
+
       let currentGroup = 'elearning';
       let reqPage = 1;
       let reqPageSize = Number(pageSizeSelect?.value || 10);
@@ -733,6 +905,10 @@
       const messageThreads = {};
       let currentRecipients = ['Student','CPNW Reviewer'];
       let disclosureExtraCount = 0;
+      let influenzaExtraCount = 0;
+      let covidExtraCount = 0;
+      let mmrBoosterCounts = { measles: 0, mumps: 0, rubella: 0 };
+      let reqSort = { key: 'label', dir: 'asc' };
 
       function groupTitle(group){
         if (group === 'elearning') return 'CPNW eLearning modules';
@@ -740,6 +916,53 @@
         if (group === 'ed') return 'Education requirements';
         if (group === 'hc') return 'Healthcare requirements';
         return 'Requirements';
+      }
+
+      function reviewerNameFor(req){
+        if (currentGroup !== 'cpnw') return '—';
+        const status = String(req?.status || '').toLowerCase();
+        if (['approved','conditionally approved','rejected','in review'].includes(status)){
+          return reviewerDisplayName;
+        }
+        return '—';
+      }
+
+      function renderReqHead(){
+        if (!listHead) return;
+        if (currentGroup === 'cpnw'){
+          const headers = [
+            { key: 'label', label: 'Requirement Name' },
+            { key: 'status', label: 'Status' },
+            { key: 'expiration', label: 'Expiration', nowrap: true },
+            { key: 'type', label: 'Type' },
+            { key: 'frequency', label: 'Frequency' },
+            { key: 'reviewer', label: 'Reviewer (name)' }
+          ];
+          listHead.innerHTML = `<tr>${headers.map(h => {
+            const active = reqSort.key === h.key;
+            const dir = reqSort.dir === 'asc' ? 'ascending' : 'descending';
+            const indicator = active ? ` <span class="small text-body-secondary">${reqSort.dir === 'asc' ? '&#9650;' : '&#9660;'}</span>` : '';
+            return `
+              <th scope="col"${h.nowrap ? ' class="text-nowrap"' : ''} aria-sort="${active ? dir : 'none'}">
+                <button class="btn btn-link p-0 text-decoration-none text-body-secondary" type="button" data-req-sort="${h.key}">
+                  ${h.label}${indicator}
+                </button>
+              </th>
+            `;
+          }).join('')}</tr>`;
+          return;
+        }
+
+        listHead.innerHTML = `
+          <tr>
+            <th scope="col">Requirement</th>
+            <th scope="col">Frequency</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-nowrap">Expiration</th>
+            <th scope="col" class="text-nowrap">Due</th>
+            <th scope="col" class="text-end">View</th>
+          </tr>
+        `;
       }
 
       function setAlert(el, message){
@@ -821,6 +1044,36 @@
         return req?.group === 'cpnw' && label.includes('criminal history disclosure');
       }
 
+      function isVaricellaRequirement(req){
+        const label = String(req?.label || '').toLowerCase();
+        return req?.group === 'cpnw' && label.includes('varicella');
+      }
+
+      function isMmrRequirement(req){
+        const label = String(req?.label || '').toLowerCase();
+        return req?.group === 'cpnw' && label.includes('measles') && label.includes('mumps') && label.includes('rubella');
+      }
+
+      function isInfluenzaRequirement(req){
+        const label = String(req?.label || '').toLowerCase();
+        return req?.group === 'cpnw' && label.includes('influenza');
+      }
+
+      function isTuberculinRequirement(req){
+        const label = String(req?.label || '').toLowerCase();
+        return req?.group === 'cpnw' && label.includes('tuberculin');
+      }
+
+      function isBlsRequirement(req){
+        const label = String(req?.label || '').toLowerCase();
+        return req?.group === 'cpnw' && label.includes('bls') && label.includes('provider');
+      }
+
+      function isCovidRequirement(req){
+        const label = String(req?.label || '').toLowerCase();
+        return req?.group === 'cpnw' && label.includes('covid');
+      }
+
       function resetHepBFields(){
         if (hepBSubmissionWrap){
           const inputs = hepBSubmissionWrap.querySelectorAll('input, textarea');
@@ -839,6 +1092,222 @@
         hepBSeriesInProcessWrap?.classList.add('d-none');
         hepBHealthReasonWrap?.classList.add('d-none');
         [hepBNcSeries1TwoFields, hepBNcSeries1ThreeFields, hepBNcSeries2TwoFields, hepBNcSeries2ThreeFields, hepBIpSeries1TwoFields, hepBIpSeries1ThreeFields].forEach(el => el?.classList.add('d-none'));
+      }
+
+      function resetVaricellaFields(){
+        if (varicellaSubmissionWrap){
+          const inputs = varicellaSubmissionWrap.querySelectorAll('input');
+          inputs.forEach(el => {
+            if (el.type === 'radio' || el.type === 'checkbox'){
+              el.checked = false;
+            }else{
+              el.value = '';
+            }
+          });
+        }
+        varicellaVaccinationFields?.classList.add('d-none');
+        varicellaTiterFields?.classList.add('d-none');
+      }
+
+      function resetMmrFields(){
+        if (mmrSubmissionWrap){
+          const inputs = mmrSubmissionWrap.querySelectorAll('input');
+          inputs.forEach(el => {
+            if (el.type === 'radio' || el.type === 'checkbox'){
+              el.checked = false;
+            }else{
+              el.value = '';
+            }
+          });
+        }
+        const groups = [mmrMeaslesGroup, mmrMumpsGroup, mmrRubellaGroup];
+        groups.forEach(group => {
+          if (!group) return;
+          const rows = group.querySelectorAll('[data-mmr-row]');
+          rows.forEach((row, index) => {
+            if (index > 0) row.remove();
+          });
+          const addBtn = group.querySelector('[data-mmr-add]');
+          addBtn?.classList.add('d-none');
+        });
+        mmrBoosterCounts = { measles: 0, mumps: 0, rubella: 0 };
+        mmrVaccinationFields?.classList.add('d-none');
+        mmrTiterFields?.classList.add('d-none');
+      }
+
+      function resetInfluenzaFields(){
+        if (influenzaDate0) influenzaDate0.value = '';
+        if (influenzaLocation0) influenzaLocation0.value = '';
+        if (influenzaVaccinations){
+          const extras = influenzaVaccinations.querySelectorAll('[data-influenza-extra]');
+          extras.forEach(el => el.remove());
+        }
+        influenzaExtraCount = 0;
+      }
+
+      function resetCovidFields(){
+        if (covidNoVaccination) covidNoVaccination.checked = false;
+        if (covidManufacturer) covidManufacturer.value = '';
+        if (covidDose1) covidDose1.value = '';
+        if (covidDoseList){
+          const extras = covidDoseList.querySelectorAll('[data-covid-extra]');
+          extras.forEach(el => el.remove());
+        }
+        covidExtraCount = 0;
+        covidDetails?.classList.remove('d-none');
+      }
+
+      function resetTuberculinFields(){
+        if (tuberculinSubmissionWrap){
+          const inputs = tuberculinSubmissionWrap.querySelectorAll('input');
+          inputs.forEach(el => {
+            if (el.type === 'radio' || el.type === 'checkbox'){
+              el.checked = false;
+            }else{
+              el.value = '';
+            }
+          });
+        }
+        tuberculinTwoStepFields?.classList.add('d-none');
+        tuberculinIgraFields?.classList.add('d-none');
+        tuberculinHistoryFields?.classList.add('d-none');
+      }
+
+      function updateVaricellaOption(){
+        const showVaccination = !!varicellaOptionVaccination?.checked;
+        const showTiter = !!varicellaOptionTiter?.checked;
+        varicellaVaccinationFields?.classList.toggle('d-none', !showVaccination);
+        varicellaTiterFields?.classList.toggle('d-none', !showTiter);
+      }
+
+      function updateMmrOption(){
+        const showVaccination = !!mmrOptionVaccination?.checked;
+        const showTiter = !!mmrOptionTiter?.checked;
+        mmrVaccinationFields?.classList.toggle('d-none', !showVaccination);
+        mmrTiterFields?.classList.toggle('d-none', !showTiter);
+        if (showTiter){
+          updateMmrBoosterVisibility('measles');
+          updateMmrBoosterVisibility('mumps');
+          updateMmrBoosterVisibility('rubella');
+        }
+      }
+
+      function mmrGroupFor(type){
+        if (type === 'measles') return mmrMeaslesGroup;
+        if (type === 'mumps') return mmrMumpsGroup;
+        if (type === 'rubella') return mmrRubellaGroup;
+        return null;
+      }
+
+      function updateMmrBoosterVisibility(type){
+        const group = mmrGroupFor(type);
+        if (!group) return;
+        const addBtn = group.querySelector('[data-mmr-add]');
+        if (!addBtn) return;
+        const rows = Array.from(group.querySelectorAll('[data-mmr-row]'));
+        const last = rows[rows.length - 1];
+        if (!last){
+          addBtn.classList.add('d-none');
+          return;
+        }
+        const hasNegative = !!last.querySelector('input[type="radio"][value="neg"]:checked');
+        addBtn.classList.toggle('d-none', !hasNegative);
+      }
+
+      function addMmrBoosterRow(type){
+        const group = mmrGroupFor(type);
+        if (!group) return;
+        const count = (mmrBoosterCounts[type] || 0) + 1;
+        mmrBoosterCounts = { ...mmrBoosterCounts, [type]: count };
+        const cap = type.charAt(0).toUpperCase() + type.slice(1);
+        const row = document.createElement('div');
+        row.className = 'row g-2 mb-2';
+        row.dataset.mmrRow = 'true';
+        row.innerHTML = `
+          <div class="col-12 col-md-5">
+            <input type="date" class="form-control" id="mmr${cap}Date${count}">
+          </div>
+          <div class="col-12 col-md-7">
+            <div class="form-label small mb-1">Result</div>
+            <div class="d-flex flex-wrap gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="mmr${cap}Result${count}" id="mmr${cap}Neg${count}" value="neg">
+                <label class="form-check-label" for="mmr${cap}Neg${count}">Neg/Equivalent</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="mmr${cap}Result${count}" id="mmr${cap}Pos${count}" value="pos">
+                <label class="form-check-label" for="mmr${cap}Pos${count}">Pos</label>
+              </div>
+            </div>
+          </div>
+        `;
+        const addBtn = group.querySelector('[data-mmr-add]');
+        group.insertBefore(row, addBtn);
+        row.querySelectorAll('input[type="radio"]').forEach(input => {
+          input.addEventListener('change', () => updateMmrBoosterVisibility(type));
+        });
+        addBtn?.classList.add('d-none');
+      }
+
+      function updateCovidOption(){
+        const hideDetails = !!covidNoVaccination?.checked;
+        covidDetails?.classList.toggle('d-none', hideDetails);
+        if (hideDetails){
+          if (covidManufacturer) covidManufacturer.value = '';
+          if (covidDose1) covidDose1.value = '';
+          if (covidDoseList){
+            const extras = covidDoseList.querySelectorAll('[data-covid-extra]');
+            extras.forEach(el => el.remove());
+          }
+          covidExtraCount = 0;
+        }
+      }
+
+      function updateTuberculinOption(){
+        const showTwoStep = !!tuberculinOptionTwoStep?.checked;
+        const showIgra = !!tuberculinOptionIgra?.checked;
+        const showHistory = !!tuberculinOptionHistory?.checked;
+        tuberculinTwoStepFields?.classList.toggle('d-none', !showTwoStep);
+        tuberculinIgraFields?.classList.toggle('d-none', !showIgra);
+        tuberculinHistoryFields?.classList.toggle('d-none', !showHistory);
+      }
+
+      function addInfluenzaField(){
+        if (!influenzaVaccinations) return;
+        influenzaExtraCount += 1;
+        const dateId = `influenzaDate${influenzaExtraCount}`;
+        const locationId = `influenzaLocation${influenzaExtraCount}`;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'col-12';
+        wrapper.dataset.influenzaExtra = 'true';
+        wrapper.innerHTML = `
+          <div class="row g-2">
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1" for="${dateId}">Vaccination date</label>
+              <input type="date" class="form-control" id="${dateId}">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small mb-1" for="${locationId}">Location received</label>
+              <input type="text" class="form-control" id="${locationId}" placeholder="Clinic or pharmacy name">
+            </div>
+          </div>
+        `;
+        influenzaVaccinations.appendChild(wrapper);
+      }
+
+      function addCovidBooster(){
+        if (!covidDoseList) return;
+        covidExtraCount += 1;
+        const doseNumber = covidExtraCount + 1;
+        const fieldId = `covidDose${doseNumber}`;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'col-12 col-md-6';
+        wrapper.dataset.covidExtra = 'true';
+        wrapper.innerHTML = `
+          <label class="form-label small mb-1" for="${fieldId}">Dose ${doseNumber} date</label>
+          <input type="date" class="form-control" id="${fieldId}">
+        `;
+        covidDoseList.appendChild(wrapper);
       }
 
       function setSeriesFields(twoFields, threeFields, isThree){
@@ -979,22 +1448,57 @@
         URL.revokeObjectURL(url);
       }
 
+      function downloadTuberculinForm(){
+        const content = [
+          'TB Check Form',
+          '',
+          'Student name:',
+          'Program:',
+          'School:',
+          '',
+          'Screening details:',
+          '',
+          'Provider signature:',
+          'Date:'
+        ].join('\n');
+        const blob = new Blob([content], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'TBCheckForm.pdf';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
       function applySubmissionTemplate(req){
         const isTdap = isTdapRequirement(req);
         const isHepB = isHepBRequirement(req);
         const isCriminal = isCriminalDisclosureRequirement(req);
+        const isVaricella = isVaricellaRequirement(req);
+        const isMmr = isMmrRequirement(req);
+        const isInfluenza = isInfluenzaRequirement(req);
+        const isTuberculin = isTuberculinRequirement(req);
+        const isBls = isBlsRequirement(req);
+        const isCovid = isCovidRequirement(req);
         if (subCompletedLabel) subCompletedLabel.textContent = isTdap ? 'Initial Tdap date' : defaultSubCompletedLabel;
         if (subSeriesLabel) subSeriesLabel.textContent = isTdap ? 'Td/Tdap subsequent dose date' : defaultSubSeriesLabel;
         if (subOtherLabel) subOtherLabel.textContent = defaultSubOtherLabel;
-        if (subCompletedDateLabel) subCompletedDateLabel.textContent = isTdap ? 'Initial Tdap date' : defaultSubCompletedDateLabel;
+        if (subCompletedDateLabel) subCompletedDateLabel.textContent = isTdap ? 'Initial Tdap date' : (isBls ? 'Date of Issue' : defaultSubCompletedDateLabel);
         if (subSeriesStartLabel) subSeriesStartLabel.textContent = isTdap ? 'Td/Tdap subsequent dose date' : defaultSubSeriesStartLabel;
         if (subSeriesDueLabel) subSeriesDueLabel.textContent = defaultSubSeriesDueLabel;
-        subOtherWrap?.classList.toggle('d-none', isTdap || isCriminal || isHepB);
-        subSeriesDueWrap?.classList.toggle('d-none', isTdap || isCriminal || isHepB);
-        submissionOptionsWrap?.classList.toggle('d-none', isTdap || isCriminal || isHepB);
+        subOtherWrap?.classList.toggle('d-none', isTdap || isCriminal || isHepB || isVaricella || isMmr || isInfluenza || isTuberculin || isBls || isCovid);
+        subSeriesDueWrap?.classList.toggle('d-none', isTdap || isCriminal || isHepB || isVaricella || isMmr || isInfluenza || isTuberculin || isBls || isCovid);
+        submissionOptionsWrap?.classList.toggle('d-none', isTdap || isCriminal || isHepB || isVaricella || isMmr || isInfluenza || isTuberculin || isBls || isCovid);
         criminalDisclosureWrap?.classList.toggle('d-none', !isCriminal);
         criminalDisclosureDownloadWrap?.classList.toggle('d-none', !isCriminal);
         hepBSubmissionWrap?.classList.toggle('d-none', !isHepB);
+        varicellaSubmissionWrap?.classList.toggle('d-none', !isVaricella);
+        mmrSubmissionWrap?.classList.toggle('d-none', !isMmr);
+        influenzaSubmissionWrap?.classList.toggle('d-none', !isInfluenza);
+        tuberculinSubmissionWrap?.classList.toggle('d-none', !isTuberculin);
+        covidSubmissionWrap?.classList.toggle('d-none', !isCovid);
         if (isTdap){
           subCompletedFields?.classList.remove('d-none');
           subSeriesFields?.classList.remove('d-none');
@@ -1002,17 +1506,103 @@
           criminalDisclosureWrap?.classList.add('d-none');
           criminalDisclosureDownloadWrap?.classList.add('d-none');
           hepBSubmissionWrap?.classList.add('d-none');
+          varicellaSubmissionWrap?.classList.add('d-none');
+          mmrSubmissionWrap?.classList.add('d-none');
+          influenzaSubmissionWrap?.classList.add('d-none');
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          covidSubmissionWrap?.classList.add('d-none');
         }else if (isCriminal){
           [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
           resetDisclosureFields();
           hepBSubmissionWrap?.classList.add('d-none');
+          varicellaSubmissionWrap?.classList.add('d-none');
+          mmrSubmissionWrap?.classList.add('d-none');
+          influenzaSubmissionWrap?.classList.add('d-none');
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          covidSubmissionWrap?.classList.add('d-none');
         }else if (isHepB){
           [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
           resetHepBFields();
+          varicellaSubmissionWrap?.classList.add('d-none');
+          mmrSubmissionWrap?.classList.add('d-none');
+          influenzaSubmissionWrap?.classList.add('d-none');
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          covidSubmissionWrap?.classList.add('d-none');
+        }else if (isVaricella){
+          [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+          criminalDisclosureWrap?.classList.add('d-none');
+          criminalDisclosureDownloadWrap?.classList.add('d-none');
+          hepBSubmissionWrap?.classList.add('d-none');
+          resetVaricellaFields();
+          updateVaricellaOption();
+          mmrSubmissionWrap?.classList.add('d-none');
+          influenzaSubmissionWrap?.classList.add('d-none');
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          covidSubmissionWrap?.classList.add('d-none');
+        }else if (isMmr){
+          [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+          criminalDisclosureWrap?.classList.add('d-none');
+          criminalDisclosureDownloadWrap?.classList.add('d-none');
+          hepBSubmissionWrap?.classList.add('d-none');
+          varicellaSubmissionWrap?.classList.add('d-none');
+          resetMmrFields();
+          updateMmrOption();
+          influenzaSubmissionWrap?.classList.add('d-none');
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          covidSubmissionWrap?.classList.add('d-none');
+        }else if (isInfluenza){
+          [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+          criminalDisclosureWrap?.classList.add('d-none');
+          criminalDisclosureDownloadWrap?.classList.add('d-none');
+          hepBSubmissionWrap?.classList.add('d-none');
+          varicellaSubmissionWrap?.classList.add('d-none');
+          mmrSubmissionWrap?.classList.add('d-none');
+          resetInfluenzaFields();
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          covidSubmissionWrap?.classList.add('d-none');
+        }else if (isTuberculin){
+          [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+          criminalDisclosureWrap?.classList.add('d-none');
+          criminalDisclosureDownloadWrap?.classList.add('d-none');
+          hepBSubmissionWrap?.classList.add('d-none');
+          varicellaSubmissionWrap?.classList.add('d-none');
+          mmrSubmissionWrap?.classList.add('d-none');
+          influenzaSubmissionWrap?.classList.add('d-none');
+          resetTuberculinFields();
+          updateTuberculinOption();
+          covidSubmissionWrap?.classList.add('d-none');
+        }else if (isBls){
+          subCompletedFields?.classList.remove('d-none');
+          subSeriesFields?.classList.add('d-none');
+          subOtherFields?.classList.add('d-none');
+          criminalDisclosureWrap?.classList.add('d-none');
+          criminalDisclosureDownloadWrap?.classList.add('d-none');
+          hepBSubmissionWrap?.classList.add('d-none');
+          varicellaSubmissionWrap?.classList.add('d-none');
+          mmrSubmissionWrap?.classList.add('d-none');
+          influenzaSubmissionWrap?.classList.add('d-none');
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          covidSubmissionWrap?.classList.add('d-none');
+        }else if (isCovid){
+          [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+          criminalDisclosureWrap?.classList.add('d-none');
+          criminalDisclosureDownloadWrap?.classList.add('d-none');
+          hepBSubmissionWrap?.classList.add('d-none');
+          varicellaSubmissionWrap?.classList.add('d-none');
+          mmrSubmissionWrap?.classList.add('d-none');
+          influenzaSubmissionWrap?.classList.add('d-none');
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          resetCovidFields();
+          updateCovidOption();
         }else{
           criminalDisclosureWrap?.classList.add('d-none');
           criminalDisclosureDownloadWrap?.classList.add('d-none');
           hepBSubmissionWrap?.classList.add('d-none');
+          varicellaSubmissionWrap?.classList.add('d-none');
+          mmrSubmissionWrap?.classList.add('d-none');
+          influenzaSubmissionWrap?.classList.add('d-none');
+          tuberculinSubmissionWrap?.classList.add('d-none');
+          covidSubmissionWrap?.classList.add('d-none');
         }
       }
 
@@ -1041,6 +1631,9 @@
         currentGroup = group;
         reqPage = 1;
         if (listSearch) listSearch.value = '';
+        if (currentGroup === 'cpnw'){
+          reqSort = { key: 'label', dir: 'asc' };
+        }
         renderReqList();
         listModal.show();
       }
@@ -1077,8 +1670,17 @@
         if (fileListEl) fileListEl.innerHTML = '';
         if (uploadedList) uploadedList.innerHTML = '';
         subRadios.forEach(r => { r.checked = false; });
-        [subCompletedDate, subSeriesStart, subSeriesDue, subOtherNotes].forEach(el => { if (el) el.value = ''; });
-        [subCompletedFields, subSeriesFields, subOtherFields].forEach(el => el?.classList.add('d-none'));
+        varicellaRadios.forEach(r => { r.checked = false; });
+        mmrRadios.forEach(r => { r.checked = false; });
+        [subCompletedDate, subSeriesStart, subSeriesDue, subOtherNotes, varicellaDose1Date, varicellaDose2Date, varicellaTiterDate, mmrDose1Date, mmrDose2Date, influenzaDate0, influenzaLocation0].forEach(el => {
+          if (el) el.value = '';
+        });
+        [varicellaTiterPositive, varicellaTiterNegative].forEach(el => { if (el) el.checked = false; });
+        [subCompletedFields, subSeriesFields, subOtherFields, varicellaVaccinationFields, varicellaTiterFields].forEach(el => el?.classList.add('d-none'));
+        resetInfluenzaFields();
+        resetTuberculinFields();
+        resetCovidFields();
+        resetMmrFields();
         applySubmissionTemplate(req);
         if (isCriminalDisclosureRequirement(req) && criminalDisclosureDate0){
           const today = new Date();
@@ -1167,17 +1769,53 @@
           return `${r.label} ${r.type} ${r.status}`.toLowerCase().includes(q);
         });
 
+        renderReqHead();
         if (listLabel) listLabel.textContent = groupTitle(currentGroup);
         if (listSub) listSub.textContent = 'Select a requirement to view details and submit.';
 
-        // Expiring/expired first, then incomplete, then submitted/complete.
-        const order = { expired:0, 'expiring soon':1, expiring:2, 'not submitted':3, incomplete:4, submitted:5, approved:6, complete:7 };
-        filtered.sort((a,b) => {
-          const oa = order[String(a.status || '').toLowerCase()] ?? 99;
-          const ob = order[String(b.status || '').toLowerCase()] ?? 99;
-          if (oa != ob) return oa - ob;
-          return String(a.label || '').localeCompare(String(b.label || ''), undefined, { sensitivity:'base' });
-        });
+        if (currentGroup === 'cpnw'){
+          const compareStrings = (a, b) => String(a || '').localeCompare(String(b || ''), undefined, { sensitivity:'base' });
+          filtered.sort((a, b) => {
+            const key = reqSort.key;
+            if (key === 'expiration'){
+              const at = a.expiration instanceof Date ? a.expiration.getTime() : null;
+              const bt = b.expiration instanceof Date ? b.expiration.getTime() : null;
+              if (at === null && bt === null) return 0;
+              if (at === null) return 1;
+              if (bt === null) return -1;
+              return reqSort.dir === 'asc' ? at - bt : bt - at;
+            }
+            const av = key === 'reviewer'
+              ? reviewerNameFor(a)
+              : (key === 'status'
+                ? String(a.status || '')
+                : (key === 'type'
+                  ? String(a.type || '')
+                  : (key === 'frequency'
+                    ? String(a.frequency || '')
+                    : String(a.label || ''))));
+            const bv = key === 'reviewer'
+              ? reviewerNameFor(b)
+              : (key === 'status'
+                ? String(b.status || '')
+                : (key === 'type'
+                  ? String(b.type || '')
+                  : (key === 'frequency'
+                    ? String(b.frequency || '')
+                    : String(b.label || ''))));
+            const cmp = compareStrings(av, bv);
+            return reqSort.dir === 'asc' ? cmp : -cmp;
+          });
+        }else{
+          // Expiring/expired first, then incomplete, then submitted/complete.
+          const order = { expired:0, 'expiring soon':1, expiring:2, 'not submitted':3, incomplete:4, submitted:5, approved:6, complete:7 };
+          filtered.sort((a,b) => {
+            const oa = order[String(a.status || '').toLowerCase()] ?? 99;
+            const ob = order[String(b.status || '').toLowerCase()] ?? 99;
+            if (oa != ob) return oa - ob;
+            return String(a.label || '').localeCompare(String(b.label || ''), undefined, { sensitivity:'base' });
+          });
+        }
 
         const total = filtered.length;
         reqPageSize = Number(pageSizeSelect?.value || reqPageSize || 10);
@@ -1189,6 +1827,21 @@
 
         listBody.innerHTML = pageItems.map(r => {
           const exp = r.expiration ? fmtDate(r.expiration) : '—';
+          const reviewer = reviewerNameFor(r);
+          if (currentGroup === 'cpnw'){
+            return `
+              <tr>
+                <td class="fw-semibold">
+                  <button class="btn btn-link p-0 text-decoration-none" type="button" data-view-req="${r.id}">${r.label}</button>
+                </td>
+                <td>${statusBadge(r.status)}</td>
+                <td class="text-nowrap">${exp}</td>
+                <td>${r.type || '—'}</td>
+                <td>${r.frequency || '—'}</td>
+                <td>${reviewer}</td>
+              </tr>
+            `;
+          }
           const due = r.due ? fmtDate(r.due) : '—';
           return `
             <tr>
@@ -1200,7 +1853,7 @@
               <td class="text-end"><button class="btn btn-outline-secondary btn-sm" type="button" data-view-req="${r.id}">View</button></td>
             </tr>
           `;
-        }).join('') || `<tr><td colspan="6" class="text-body-secondary small">No results.</td></tr>`;
+        }).join('') || `<tr><td colspan="${currentGroup === 'cpnw' ? 6 : 6}" class="text-body-secondary small">No results.</td></tr>`;
 
         if (pageInfo){
           pageInfo.textContent = total ? `Showing ${start + 1}–${end} of ${total}` : 'No results';
@@ -1247,7 +1900,54 @@
             ? 'criminal_disclosure'
             : (isHepBRequirement(req)
               ? 'hep_b'
-              : (Array.from(subRadios).find(r => r.checked)?.value || '')));
+              : (isVaricellaRequirement(req)
+                ? 'varicella'
+                : (isMmrRequirement(req)
+                  ? 'mmr'
+                  : (isInfluenzaRequirement(req)
+                    ? 'influenza'
+                    : (isTuberculinRequirement(req)
+                      ? 'tuberculin'
+                      : (isBlsRequirement(req)
+                        ? 'bls'
+                        : (isCovidRequirement(req)
+                          ? 'covid'
+                          : (Array.from(subRadios).find(r => r.checked)?.value || '')))))))));
+
+        const influenzaEntries = isInfluenzaRequirement(req) && influenzaVaccinations
+          ? Array.from(influenzaVaccinations.querySelectorAll('[data-influenza-entry], [data-influenza-extra]'))
+            .map(row => {
+              const date = row.querySelector('input[type="date"]')?.value || '';
+              const location = (row.querySelector('input[type="text"]')?.value || '').trim();
+              return (date || location) ? { date, location } : null;
+            })
+            .filter(Boolean)
+          : [];
+
+        const covidEntries = isCovidRequirement(req) && covidDoseList
+          ? Array.from(covidDoseList.querySelectorAll('input[type="date"]'))
+            .map(el => el.value)
+            .filter(Boolean)
+          : [];
+
+        const collectMmrRows = (type) => {
+          const group = mmrGroupFor(type);
+          if (!group) return [];
+          return Array.from(group.querySelectorAll('[data-mmr-row]'))
+            .map(row => ({
+              date: row.querySelector('input[type="date"]')?.value || '',
+              result: row.querySelector('input[type="radio"]:checked')?.value || ''
+            }))
+            .filter(row => row.date || row.result);
+        };
+
+        const mmrTiterEntries = isMmrRequirement(req)
+          ? {
+            measles: collectMmrRows('measles'),
+            mumps: collectMmrRows('mumps'),
+            rubella: collectMmrRows('rubella')
+          }
+          : null;
 
         const submissionPayload = {
           mode: submissionMode,
@@ -1273,6 +1973,52 @@
               ncSeries2Steps: hepBNcSeries2Two?.checked ? 2 : (hepBNcSeries2Three?.checked ? 3 : 0),
               ipSeries1Steps: hepBIpSeries1Two?.checked ? 2 : (hepBIpSeries1Three?.checked ? 3 : 0)
             }
+          } : null,
+          varicella: isVaricellaRequirement(req) ? {
+            option: Array.from(varicellaRadios).find(r => r.checked)?.value || '',
+            vaccinationDates: [varicellaDose1Date?.value || '', varicellaDose2Date?.value || ''].filter(Boolean),
+            titerDate: varicellaTiterDate?.value || '',
+            titerResult: varicellaTiterPositive?.checked ? 'positive' : (varicellaTiterNegative?.checked ? 'negative' : '')
+          } : null,
+          mmr: isMmrRequirement(req) ? {
+            option: Array.from(mmrRadios).find(r => r.checked)?.value || '',
+            vaccinationDates: [mmrDose1Date?.value || '', mmrDose2Date?.value || ''].filter(Boolean),
+            titers: mmrTiterEntries
+          } : null,
+          influenza: isInfluenzaRequirement(req) ? {
+            vaccinations: influenzaEntries
+          } : null,
+          tuberculin: isTuberculinRequirement(req) ? {
+            option: tuberculinOptionTwoStep?.checked
+              ? 'two_step'
+              : (tuberculinOptionIgra?.checked ? 'igra' : (tuberculinOptionHistory?.checked ? 'history' : '')),
+            twoStep: {
+              test1: {
+                placeDate: tuberculinTest1Place?.value || '',
+                readDate: tuberculinTest1Read?.value || '',
+                resultMm: tuberculinTest1Mm?.value || '',
+                result: tuberculinTest1Neg?.checked ? 'neg' : (tuberculinTest1Pos?.checked ? 'pos' : '')
+              },
+              test2: {
+                placeDate: tuberculinTest2Place?.value || '',
+                readDate: tuberculinTest2Read?.value || '',
+                resultMm: tuberculinTest2Mm?.value || '',
+                result: tuberculinTest2Neg?.checked ? 'neg' : (tuberculinTest2Pos?.checked ? 'pos' : '')
+              }
+            },
+            igra: {
+              dateDrawn: tuberculinIgraDate?.value || '',
+              result: tuberculinIgraNeg?.checked ? 'neg' : (tuberculinIgraPos?.checked ? 'pos' : '')
+            },
+            history: {
+              chestDate: tuberculinChestDate?.value || '',
+              result: tuberculinChestNeg?.checked ? 'neg' : (tuberculinChestPos?.checked ? 'pos' : '')
+            }
+          } : null,
+          covid: isCovidRequirement(req) ? {
+            noVaccination: !!covidNoVaccination?.checked,
+            manufacturer: (covidManufacturer?.value || '').trim(),
+            doses: covidEntries
           } : null
         };
 
@@ -1312,6 +2058,19 @@
       }
 
       document.addEventListener('click', (e) => {
+        const sortBtn = e.target.closest('[data-req-sort]');
+        if (sortBtn && currentGroup === 'cpnw'){
+          const key = sortBtn.dataset.reqSort || '';
+          if (key){
+            if (reqSort.key === key){
+              reqSort = { ...reqSort, dir: reqSort.dir === 'asc' ? 'desc' : 'asc' };
+            }else{
+              reqSort = { key, dir: 'asc' };
+            }
+            renderReqList();
+          }
+          return;
+        }
         const openBtn = e.target.closest('[data-open-reqs]');
         if (openBtn){
           openReqList(openBtn.dataset.openReqs);
@@ -1337,6 +2096,30 @@
       subRadios.forEach(radio => {
         radio.addEventListener('change', () => setSubmissionMode(radio.value));
       });
+
+      varicellaOptionMilitary?.addEventListener('change', updateVaricellaOption);
+      varicellaOptionVaccination?.addEventListener('change', updateVaricellaOption);
+      varicellaOptionTiter?.addEventListener('change', updateVaricellaOption);
+      mmrOptionMilitary?.addEventListener('change', updateMmrOption);
+      mmrOptionVaccination?.addEventListener('change', updateMmrOption);
+      mmrOptionTiter?.addEventListener('change', updateMmrOption);
+      [
+        { type: 'measles', group: mmrMeaslesGroup },
+        { type: 'mumps', group: mmrMumpsGroup },
+        { type: 'rubella', group: mmrRubellaGroup }
+      ].forEach(({ type, group }) => {
+        group?.querySelectorAll('input[type="radio"]').forEach(input => {
+          input.addEventListener('change', () => updateMmrBoosterVisibility(type));
+        });
+        group?.querySelector('[data-mmr-add]')?.addEventListener('click', () => addMmrBoosterRow(type));
+      });
+      influenzaAdd?.addEventListener('click', addInfluenzaField);
+      tuberculinOptionTwoStep?.addEventListener('change', updateTuberculinOption);
+      tuberculinOptionIgra?.addEventListener('change', updateTuberculinOption);
+      tuberculinOptionHistory?.addEventListener('change', updateTuberculinOption);
+      tuberculinDownload?.addEventListener('click', downloadTuberculinForm);
+      covidNoVaccination?.addEventListener('change', updateCovidOption);
+      covidAddBooster?.addEventListener('click', addCovidBooster);
 
       hepBOptionTiter?.addEventListener('change', updateHepBMainOption);
       hepBOptionNoTiter?.addEventListener('change', updateHepBMainOption);

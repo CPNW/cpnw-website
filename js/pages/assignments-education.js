@@ -10,7 +10,11 @@
       const programDefs = [
         { id:'BSN', base: 12, aySpan: 2 },
         { id:'ADN', base: 10, aySpan: 2 },
-        { id:'Surg Tech', base: 8, aySpan: 2 }
+        { id:'Surg Tech', base: 8, aySpan: 2 },
+        { id:'Radiologic Technology', base: 6, aySpan: 2 },
+        { id:'Respiratory Care', base: 7, aySpan: 2 },
+        { id:'Medical Assistant', base: 6, aySpan: 2 },
+        { id:'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
       ];
       const termAdjust = { Fall:3, Winter:1, Spring:0, Summer:-2 };
       const ASSIGNMENTS_KEY = 'cpnw-assignments-v1';
@@ -56,6 +60,9 @@
         const name = String(label || '').toLowerCase();
         if (name.includes('surg')) return 'surg tech';
         if (name.includes('rad')) return 'radiologic technology';
+        if (name.includes('resp')) return 'respiratory care';
+        if (name.includes('sonography') || name.includes('sono') || name.includes('dms')) return 'diagnostic medical sonography';
+        if (name.includes('medassistant') || name.includes('medassist')) return 'medical assistant';
         if (name.includes('bsn')) return 'bsn';
         if (name.includes('adn')) return 'adn';
         return name;
@@ -69,6 +76,9 @@
         const name = String(label || '').toLowerCase();
         if (name.includes('surg')) return 'Surg Tech';
         if (name.includes('rad')) return 'Radiologic Technology';
+        if (name.includes('resp')) return 'Respiratory Care';
+        if (name.includes('sonography') || name.includes('sono') || name.includes('dms')) return 'Diagnostic Medical Sonography';
+        if (name.includes('medassistant') || name.includes('medassist')) return 'Medical Assistant';
         if (name.includes('bsn')) return 'BSN';
         if (name.includes('adn')) return 'ADN';
         return String(label || '').trim();

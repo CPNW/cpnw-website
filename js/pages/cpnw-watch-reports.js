@@ -31,10 +31,25 @@
     { school: 'CPNW University', program: 'ADN', watchRequirement: 'CPNW: CPNW WATCH', reviewerService: true },
     { school: 'CPNW Education', program: 'BSN', watchRequirement: 'CPNW: Independent WATCH', reviewerService: true },
     { school: 'CPNW University', program: 'BSN', watchRequirement: 'CPNW: Independent WATCH', reviewerService: false },
-    { school: 'CPNW Education', program: 'RadTech', watchRequirement: 'CPNW: CPNW WATCH', reviewerService: false }
+    { school: 'CPNW Education', program: 'Radiologic Technology', watchRequirement: 'CPNW: CPNW WATCH', reviewerService: false },
+    { school: 'CPNW University', program: 'Respiratory Care', watchRequirement: 'CPNW: CPNW WATCH', reviewerService: true },
+    { school: 'CPNW Education', program: 'Medical Assistant', watchRequirement: 'CPNW: Independent WATCH', reviewerService: false },
+    { school: 'CPNW Education', program: 'Diagnostic Medical Sonography', watchRequirement: 'CPNW: CPNW WATCH', reviewerService: true }
   ];
 
-  const WATCH_PROGRAM_KEYS = new Map(WATCH_PROGRAMS.map(p => [`${p.school}::${p.program}`, p]));
+  function normalizeProgramName(name){
+    const normalized = String(name || '').toLowerCase();
+    if (normalized.includes('surg')) return 'Surg Tech';
+    if (normalized.includes('rad')) return 'Radiologic Technology';
+    if (normalized.includes('resp')) return 'Respiratory Care';
+    if (normalized.includes('medassistant') || normalized.includes('medassist')) return 'Medical Assistant';
+    if (normalized.includes('sonography') || normalized.includes('sono') || normalized.includes('dms')) return 'Diagnostic Medical Sonography';
+    if (normalized.includes('bsn')) return 'BSN';
+    if (normalized.includes('adn')) return 'ADN';
+    return String(name || '').trim();
+  }
+
+  const WATCH_PROGRAM_KEYS = new Map(WATCH_PROGRAMS.map(p => [`${p.school}::${normalizeProgramName(p.program)}`, p]));
 
   const PAGE_SIZE = 10;
   let currentPage = 1;
@@ -126,7 +141,7 @@
   function buildRows(){
     return roster.map((person) => {
       const { program, school } = resolveProgram(person);
-      const key = `${school}::${program}`;
+      const key = `${school}::${normalizeProgramName(program)}`;
       const watchProgram = WATCH_PROGRAM_KEYS.get(key);
       if (!watchProgram) return null;
       const nameParts = parseName(person.name);
