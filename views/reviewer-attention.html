@@ -100,7 +100,7 @@
             Filter requirements
           </button>
           <div class="dropdown-menu p-3 cpnw-dropdown-menu-280" id="reviewerReqFilters">
-            <div class="small text-body-secondary">Show students with these CPNW requirements in Submitted/In Review.</div>
+            <div class="small text-body-secondary">Show students with these CPNW requirements in Submitted status.</div>
             <div class="d-grid gap-2 mt-2"></div>
           </div>
         </div>
@@ -323,6 +323,326 @@
                   <div class="col-12 d-none" id="studentSubOtherFields">
                     <label class="form-label small mb-1" for="studentOtherNotes">Notes</label>
                     <textarea class="form-control" id="studentOtherNotes" rows="2" placeholder="Add context for your submission…"></textarea>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-none" id="varicellaSubmissionWrap">
+                  <div class="d-flex flex-wrap gap-3 mb-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="varicellaSubmission" id="varicellaOptionMilitary" value="military">
+                      <label class="form-check-label" for="varicellaOptionMilitary">Military Immunization</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="varicellaSubmission" id="varicellaOptionVaccination" value="vaccination">
+                      <label class="form-check-label" for="varicellaOptionVaccination">Vaccination Dates</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="varicellaSubmission" id="varicellaOptionTiter" value="titer">
+                      <label class="form-check-label" for="varicellaOptionTiter">Immunity by Titer</label>
+                    </div>
+                  </div>
+                  <div class="row g-3">
+                    <div class="col-12 d-none" id="varicellaVaccinationFields">
+                      <div class="row g-2">
+                        <div class="col-12 col-sm-6">
+                          <label class="form-label small mb-1" for="varicellaDose1Date">Vaccination date 1</label>
+                          <input type="date" class="form-control" id="varicellaDose1Date">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                          <label class="form-label small mb-1" for="varicellaDose2Date">Vaccination date 2</label>
+                          <input type="date" class="form-control" id="varicellaDose2Date">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12 d-none" id="varicellaTiterFields">
+                      <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="varicellaTiterDate">Titer date drawn</label>
+                          <input type="date" class="form-control" id="varicellaTiterDate">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="varicellaTiterResult" id="varicellaTiterPositive" value="positive">
+                              <label class="form-check-label" for="varicellaTiterPositive">Positive</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="varicellaTiterResult" id="varicellaTiterNegative" value="negative">
+                              <label class="form-check-label" for="varicellaTiterNegative">Negative</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-none" id="mmrSubmissionWrap">
+                  <div class="d-flex flex-wrap gap-3 mb-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="mmrSubmission" id="mmrOptionMilitary" value="military">
+                      <label class="form-check-label" for="mmrOptionMilitary">Military immunization</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="mmrSubmission" id="mmrOptionVaccination" value="vaccination">
+                      <label class="form-check-label" for="mmrOptionVaccination">A. Vaccination Dates</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="mmrSubmission" id="mmrOptionTiter" value="titer">
+                      <label class="form-check-label" for="mmrOptionTiter">B. Immunity by Titer</label>
+                    </div>
+                  </div>
+                  <div class="row g-3">
+                    <div class="col-12 d-none" id="mmrVaccinationFields">
+                      <div class="row g-2">
+                        <div class="col-12 col-sm-6">
+                          <label class="form-label small mb-1" for="mmrDose1Date">Vaccination date 1</label>
+                          <input type="date" class="form-control" id="mmrDose1Date">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                          <label class="form-label small mb-1" for="mmrDose2Date">Vaccination date 2</label>
+                          <input type="date" class="form-control" id="mmrDose2Date">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12 d-none" id="mmrTiterFields">
+                      <div class="border rounded p-2 mb-3" data-mmr-group="measles">
+                        <div class="fw-semibold small mb-2">Measles by titer</div>
+                        <div class="row g-2 mb-2" data-mmr-row>
+                          <div class="col-12 col-md-5">
+                            <input type="date" class="form-control" id="mmrMeaslesDate0">
+                          </div>
+                          <div class="col-12 col-md-7">
+                            <div class="form-label small mb-1">Result</div>
+                            <div class="d-flex flex-wrap gap-3">
+                              <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mmrMeaslesResult0" id="mmrMeaslesNeg0" value="neg">
+                                <label class="form-check-label" for="mmrMeaslesNeg0">Neg/Equivalent</label>
+                              </div>
+                              <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mmrMeaslesResult0" id="mmrMeaslesPos0" value="pos">
+                                <label class="form-check-label" for="mmrMeaslesPos0">Pos</label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <button class="btn btn-cpnw btn-cpnw-secondary btn-sm d-none" type="button" data-mmr-add="measles">+ Add Booster</button>
+                      </div>
+
+                      <div class="border rounded p-2 mb-3" data-mmr-group="mumps">
+                        <div class="fw-semibold small mb-2">Mumps by titer</div>
+                        <div class="row g-2 mb-2" data-mmr-row>
+                          <div class="col-12 col-md-5">
+                            <input type="date" class="form-control" id="mmrMumpsDate0">
+                          </div>
+                          <div class="col-12 col-md-7">
+                            <div class="form-label small mb-1">Result</div>
+                            <div class="d-flex flex-wrap gap-3">
+                              <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mmrMumpsResult0" id="mmrMumpsNeg0" value="neg">
+                                <label class="form-check-label" for="mmrMumpsNeg0">Neg/Equivalent</label>
+                              </div>
+                              <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mmrMumpsResult0" id="mmrMumpsPos0" value="pos">
+                                <label class="form-check-label" for="mmrMumpsPos0">Pos</label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <button class="btn btn-cpnw btn-cpnw-secondary btn-sm d-none" type="button" data-mmr-add="mumps">+ Add Booster</button>
+                      </div>
+
+                      <div class="border rounded p-2 mb-3" data-mmr-group="rubella">
+                        <div class="fw-semibold small mb-2">Rubella by titer</div>
+                        <div class="row g-2 mb-2" data-mmr-row>
+                          <div class="col-12 col-md-5">
+                            <input type="date" class="form-control" id="mmrRubellaDate0">
+                          </div>
+                          <div class="col-12 col-md-7">
+                            <div class="form-label small mb-1">Result</div>
+                            <div class="d-flex flex-wrap gap-3">
+                              <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mmrRubellaResult0" id="mmrRubellaNeg0" value="neg">
+                                <label class="form-check-label" for="mmrRubellaNeg0">Neg/Equivalent</label>
+                              </div>
+                              <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mmrRubellaResult0" id="mmrRubellaPos0" value="pos">
+                                <label class="form-check-label" for="mmrRubellaPos0">Pos</label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <button class="btn btn-cpnw btn-cpnw-secondary btn-sm d-none" type="button" data-mmr-add="rubella">+ Add Booster</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-none" id="influenzaSubmissionWrap">
+                  <div class="fw-semibold mb-2">Influenza vaccination</div>
+                  <div class="row g-2" id="influenzaVaccinations">
+                    <div class="col-12" data-influenza-entry>
+                      <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="influenzaDate0">Vaccination date</label>
+                          <input type="date" class="form-control" id="influenzaDate0">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="influenzaLocation0">Location received</label>
+                          <input type="text" class="form-control" id="influenzaLocation0" placeholder="Clinic or pharmacy name">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-2">
+                    <button class="btn btn-cpnw btn-cpnw-secondary btn-sm" type="button" id="influenzaAdd">+ Seasonal Vaccination</button>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-none" id="tuberculinSubmissionWrap">
+                  <div class="fw-semibold mb-2">Tuberculin screening</div>
+                  <button class="btn btn-outline-light btn-sm mb-3" type="button" id="tuberculinDownload">Download TBCheckForm.pdf</button>
+                  <div class="d-flex flex-column gap-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="tuberculinOption" id="tuberculinOptionTwoStep" value="two_step">
+                      <label class="form-check-label" for="tuberculinOptionTwoStep">A. Two Step</label>
+                    </div>
+                    <div class="ms-4 d-none" id="tuberculinTwoStepFields">
+                      <div class="fw-semibold small mb-2">Test #1</div>
+                      <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="tuberculinTest1Place">Place Date</label>
+                          <input type="date" class="form-control" id="tuberculinTest1Place">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="tuberculinTest1Read">Read Date</label>
+                          <input type="date" class="form-control" id="tuberculinTest1Read">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="tuberculinTest1Mm">Result in mm</label>
+                          <input type="text" class="form-control" id="tuberculinTest1Mm">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <div class="form-label small mb-1">Result</div>
+                          <div class="d-flex gap-3">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="tuberculinTest1Result" id="tuberculinTest1Neg" value="neg">
+                              <label class="form-check-label" for="tuberculinTest1Neg">Neg</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="tuberculinTest1Result" id="tuberculinTest1Pos" value="pos">
+                              <label class="form-check-label" for="tuberculinTest1Pos">Pos</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="fw-semibold small mt-3 mb-2">Test #2</div>
+                      <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="tuberculinTest2Place">Place Date</label>
+                          <input type="date" class="form-control" id="tuberculinTest2Place">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="tuberculinTest2Read">Read Date</label>
+                          <input type="date" class="form-control" id="tuberculinTest2Read">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="tuberculinTest2Mm">Result in mm</label>
+                          <input type="text" class="form-control" id="tuberculinTest2Mm">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <div class="form-label small mb-1">Result</div>
+                          <div class="d-flex gap-3">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="tuberculinTest2Result" id="tuberculinTest2Neg" value="neg">
+                              <label class="form-check-label" for="tuberculinTest2Neg">Neg</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="tuberculinTest2Result" id="tuberculinTest2Pos" value="pos">
+                              <label class="form-check-label" for="tuberculinTest2Pos">Pos</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="tuberculinOption" id="tuberculinOptionIgra" value="igra">
+                      <label class="form-check-label" for="tuberculinOptionIgra">B. TB IGRA (blood test)</label>
+                    </div>
+                    <div class="ms-4 d-none" id="tuberculinIgraFields">
+                      <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="tuberculinIgraDate">Date Drawn</label>
+                          <input type="date" class="form-control" id="tuberculinIgraDate">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <div class="form-label small mb-1">Result</div>
+                          <div class="d-flex gap-3">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="tuberculinIgraResult" id="tuberculinIgraNeg" value="neg">
+                              <label class="form-check-label" for="tuberculinIgraNeg">Neg</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="tuberculinIgraResult" id="tuberculinIgraPos" value="pos">
+                              <label class="form-check-label" for="tuberculinIgraPos">Pos</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="tuberculinOption" id="tuberculinOptionHistory" value="history">
+                      <label class="form-check-label" for="tuberculinOptionHistory">C. If Past, or new positive, history of BCG vaccine</label>
+                    </div>
+                    <div class="ms-4 d-none" id="tuberculinHistoryFields">
+                      <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label small mb-1" for="tuberculinChestDate">TB Chest Xray date</label>
+                          <input type="date" class="form-control" id="tuberculinChestDate">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <div class="form-label small mb-1">Result</div>
+                          <div class="d-flex gap-3">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="tuberculinChestResult" id="tuberculinChestNeg" value="neg">
+                              <label class="form-check-label" for="tuberculinChestNeg">Neg</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="tuberculinChestResult" id="tuberculinChestPos" value="pos">
+                              <label class="form-check-label" for="tuberculinChestPos">Pos</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-none" id="covidSubmissionWrap">
+                  <div class="fw-semibold mb-2">COVID-19 vaccination</div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="covidNoVaccination">
+                    <label class="form-check-label" for="covidNoVaccination">Not Applicable</label>
+                  </div>
+                  <div id="covidDetails">
+                    <div class="row g-2">
+                      <div class="col-12 col-md-6">
+                        <label class="form-label small mb-1" for="covidManufacturer">Manufacturer</label>
+                        <input type="text" class="form-control" id="covidManufacturer" placeholder="Pfizer, Moderna, Johnson & Johnson">
+                      </div>
+                    </div>
+                    <div class="row g-2 mt-1" id="covidDoseList">
+                      <div class="col-12 col-md-6" data-covid-dose>
+                        <label class="form-label small mb-1" for="covidDose1">Dose 1 date</label>
+                        <input type="date" class="form-control" id="covidDose1">
+                      </div>
+                    </div>
+                    <div class="mt-2">
+                      <button class="btn btn-cpnw btn-cpnw-secondary btn-sm" type="button" id="covidAddBooster">+ Add Booster</button>
+                    </div>
                   </div>
                 </div>
 

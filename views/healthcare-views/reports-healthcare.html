@@ -74,15 +74,27 @@
           <div class="form-floating">
             <select class="form-select" id="locationFilter">
               <option value="">All locations</option>
-              <option>Seattle</option>
-              <option>Portland</option>
-              <option>Boise</option>
             </select>
             <label for="locationFilter">Locations</label>
           </div>
         </div>
         <div class="col-12 col-md-3">
-          <div class="form-floating cpnw-program-filter" data-program-filter>
+          <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-school-filter>
+            <input
+              type="text"
+              class="form-control"
+              id="schoolFilter"
+              placeholder="All schools"
+              readonly
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            />
+            <label for="schoolFilter">Schools</label>
+            <div class="cpnw-program-menu" data-school-menu role="listbox"></div>
+          </div>
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-program-filter>
             <input
               type="text"
               class="form-control"
@@ -92,12 +104,12 @@
               aria-haspopup="listbox"
               aria-expanded="false"
             />
-            <label for="programFilter">School / Program</label>
+            <label for="programFilter">Programs</label>
             <div class="cpnw-program-menu" data-program-menu role="listbox"></div>
           </div>
         </div>
         <div class="col-12 col-md-3">
-          <div class="form-floating cpnw-program-filter" data-cohort-filter>
+          <div class="form-floating cpnw-program-filter cpnw-program-filter-scroll" data-cohort-filter>
             <input
               type="text"
               class="form-control"
@@ -111,7 +123,9 @@
             <div class="cpnw-program-menu" data-cohort-menu role="listbox"></div>
           </div>
         </div>
-        <div class="col-12 col-md-3">
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-4">
           <div class="form-floating">
             <input type="search" class="form-control" id="reportSearch" placeholder="Search..." />
             <label for="reportSearch">Search name/email</label>
@@ -269,6 +283,6 @@
     crossorigin="anonymous"
   ></script>
   <script src="../../js/main.js?v=20251214-2"></script>
-  <script src="../../js/pages/reports-education.js"></script>
+  <script src="../../js/pages/reports-healthcare.js"></script>
 </body>
 </html>

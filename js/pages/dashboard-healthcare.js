@@ -4,22 +4,12 @@
         { id:'bsn', name:'BSN' },
         { id:'adn', name:'ADN' },
         { id:'surg', name:'Surg Tech' },
+        { id:'rad', name:'Radiologic Technology' },
+        { id:'resp', name:'Respiratory Care' },
+        { id:'med', name:'Medical Assistant' },
+        { id:'sono', name:'Diagnostic Medical Sonography' },
         { id:'allied', name:'Allied Health' }
       ];
-
-	      const requests = [
-	        { school:'Northwest U', program:'BSN', programId:'bsn', students:8, start:'Mar 18', status:'pending' },
-	        { school:'Evergreen College', program:'Allied Health', programId:'allied', students:4, start:'Mar 25', status:'approved' },
-	        { school:'Cascade State', program:'Practicum', programId:'bsn', students:6, start:'Apr 02', status:'reviewing' },
-	        { school:'CPNW Education', program:'ADN', programId:'adn', students:5, start:'Apr 10', status:'pending' }
-	      ];
-
-	      const sites = [
-	        { name:'Med-Surg (Downtown)', slots:4, status:'open' },
-	        { name:'ICU (North Campus)', slots:1, status:'limited' },
-	        { name:'Pediatrics (East)', slots:0, status:'full' }
-	      ];
-
       const ASSIGNMENTS_KEY = 'cpnw-assignments-v1';
       const ASSIGNMENT_GRACE_DAYS = 14;
       const ASSIGNMENT_WINDOW_DAYS = 42;
@@ -50,9 +40,22 @@
       const programDefs = [
         { id:'BSN', base: 12, aySpan: 2 },
         { id:'ADN', base: 10, aySpan: 2 },
-        { id:'Surg Tech', base: 8, aySpan: 2 }
+        { id:'Surg Tech', base: 8, aySpan: 2 },
+        { id:'Radiologic Technology', base: 6, aySpan: 2 },
+        { id:'Respiratory Care', base: 7, aySpan: 2 },
+        { id:'Medical Assistant', base: 6, aySpan: 2 },
+        { id:'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
       ];
-      const programIdMap = { 'BSN':'bsn', 'ADN':'adn', 'Surg Tech':'surg', 'Allied Health':'allied' };
+      const programIdMap = {
+        'BSN':'bsn',
+        'ADN':'adn',
+        'Surg Tech':'surg',
+        'Radiologic Technology':'rad',
+        'Respiratory Care':'resp',
+        'Medical Assistant':'med',
+        'Diagnostic Medical Sonography':'sono',
+        'Allied Health':'allied'
+      };
 
       function loadJSON(key, fallback){
         try{
@@ -84,6 +87,49 @@
 
       function normalize(value){
         return String(value || '').trim().toLowerCase();
+      }
+
+      function normalizeProgramToken(value){
+        const name = normalize(value).replace(/[^a-z0-9]/g, '');
+        if (name.includes('surg')) return 'surgtech';
+        if (name.includes('rad')) return 'radtech';
+        if (name.includes('resp')) return 'respcare';
+        if (name.includes('sonography') || name.includes('sono') || name.includes('dms')) return 'sonography';
+        if (name.includes('medassistant') || name.includes('medassist')) return 'medicalassistant';
+        if (name.includes('allied')) return 'alliedhealth';
+        if (name.includes('bsn')) return 'bsn';
+        if (name.includes('adn')) return 'adn';
+        return name;
+      }
+
+      function normalizeEmail(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
+      function toDateInputValue(date){
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function parseDateInput(value){
+        if (!value) return null;
+        const parts = String(value).split('-').map(Number);
+        if (parts.length !== 3 || parts.some(part => !Number.isFinite(part))) return null;
+        const [year, month, day] = parts;
+        return new Date(year, month - 1, day);
+      }
+
+      function dateAtMidnight(date){
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      }
+
+      function formatShortDate(date){
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       }
 
       function hydrateAssignments(list){
@@ -257,13 +303,15 @@
       function buildAssignmentEligibility(assignments, facilityNames){
         const ids = new Set();
         const sids = new Set();
+        const emails = new Set();
         assignments.forEach(assignment => {
           if (!assignmentMatchesFacility(assignment, facilityNames)) return;
           if (!assignmentWithinWindow(assignment)) return;
           if (assignment.studentId) ids.add(String(assignment.studentId));
           if (assignment.studentSid) sids.add(String(assignment.studentSid));
+          if (assignment.studentEmail) emails.add(normalizeEmail(assignment.studentEmail));
         });
-        return { ids, sids };
+        return { ids, sids, emails };
       }
 
       function buildReviewPeople(){
@@ -303,15 +351,21 @@
       const programSearch = document.getElementById('programSearch');
       const selectAllBtn = document.getElementById('programSelectAll');
       const clearBtn = document.getElementById('programClear');
-      const requestTableBody = document.getElementById('requestTableBody');
-      const siteList = document.getElementById('siteList');
+      const notificationsList = document.getElementById('healthcareNotifications');
+      const summaryStartInput = document.getElementById('summaryStart');
+      const summaryEndInput = document.getElementById('summaryEnd');
+      const summaryTotalEl = document.getElementById('summaryTotal');
+      const summaryApprovedEl = document.getElementById('summaryApproved');
+      const summaryPendingEl = document.getElementById('summaryPending');
+      const summaryRejectedEl = document.getElementById('summaryRejected');
+      const summaryNote = document.getElementById('summaryNote');
 
       const metricPending = document.getElementById('metricPending');
       const metricPendingNote = document.getElementById('metricPendingNote');
       const metricApproved = document.getElementById('metricApproved');
       const metricApprovedNote = document.getElementById('metricApprovedNote');
-      const metricVerified = document.getElementById('metricVerified');
-      const metricVerifiedNote = document.getElementById('metricVerifiedNote');
+      const metricRejected = document.getElementById('metricRejected');
+      const metricRejectedNote = document.getElementById('metricRejectedNote');
       const metricExpiring = document.getElementById('metricExpiring');
       const metricExpiringNote = document.getElementById('metricExpiringNote');
 
@@ -326,8 +380,32 @@
       const facilityNames = getHealthcareFacilityNames();
       const assignmentEligibility = buildAssignmentEligibility(assignments, facilityNames);
 
+      if (summaryStartInput && !summaryStartInput.value){
+        summaryStartInput.value = toDateInputValue(TODAY);
+      }
+      if (summaryEndInput && !summaryEndInput.value){
+        const defaultEnd = new Date(TODAY);
+        defaultEnd.setDate(defaultEnd.getDate() + 7);
+        summaryEndInput.value = toDateInputValue(defaultEnd);
+      }
+
       function programIdForPerson(person){
-        return programIdMap[person?.program] || '';
+        const direct = programIdMap[person?.program] || '';
+        if (direct) return direct;
+        const token = normalizeProgramToken(person?.program);
+        if (!token) return '';
+        const tokenMap = {
+          bsn: 'bsn',
+          adn: 'adn',
+          surgtech: 'surg',
+          radtech: 'rad',
+          respcare: 'resp',
+          medicalassistant: 'med',
+          sonography: 'sono',
+          dms: 'sono',
+          alliedhealth: 'allied'
+        };
+        return tokenMap[token] || '';
       }
 
       function findPersonForAssignment(assignment){
@@ -339,14 +417,6 @@
           if (sid && String(person.sid || '') === sid) return true;
           return false;
         }) || null;
-      }
-
-      function statusBadge(status){
-        const s = String(status || '').toLowerCase();
-        if (s === 'pending') return '<span class="badge text-bg-warning text-dark">Pending</span>';
-        if (s === 'approved') return '<span class="badge text-bg-success">Approved</span>';
-        if (s === 'reviewing') return '<span class="badge text-bg-secondary">Reviewing</span>';
-        return `<span class="badge text-bg-secondary">${status}</span>`;
       }
 
       function renderProgramFilters(term = ''){
@@ -379,6 +449,72 @@
         return Array.from(filters.querySelectorAll('input:checked')).map(i => i.value);
       }
 
+      function getSummaryRange(){
+        const start = dateAtMidnight(parseDateInput(summaryStartInput?.value));
+        const end = dateAtMidnight(parseDateInput(summaryEndInput?.value));
+        if (start && end && end < start) return { start, end: start };
+        return { start, end };
+      }
+
+      function assignmentStartsWithinRange(assignment, range){
+        if (!range.start || !range.end) return true;
+        const start = assignment?.start instanceof Date ? assignment.start : (assignment?.start ? new Date(assignment.start) : null);
+        if (!(start instanceof Date) || Number.isNaN(start.getTime())) return false;
+        const startDay = dateAtMidnight(start);
+        return startDay >= range.start && startDay <= range.end;
+      }
+
+      function isStatusApproved(status){
+        return String(status || '').toLowerCase() === 'approved';
+      }
+
+      function isStatusRejected(status){
+        return String(status || '').toLowerCase() === 'rejected';
+      }
+
+      function isStatusPending(status){
+        const s = String(status || '').toLowerCase();
+        return s === 'pending' || s === 'reviewing' || s === '';
+      }
+
+      function buildNotificationList(items){
+        if (!notificationsList) return;
+        if (!items.length){
+          notificationsList.innerHTML = `
+            <li class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-semibold">All caught up</div>
+                <p class="small text-body-secondary mb-0">No new alerts at the moment.</p>
+              </div>
+              <span class="badge text-bg-success">Clear</span>
+            </li>
+          `;
+          return;
+        }
+        notificationsList.innerHTML = items.map(item => `
+          <li class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="fw-semibold">${item.title}</div>
+              ${item.meta ? `<p class="small text-body-secondary mb-1">${item.meta}</p>` : ''}
+              ${item.action ? `<a href="${item.action.href}" class="small text-decoration-none">${item.action.label}</a>` : ''}
+            </div>
+            <span class="badge ${item.badgeClass}">${item.badgeLabel}</span>
+          </li>
+        `).join('');
+      }
+
+      function getUpcomingPendingCount(list){
+        const today = dateAtMidnight(TODAY);
+        const upcomingLimit = new Date(today);
+        upcomingLimit.setDate(upcomingLimit.getDate() + 7);
+        return list.filter(assignment => {
+          const start = assignment?.start instanceof Date ? assignment.start : (assignment?.start ? new Date(assignment.start) : null);
+          if (!(start instanceof Date) || Number.isNaN(start.getTime())) return false;
+          const startDay = dateAtMidnight(start);
+          return startDay >= today && startDay <= upcomingLimit && isStatusPending(assignment.status);
+        }).length;
+      }
+
 	      function summarize(){
 	        const selectedIds = getSelectedProgramIds();
 	        const effective = selectedIds.length ? selectedIds : programs.map(p => p.id);
@@ -386,17 +522,15 @@
 	          programCount.textContent = effective.length === programs.length ? 'All' : String(effective.length);
 	        }
 
-	        const filteredRequests = requests.filter(r => effective.includes(r.programId));
 	        const submittedReviewStudentCount = new Set(
 	          reviewPeople
 	            .filter(p => (p.studentId && assignmentEligibility.ids.has(p.studentId))
-	              || assignmentEligibility.sids.has(p.sid))
+	              || assignmentEligibility.sids.has(p.sid)
+                || (p.email && assignmentEligibility.emails.has(normalizeEmail(p.email))))
 	            .filter(p => effective.includes(programIdForPerson(p)))
 	            .filter(p => hasHealthcareReviewItems(p))
-	            .map(p => p.studentId || p.sid)
+	            .map(p => p.studentId || p.sid || normalizeEmail(p.email))
 	        ).size;
-	        const pending = filteredRequests.filter(r => r.status === 'pending').length;
-	        const approved = filteredRequests.filter(r => r.status === 'approved').length;
 
           const isFiltered = effective.length !== programs.length;
           const scopedAssignments = assignments
@@ -408,51 +542,69 @@
               if (!programId) return !isFiltered;
               return effective.includes(programId);
             });
-          const approvedAssignments = scopedAssignments.filter(a => String(a.status || '').toLowerCase() === 'approved').length;
-          const totalAssignments = scopedAssignments.length;
-	        // Demo placeholders for readiness/expiring that scale with request totals.
-	        const verified = 24 + approved * 2;
-	        const expiring = Math.max(0, 3 + pending - approved);
+        const approvedAssignments = scopedAssignments.filter(a => isStatusApproved(a.status)).length;
+        const rejectedAssignments = scopedAssignments.filter(a => isStatusRejected(a.status)).length;
+        const pendingAssignments = scopedAssignments.filter(a => isStatusPending(a.status)).length;
+        const totalAssignments = scopedAssignments.length;
+        const expiring = Math.max(0, 3 + pendingAssignments - approvedAssignments);
 
 	        if (metricPending) metricPending.textContent = String(submittedReviewStudentCount);
 	        if (metricApproved) metricApproved.textContent = `${approvedAssignments}/${totalAssignments}`;
 	        if (metricApprovedNote) metricApprovedNote.textContent = totalAssignments ? 'Approved / total assignments' : 'No assignments in window';
-	        if (metricVerified) metricVerified.textContent = String(verified);
-	        if (metricVerifiedNote) metricVerifiedNote.textContent = 'All requirements passed';
-	        if (metricExpiring) metricExpiring.textContent = String(expiring);
+        if (metricRejected) metricRejected.textContent = String(rejectedAssignments);
+        if (metricRejectedNote) metricRejectedNote.textContent = rejectedAssignments ? 'Requires follow up' : 'No rejected assignments';
+        if (metricExpiring) metricExpiring.textContent = String(expiring);
         if (metricExpiringNote) metricExpiringNote.textContent = expiring ? 'Follow up this week' : 'No expiring items';
 
-        if (requestTableBody){
-          requestTableBody.innerHTML = filteredRequests.map(r => `
-            <tr>
-              <td class="fw-semibold">${r.school}</td>
-              <td>${r.program}</td>
-              <td>${r.students}</td>
-              <td>${r.start}</td>
-              <td>${statusBadge(r.status)}</td>
-            </tr>
-          `).join('') || '<tr><td colspan="5" class="text-body-secondary small">No requests match your filters.</td></tr>';
+        const range = getSummaryRange();
+        const rangedAssignments = scopedAssignments.filter(a => assignmentStartsWithinRange(a, range));
+        const summaryApproved = rangedAssignments.filter(a => isStatusApproved(a.status)).length;
+        const summaryRejected = rangedAssignments.filter(a => isStatusRejected(a.status)).length;
+        const summaryPending = rangedAssignments.filter(a => isStatusPending(a.status)).length;
+        const summaryTotal = rangedAssignments.length;
+
+        if (summaryTotalEl) summaryTotalEl.textContent = String(summaryTotal);
+        if (summaryApprovedEl) summaryApprovedEl.textContent = String(summaryApproved);
+        if (summaryPendingEl) summaryPendingEl.textContent = String(summaryPending);
+        if (summaryRejectedEl) summaryRejectedEl.textContent = String(summaryRejected);
+        if (summaryNote){
+          if (range.start && range.end){
+            summaryNote.textContent = `Showing start dates from ${formatShortDate(range.start)} to ${formatShortDate(range.end)}.`;
+          }else{
+            summaryNote.textContent = 'Showing all upcoming and active assignments.';
+          }
         }
 
-        if (siteList){
-          siteList.innerHTML = sites.map(s => {
-            const badge = s.status === 'open'
-              ? '<span class="badge text-bg-success">Open</span>'
-              : s.status === 'limited'
-                ? '<span class="badge text-bg-warning text-dark">Limited</span>'
-                : '<span class="badge text-bg-secondary">Full</span>';
-            const sub = s.slots ? `${s.slots} slot${s.slots === 1 ? '' : 's'} open` : 'Waitlist';
-            return `
-              <li class="d-flex justify-content-between align-items-center">
-                <div>
-                  <div class="fw-semibold">${s.name}</div>
-                  <p class="small text-body-secondary mb-0">${sub}</p>
-                </div>
-                ${badge}
-              </li>
-            `;
-          }).join('');
+        const notifications = [];
+        if (submittedReviewStudentCount > 0){
+          notifications.push({
+            title: `${submittedReviewStudentCount} student${submittedReviewStudentCount === 1 ? '' : 's'} need healthcare review`,
+            meta: 'Submitted or in-review healthcare requirements.',
+            action: { label: 'Review submissions', href: 'review-healthcare.html' },
+            badgeClass: 'text-bg-warning text-dark',
+            badgeLabel: 'Action'
+          });
         }
+        if (rejectedAssignments > 0){
+          notifications.push({
+            title: `${rejectedAssignments} rejected assignment${rejectedAssignments === 1 ? '' : 's'} need attention`,
+            meta: 'Resolve issues so assignments can be approved.',
+            action: { label: 'View rejected', href: 'clinical-roster-healthcare.html?status=rejected' },
+            badgeClass: 'text-bg-danger',
+            badgeLabel: 'Review'
+          });
+        }
+        const upcomingPending = getUpcomingPendingCount(scopedAssignments);
+        if (upcomingPending > 0){
+          notifications.push({
+            title: `${upcomingPending} assignment${upcomingPending === 1 ? '' : 's'} start soon`,
+            meta: 'Pending approvals within the next 7 days.',
+            action: { label: 'Open clinical roster', href: 'clinical-roster-healthcare.html' },
+            badgeClass: 'text-bg-secondary',
+            badgeLabel: 'Upcoming'
+          });
+        }
+        buildNotificationList(notifications);
       }
 
       renderProgramFilters('');
@@ -471,5 +623,7 @@
         filters.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
         summarize();
       });
+      summaryStartInput?.addEventListener('change', summarize);
+      summaryEndInput?.addEventListener('change', summarize);
     })();
   

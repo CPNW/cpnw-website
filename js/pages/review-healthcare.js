@@ -162,6 +162,10 @@
         return String(value || '').trim().toLowerCase();
       }
 
+      function normalizeEmail(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
       function normalizeProgramToken(value){
         const name = normalize(value).replace(/[^a-z0-9]/g, '');
         if (name.includes('surg')) return 'surgtech';
@@ -290,13 +294,15 @@
       function buildAssignmentEligibility(assignments, facilityNames){
         const ids = new Set();
         const sids = new Set();
+        const emails = new Set();
         assignments.forEach(assignment => {
           if (!assignmentMatchesFacility(assignment, facilityNames)) return;
           if (!assignmentWithinWindow(assignment)) return;
           if (assignment.studentId) ids.add(String(assignment.studentId));
           if (assignment.studentSid) sids.add(String(assignment.studentSid));
+          if (assignment.studentEmail) emails.add(normalizeEmail(assignment.studentEmail));
         });
-        return { ids, sids };
+        return { ids, sids, emails };
       }
       const cohortSeeds = [];
       programDefs.forEach(p => {
@@ -410,6 +416,7 @@
       const statusChipButtons = document.querySelectorAll('[data-status-chip]');
       const reviewTableBody = document.getElementById('reviewTableBody');
       const reviewSearch = document.getElementById('reviewSearch');
+      const schoolFilter = document.getElementById('schoolFilter');
       const programFilter = document.getElementById('programFilter');
       const reviewPageSizeSelect = document.getElementById('reviewPageSize');
       const reviewPrevPage = document.getElementById('reviewPrevPage');
@@ -535,6 +542,10 @@
       let influenzaExtraCount = 0;
       let covidExtraCount = 0;
       let mmrBoosterCounts = { measles: 0, mumps: 0, rubella: 0 };
+      const buildMultiSelect = (window.CPNW && typeof window.CPNW.buildCheckboxMultiSelect === 'function')
+        ? window.CPNW.buildCheckboxMultiSelect
+        : null;
+      const useSeparateFilters = isHealthcareView && schoolFilter && !!buildMultiSelect;
 
       function getProgramsBySchool(){
         if (!isHealthcareView && Object.keys(accessSummary.programsBySchool || {}).length){
@@ -542,7 +553,8 @@
         }
         const source = isHealthcareView
           ? people.filter(p => (p.studentId && assignmentEligibility.ids.has(p.studentId))
-            || assignmentEligibility.sids.has(p.sid))
+            || assignmentEligibility.sids.has(p.sid)
+            || (p.email && assignmentEligibility.emails.has(normalizeEmail(p.email))))
           : people;
         return source.reduce((acc, person) => {
           if (!person.school || !person.program) return acc;
@@ -552,9 +564,17 @@
         }, {});
       }
 
+      function handleFilterChange(){
+        reviewPage = 1;
+        updateCohortItems();
+        renderReviews();
+      }
+
+      const schoolFilterWrap = schoolFilter?.closest('[data-school-filter]');
+      const schoolFilterMenu = schoolFilterWrap?.querySelector('[data-school-menu]');
       const programFilterWrap = programFilter?.closest('[data-program-filter]');
       const programFilterMenu = programFilterWrap?.querySelector('[data-program-menu]');
-      const programFilterControl = (window.CPNW && typeof window.CPNW.buildProgramFilter === 'function')
+      const programFilterControl = (!useSeparateFilters && window.CPNW && typeof window.CPNW.buildProgramFilter === 'function')
         ? window.CPNW.buildProgramFilter({
           input: programFilter,
           menu: programFilterMenu,
@@ -568,15 +588,31 @@
         })
         : null;
 
-      const cohortFilterControl = (isHealthcareView && window.CPNW && typeof window.CPNW.buildCheckboxMultiSelect === 'function')
-        ? window.CPNW.buildCheckboxMultiSelect({
+      const schoolFilterControl = (useSeparateFilters && buildMultiSelect)
+        ? buildMultiSelect({
+          input: schoolFilter,
+          menu: schoolFilterMenu,
+          items: [],
+          placeholder: 'All schools',
+          onChange: handleFilterChange
+        })
+        : null;
+      const programMultiFilterControl = (useSeparateFilters && buildMultiSelect)
+        ? buildMultiSelect({
+          input: programFilter,
+          menu: programFilterMenu,
+          items: [],
+          placeholder: 'All programs',
+          onChange: handleFilterChange
+        })
+        : null;
+      const cohortFilterControl = (isHealthcareView && buildMultiSelect)
+        ? buildMultiSelect({
           input: cohortFilterEl,
           menu: cohortFilterMenu,
+          items: [],
           placeholder: 'All cohorts',
-          onChange: () => {
-            reviewPage = 1;
-            renderReviews();
-          }
+          onChange: handleFilterChange
         })
         : null;
 
@@ -601,6 +637,59 @@
       }
 
       function updateCohortItems(){
+        if (useSeparateFilters && schoolFilterControl && programMultiFilterControl && cohortFilterControl){
+          const source = isHealthcareView
+            ? people.filter(p => (p.studentId && assignmentEligibility.ids.has(p.studentId))
+              || assignmentEligibility.sids.has(p.sid)
+              || (p.email && assignmentEligibility.emails.has(normalizeEmail(p.email))))
+            : people;
+          const schoolItems = new Map();
+          source.forEach(person => {
+            const label = String(person.school || '').trim();
+            if (!label) return;
+            const value = normalize(label);
+            if (!schoolItems.has(value)) schoolItems.set(value, label);
+          });
+          schoolFilterControl.setItems(Array.from(schoolItems.entries())
+            .sort((a, b) => a[1].localeCompare(b[1]))
+            .map(([value, label]) => ({ value, label })));
+
+          const schoolSelections = new Set(schoolFilterControl.getSelection());
+          const schoolFiltered = schoolSelections.size
+            ? source.filter(person => schoolSelections.has(normalize(person.school)))
+            : source;
+
+          const programItems = new Map();
+          schoolFiltered.forEach(person => {
+            const label = String(person.program || '').trim();
+            if (!label) return;
+            const value = normalizeProgramToken(label);
+            if (!value) return;
+            if (!programItems.has(value)) programItems.set(value, formatProgramLabel(label));
+          });
+          programMultiFilterControl.setItems(Array.from(programItems.entries())
+            .sort((a, b) => a[1].localeCompare(b[1]))
+            .map(([value, label]) => ({ value, label })));
+
+          const programSelections = new Set(programMultiFilterControl.getSelection());
+          const programFiltered = programSelections.size
+            ? schoolFiltered.filter(person => programSelections.has(normalizeProgramToken(person.program)))
+            : schoolFiltered;
+
+          const cohortItems = new Map();
+          cohortItems.set('__unassigned__', { value: '__unassigned__', label: 'Unassigned', group: '' });
+          programFiltered.forEach(person => {
+            const raw = String(person.cohort || '').trim();
+            const value = raw || '__unassigned__';
+            if (cohortItems.has(value)) return;
+            const label = raw || 'Unassigned';
+            const group = formatProgramLabel(person.program || '') || '';
+            cohortItems.set(value, { value, label, group });
+          });
+          cohortFilterControl.setItems(Array.from(cohortItems.values())
+            .sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label)));
+          return;
+        }
         if (cohortFilterControl){
           const selections = programFilterControl ? programFilterControl.getSelection() : [];
           cohortFilterControl.setItems(getCohortItems(selections));
@@ -761,11 +850,6 @@
       function isCovidRequirement(name){
         const label = String(name || '').toLowerCase();
         return label.includes('covid');
-      }
-
-      function isImmunizationRequirement(name){
-        if (!name) return false;
-        return /(covid|covid-19|hepatitis|influenza|varicella|measles|mumps|rubella|mmr|tetanus|diphtheria|pertussis|tdap|tb|tuberculin|vaccine|vaccination|immunization)/i.test(name);
       }
 
       function buildRequirementInstructions(name){
@@ -1284,6 +1368,11 @@
         });
       }
 
+      function isImmunizationRequirement(name){
+        if (!name) return false;
+        return /(covid|covid-19|hepatitis|influenza|varicella|measles|mumps|rubella|mmr|tetanus|diphtheria|pertussis|tdap|tb|tuberculin|vaccine|vaccination|immunization)/i.test(name);
+      }
+
       function buildReqs(overallStatus, seed = 0, sid = '', studentEmail = ''){
         const rows = [];
         const seedOffset = Number.isFinite(seed) ? seed : 0;
@@ -1413,9 +1502,21 @@
 
       function renderReviews(){
         const q = (reviewSearch?.value || '').toLowerCase();
-        const programSelections = programFilterControl ? programFilterControl.getSelection() : [];
+        const schoolSelections = useSeparateFilters && schoolFilterControl
+          ? schoolFilterControl.getSelection()
+          : [];
+        const programSelections = useSeparateFilters
+          ? (programMultiFilterControl ? programMultiFilterControl.getSelection() : [])
+          : (programFilterControl ? programFilterControl.getSelection() : []);
         const hasProgramSelections = programSelections.length > 0;
-        const validCohorts = new Set([...cohorts.map(c=>c.cohortLabel), '__unassigned__']);
+        const hasSchoolSelections = schoolSelections.length > 0;
+        const schoolSet = useSeparateFilters ? new Set(schoolSelections) : null;
+        const programSet = useSeparateFilters ? new Set(programSelections) : null;
+        const validCohorts = new Set([
+          ...cohorts.map(c=>c.cohortLabel),
+          ...people.map(p => p.cohort).filter(Boolean),
+          '__unassigned__'
+        ]);
         const cohortSelections = cohortFilterControl
           ? cohortFilterControl.getSelection().filter(val => validCohorts.has(val))
           : (cohortFilterEl && validCohorts.has(cohortFilterEl.value) && cohortFilterEl.value ? [cohortFilterEl.value] : []);
@@ -1445,7 +1546,8 @@
         const filtered = people.filter(p=>{
           if (isHealthcareView){
             const matchesAssignment = (p.studentId && assignmentEligibility.ids.has(p.studentId))
-              || assignmentEligibility.sids.has(p.sid);
+              || assignmentEligibility.sids.has(p.sid)
+              || (p.email && assignmentEligibility.emails.has(normalizeEmail(p.email)));
             if (!matchesAssignment) return false;
             const summary = getHcSummary(p);
             if (currentStatusChip === 'needs-review' && !summary.hasReviewable) return false;
@@ -1470,7 +1572,10 @@
               return false;
             }
           }
-          if (hasProgramSelections){
+          if (useSeparateFilters){
+            if (hasSchoolSelections && !schoolSet.has(normalize(p.school))) return false;
+            if (hasProgramSelections && !programSet.has(normalizeProgramToken(p.program))) return false;
+          }else if (hasProgramSelections){
             const matchesProgram = programSelections.some(sel =>
               normalize(sel.school) === normalize(p.school)
               && normalizeProgramToken(sel.program) === normalizeProgramToken(p.program)
@@ -1929,7 +2034,7 @@
 	          decisionNote = document.createElement('div');
 	          decisionNote.id = 'decisionRestrictionNote';
 	          decisionNote.className = 'small text-body-secondary mt-2 d-none';
-	          decisionNote.textContent = 'Education users can only review CPNW and Education requirements.';
+	          decisionNote.textContent = 'Healthcare users can only review Healthcare requirements.';
 	          decisionWrap.appendChild(decisionNote);
 	        }
 	        const canReview = isHealthcareView ? category === 'Healthcare' : category !== 'Healthcare';
