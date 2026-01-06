@@ -25,6 +25,9 @@
       const currentUser = (window.CPNW && typeof window.CPNW.getCurrentUser === 'function')
         ? window.CPNW.getCurrentUser()
         : null;
+      const sharedRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+        ? window.CPNW.getSharedRoster()
+        : [];
       const currentPrograms = Array.isArray(currentUser?.programs)
         ? currentUser.programs
         : currentUser?.programs ? [currentUser.programs] : [];
@@ -198,6 +201,33 @@
         });
       }
 
+      if (!isHealthcareView){
+        const rosterCohorts = new Map();
+        sharedRoster.forEach(person => {
+          const role = String(person.role || '').toLowerCase();
+          if (!['student','faculty','faculty-admin'].includes(role)) return;
+          const label = String(person.cohort || '').trim();
+          if (!label) return;
+          const key = label.toLowerCase();
+          if (rosterCohorts.has(key)){
+            rosterCohorts.get(key).students += 1;
+            return;
+          }
+          const program = normalizeProgramLabel(person.program || person.programs?.[0]);
+          const school = person.school || person.schools?.[0] || pickSchoolForProgram(program);
+          rosterCohorts.set(key, {
+            cohortLabel: label,
+            program,
+            school,
+            students: 1,
+            seed: false
+          });
+        });
+        if (rosterCohorts.size){
+          activeCohorts = Array.from(rosterCohorts.values());
+        }
+      }
+
       function applyStoredCohort(item){
         if (!cohortAPI) return item;
         const override = typeof cohortAPI.getUserCohortLabel === 'function'
@@ -264,10 +294,27 @@
           }));
         });
       }else{
+        sharedRoster.forEach(person => {
+          const role = String(person.role || '').toLowerCase();
+          if (!['student','faculty','faculty-admin'].includes(role)) return;
+          const program = normalizeProgramLabel(person.program || person.programs?.[0]);
+          const school = person.school || person.schools?.[0] || pickSchoolForProgram(program);
+          data.push(applyStoredCohort({
+            name: person.name,
+            email: person.email,
+            program,
+            school,
+            role: person.role,
+            status: 'active',
+            date: '2025-02-15',
+            cohortLabel: person.cohort || '',
+            studentId: person.studentId || person.profile?.studentId || '',
+            sid: person.sid || person.profile?.sid || ''
+          }));
+        });
         demoPeople.forEach(person => {
           const role = String(person.role || '').toLowerCase();
-          if (role === 'cpnw-reviewer' || role === 'healthcare') return;
-          if (!['student','faculty','education'].includes(role)) return;
+          if (role !== 'education') return;
           const program = normalizeProgramLabel(person.programs?.[0]);
           const school = person.schools?.[0] || pickSchoolForProgram(program);
           data.push(applyStoredCohort({
@@ -292,41 +339,14 @@
         }
       }
       if (!isHealthcareView){
-        // Generate active students from the same cohort-based roster used across pages
-        activeCohorts.forEach((c, idx) => {
-          const count = Math.min(12, Math.max(0, Number(c.students) || 0));
-          for (let i = 0; i < count; i++){
-            const studentId = `${idx+1}-${i+1}`;
-            const entry = {
-              name: `Student ${studentId}`,
-              email: `student${idx+1}${i+1}@demo.cpnw.org`,
-              program: c.program || c.programName || 'BSN',
-              school: c.school || pickSchoolForProgram(c.program || c.programName),
-              role: 'student',
-              status: 'active',
-              date: '2025-02-20',
-              cohortLabel: c.cohortLabel,
-              studentId,
-              sid: String(1000 + idx * 50 + i)
-            };
-            const rosterEntry = (window.CPNW && typeof window.CPNW.findRosterEntry === 'function')
-              ? window.CPNW.findRosterEntry({ studentId, sid: entry.sid, email: entry.email })
-              : null;
-            if (rosterEntry){
-              entry.name = rosterEntry.name || entry.name;
-              entry.email = rosterEntry.email || entry.email;
-              entry.sid = rosterEntry.sid || entry.sid;
-            }
-            data.push(applyStoredCohort(entry));
+        data.forEach(item => {
+          if (item.studentId || item.sid) return;
+          const rosterEntry = sharedRoster.find(person => String(person.email || '').toLowerCase() === String(item.email || '').toLowerCase());
+          if (rosterEntry){
+            item.studentId = rosterEntry.studentId || rosterEntry.profile?.studentId || '';
+            item.sid = rosterEntry.sid || rosterEntry.profile?.sid || '';
           }
         });
-        // Requests, inactive samples
-        const cohortLabelsCycle = activeCohorts.map(c => c.cohortLabel);
-        data.push(
-          applyStoredCohort({ name: 'Riley Request', email: 'riley.req@cpnw.org', program: 'Surg Tech', school: pickSchoolForProgram('Surg Tech'), role: 'student', status: 'request-new', date: '2025-02-16', cohortLabel: cohortLabelsCycle[0] || '' }),
-          applyStoredCohort({ name: 'Casey Return', email: 'casey.ret@cpnw.org', program: 'BSN', school: pickSchoolForProgram('BSN'), role: 'faculty', status: 'request-returned', date: '2025-02-12', cohortLabel: cohortLabelsCycle[1] || '' }),
-          applyStoredCohort({ name: 'Taylor Inactive', email: 'taylor.inactive@cpnw.org', program: 'ADN', school: pickSchoolForProgram('ADN'), role: 'student', status: 'inactive', date: '2025-01-20', cohortLabel: cohortLabelsCycle[2] || '' })
-        );
       }
 
       let currentStatus = 'active';

@@ -625,6 +625,14 @@
           return list.map(r => {
             const stored = requirementsStore.getRecord(studentKey, r.label);
             if (stored?.status){
+              const expOverride = stored.meta?.expiration;
+              if (expOverride && r.frequency !== 'Once'
+                && (stored.status === 'Approved' || stored.status === 'Conditionally Approved')){
+                const expDate = new Date(expOverride);
+                if (!Number.isNaN(expDate.getTime())){
+                  return { ...r, status: stored.status, expiration: expDate };
+                }
+              }
               return { ...r, status: stored.status };
             }
             const nextStatus = toStoreStatus(r.status);

@@ -202,40 +202,31 @@
 
       // Build roster
       const roster = [];
-      cohorts.forEach((c, idx) => {
-        const count = Math.min(12, c.students);
-        for (let i = 0; i < count; i++){
-          const studentId = `${idx+1}-${i+1}`;
-          const sid = String(1000 + idx * 50 + i);
-          const email = `student${idx+1}${i+1}@demo.cpnw.org`;
-          let cohortLabel = c.cohortLabel;
-          if (cohortAPI && typeof cohortAPI.getUserCohortLabel === 'function'){
-            const override = cohortAPI.getUserCohortLabel(email);
-            if (override !== null && override !== undefined){
-              cohortLabel = override;
-            }
+      const sharedRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+        ? window.CPNW.getSharedRoster()
+        : [];
+      sharedRoster.forEach(person => {
+        const role = String(person.role || '').toLowerCase();
+        if (!['student','faculty','faculty-admin'].includes(role)) return;
+        const program = person.program || person.programs?.[0] || '';
+        let cohortLabel = person.cohort || '';
+        if (cohortAPI && typeof cohortAPI.getUserCohortLabel === 'function'){
+          const override = cohortAPI.getUserCohortLabel(person.email);
+          if (override !== null && override !== undefined){
+            cohortLabel = override;
           }
-          const record = getRecord(email);
-          const entry = {
-            name: `Student ${studentId}`,
-            email,
-            program: c.program,
-            cohort: cohortLabel,
-            checkr: record.checkr,
-            watch: record.watch,
-            studentId,
-            sid
-          };
-          const rosterEntry = (window.CPNW && typeof window.CPNW.findRosterEntry === 'function')
-            ? window.CPNW.findRosterEntry({ studentId, sid: entry.sid, email: entry.email })
-            : null;
-          if (rosterEntry){
-            entry.name = rosterEntry.name || entry.name;
-            entry.email = rosterEntry.email || entry.email;
-            entry.sid = rosterEntry.sid || entry.sid;
-          }
-          roster.push(entry);
         }
+        const record = getRecord(person.email);
+        roster.push({
+          name: person.name,
+          email: person.email,
+          program,
+          cohort: cohortLabel,
+          checkr: record.checkr,
+          watch: record.watch,
+          studentId: person.studentId || person.profile?.studentId || '',
+          sid: person.sid || person.profile?.sid || ''
+        });
       });
 
       function setInitiateError(message){

@@ -47,7 +47,7 @@
       const programDefs = [
         { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
         { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
-        { id: 'surg', name: 'Surg Tech', base: 8, aySpan: 2 },
+        { id: 'surg', name: 'Surgical Technology', base: 8, aySpan: 2 },
         { id: 'rad', name: 'Radiologic Technology', base: 6, aySpan: 2 },
         { id: 'resp', name: 'Respiratory Care', base: 7, aySpan: 2 },
         { id: 'med', name: 'Medical Assistant', base: 6, aySpan: 2 },
@@ -79,6 +79,10 @@
         return String(value || '').trim().toLowerCase();
       }
 
+      function normalizeEmail(value){
+        return String(value || '').trim().toLowerCase();
+      }
+
       function normalizeSchool(value){
         return String(value || '').trim().toLowerCase();
       }
@@ -105,6 +109,19 @@
         if (name.includes('bsn')) return 'bsn';
         if (name.includes('adn')) return 'adn';
         return name;
+      }
+
+      function cohortKey(label){
+        const raw = String(label || '').trim();
+        if (!raw) return 'unassigned';
+        const lowered = raw.toLowerCase();
+        if (lowered === 'unassigned') return 'unassigned';
+        const match = raw.match(/^(.*?)\s*[–-]\s*(Fall|Winter|Spring|Summer)\s*(\d{4})$/i);
+        if (!match) return normalize(raw);
+        const program = normalizeProgramToken(match[1]);
+        const term = String(match[2] || '').toLowerCase();
+        const year = match[3];
+        return `${program}|${term}|${year}`;
       }
 
       const termAdjust = { Fall: 3, Winter: 1, Spring: 0, Summer: -2 };
@@ -273,7 +290,7 @@
         const reviewPrograms = [
           { id: 'BSN', base: 12, aySpan: 2 },
           { id: 'ADN', base: 10, aySpan: 2 },
-          { id: 'Surg Tech', base: 8, aySpan: 2 },
+          { id: 'Surgical Technology', base: 8, aySpan: 2 },
           { id: 'Radiologic Technology', base: 6, aySpan: 2 },
           { id: 'Respiratory Care', base: 7, aySpan: 2 },
           { id: 'Medical Assistant', base: 6, aySpan: 2 },
@@ -478,6 +495,11 @@
                 }
               }
             }
+            if (storedRecord?.meta?.expiration && frequency !== 'Once'
+              && (status === 'Approved' || status === 'Conditionally Approved')){
+              const expDate = new Date(storedRecord.meta.expiration);
+              if (!Number.isNaN(expDate.getTime())) exp = expDate;
+            }
             const type = !isElearning && isImmunizationRequirement(name) ? 'Immunization' : baseType;
 
             rows.push({
@@ -496,6 +518,11 @@
         return rows;
       }
 
+      function getEducationRequirements(person){
+        return buildReqs('complete', seedFromPerson(person), person.sid, person.email)
+          .filter(r => r.category !== 'Healthcare' && r.type !== 'eLearning');
+      }
+
       function hasExpiringReq(person){
         const rows = buildReqs('complete', seedFromPerson(person), person.sid, person.email)
           .filter(r => r.category === 'CPNW Clinical Passport' || r.category === 'Education');
@@ -509,10 +536,41 @@
       }
 
       function getEducationReviewStatus(person){
-        const rows = buildReqs('complete', seedFromPerson(person), person.sid, person.email)
-          .filter(r => r.category !== 'Healthcare' && r.type !== 'eLearning');
+        const rows = getEducationRequirements(person);
         const needsReview = rows.some(r => r.status === 'Submitted' || r.status === 'In Review');
         return needsReview ? 'needs-review' : '';
+      }
+
+      function isEducationReady(person){
+        const rows = getEducationRequirements(person);
+        if (!rows.length) return false;
+        const allApproved = rows.every(r => r.status === 'Approved' || r.status === 'Conditionally Approved');
+        return allApproved && !hasExpiringReq(person);
+      }
+
+      function buildReadinessMap(selectedProgramIds = [], selectedCohortLabels = []){
+        const cohortSet = new Set(selectedCohortLabels.map(cohortKey));
+        const hasCohortSelections = cohortSet.size > 0;
+        return reviewPeople.reduce((map, person) => {
+          if (programAccessSet.size){
+            const key = `${normalize(person.school)}|${normalizeProgramToken(person.program)}`;
+            if (!programAccessSet.has(key)) return map;
+          }
+          if (selectedProgramIds.length){
+            const programId = programIdFromName(person.program);
+            if (!selectedProgramIds.includes(programId)) return map;
+          }
+          const cohortLabel = (person.cohort || '').trim() || 'Unassigned';
+          const cohortId = cohortKey(cohortLabel);
+          if (hasCohortSelections && !cohortSet.has(cohortId)) return map;
+          const entry = map.get(cohortId) || { students: 0, ready: 0, pending: 0, expiring: 0 };
+          entry.students += 1;
+          if (getEducationReviewStatus(person) === 'needs-review') entry.pending += 1;
+          if (hasExpiringReq(person)) entry.expiring += 1;
+          if (isEducationReady(person)) entry.ready += 1;
+          map.set(cohortId, entry);
+          return map;
+        }, new Map());
       }
 
       const reviewPeople = (() => {
@@ -520,238 +578,140 @@
           ? window.CPNW.getSharedRoster()
           : [];
         const people = baseRoster
-          .filter(person => ['student','faculty'].includes(person.role))
+          .filter(person => ['student','faculty','faculty-admin'].includes(person.role))
           .map(person => ({ ...person }));
-
-        function addPerson(raw){
-          const person = { ...raw };
-          if (cohortAPI){
-            const override = typeof cohortAPI.getUserCohortLabel === 'function'
-              ? cohortAPI.getUserCohortLabel(person.email)
-              : null;
-            if (override !== null && override !== undefined){
-              person.cohort = override;
-            }
-          }
-          people.push(person);
-        }
-
-        addPerson({
-          name: 'Fran Faculty',
-          email: 'fran.faculty@cpnw.org',
-          program: 'BSN',
-          school: 'CPNW Education',
-          cohort: '',
-          sid: 'EID-FF-001',
-          verified: true,
-          status: '',
-          phone: '(555) 010-2000',
-          emergName: '',
-          emergPhone: '',
-          dob: new Date(1988, 5, 12)
-        });
-
-        addPerson({
-          name: 'Faculty Admin (Demo)',
-          email: 'facadmin@cpnw.org',
-          program: 'BSN',
-          school: 'CPNW Education',
-          cohort: '',
-          sid: 'EID-FA-001',
-          verified: true,
-          status: '',
-          phone: '(555) 010-2001',
-          emergName: '',
-          emergPhone: '',
-          dob: new Date(1985, 9, 3)
-        });
 
         return people;
       })();
 
       function buildActiveStudentRoster(){
         const pickSchoolForProgram = createSchoolPicker();
-        const rosterPrograms = [
-          { id: 'bsn', name: 'BSN', base: 12, aySpan: 2 },
-          { id: 'adn', name: 'ADN', base: 10, aySpan: 2 },
-          { id: 'surg', name: 'Surg Tech', base: 8, aySpan: 2 },
-          { id: 'rad', name: 'Radiologic Technology', base: 6, aySpan: 2 },
-          { id: 'resp', name: 'Respiratory Care', base: 7, aySpan: 2 },
-          { id: 'med', name: 'Medical Assistant', base: 6, aySpan: 2 },
-          { id: 'sono', name: 'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
-        ];
-        const cohortSeeds = [];
-        rosterPrograms.forEach(p => {
-          const ayStarts = Array.from({length: p.aySpan}, (_, i) => CURRENT_AY_START - i);
-          ayStarts.forEach(ay => {
-            TERMS.forEach(term => {
-              const year = term === 'Fall' ? ay : ay + 1;
-              const ayStart = deriveAY(term, term === 'Fall' ? ay : ay + 1).ayStart;
-              const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
-              cohortSeeds.push({
-                programName: p.name,
-                term,
-                year,
-                ayStart,
-                students
-              });
-            });
-          });
-        });
-        const seedActiveCohorts = cohortSeeds.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
-        const customCohorts = cohortAPI ? cohortAPI.listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX }) : [];
-        let activeCohorts = seedActiveCohorts
-          .map(c => ({
-            cohortLabel: `${c.programName} – ${c.term} ${c.year}`,
-            program: c.programName,
-            ayStart: c.ayStart,
-            students: c.students,
-            seed: true
-          }))
-          .concat(customCohorts);
-        activeCohorts = activeCohorts.map(c => ({
-          ...c,
-          school: c.school || pickSchoolForProgram(c.program || c.programName)
-        }));
-        if (programAccessSet.size){
-          activeCohorts = activeCohorts.filter(c => {
-            const key = `${normalizeSchool(c.school)}|${normalizeProgramToken(c.program)}`;
-            return programAccessSet.has(key);
-          });
-        }
-
-        function applyStoredCohort(entry){
-          if (!cohortAPI) return entry;
-          const override = typeof cohortAPI.getUserCohortLabel === 'function'
-            ? cohortAPI.getUserCohortLabel(entry.email)
-            : null;
-          if (override === null || override === undefined) return entry;
-          return { ...entry, cohortLabel: override };
-        }
-
+        const sharedRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+          ? window.CPNW.getSharedRoster()
+          : [];
         const list = [];
-        const demoPeople = (window.CPNW && Array.isArray(window.CPNW.demoPeople)) ? window.CPNW.demoPeople : [];
-        demoPeople.forEach(person => {
+        sharedRoster.forEach(person => {
           const role = String(person.role || '').toLowerCase();
           if (role !== 'student') return;
-          const program = (() => {
-            const name = String(person.programs?.[0] || '').toLowerCase();
-            if (name.includes('surg')) return 'Surg Tech';
-            if (name.includes('rad')) return 'Radiologic Technology';
-            if (name.includes('resp')) return 'Respiratory Care';
-            if (name.includes('sonography') || name.includes('sono') || name.includes('dms')) return 'Diagnostic Medical Sonography';
-            if (name.includes('medassistant') || name.includes('medassist')) return 'Medical Assistant';
-            if (name.includes('bsn')) return 'BSN';
-            if (name.includes('adn')) return 'ADN';
-            return person.programs?.[0] || 'BSN';
-          })();
-          const school = person.schools?.[0] || pickSchoolForProgram(program);
-          const entry = applyStoredCohort({
+          const program = person.program || person.programs?.[0] || '';
+          const school = person.school || person.schools?.[0] || pickSchoolForProgram(program);
+          let cohortLabel = person.cohort || '';
+          if (cohortAPI){
+            const override = typeof cohortAPI.getUserCohortLabel === 'function'
+              ? cohortAPI.getUserCohortLabel(person.email)
+              : null;
+            if (override !== null && override !== undefined){
+              cohortLabel = override;
+            }
+          }
+          const entry = {
             name: person.name,
             email: person.email,
             program,
             school,
             role: person.role,
             status: 'active',
-            cohortLabel: person.cohort || ''
-          });
+            cohortLabel
+          };
           if (programAccessSet.size){
             const key = `${normalizeSchool(entry.school)}|${normalizeProgramToken(entry.program)}`;
             if (!programAccessSet.has(key)) return;
           }
           list.push(entry);
         });
-
-        activeCohorts.forEach((c, idx) => {
-          const count = Math.min(12, Math.max(0, Number(c.students) || 0));
-          for (let i = 0; i < count; i++){
-            list.push(applyStoredCohort({
-              name: `Student ${idx+1}-${i+1}`,
-              email: `student${idx+1}${i+1}@demo.cpnw.org`,
-              program: c.program || c.programName || 'BSN',
-              school: c.school || pickSchoolForProgram(c.program || c.programName),
-              role: 'student',
-              status: 'active',
-              cohortLabel: c.cohortLabel
-            }));
-          }
-        });
-
         return list;
       }
 
       function buildAssignmentData(){
-        const pickSchoolForProgram = createSchoolPicker();
         const ASSIGNMENTS_KEY = 'cpnw-assignments-v1';
-        const assignmentPrograms = [
-          { id: 'BSN', base: 12, aySpan: 2 },
-          { id: 'ADN', base: 10, aySpan: 2 },
-          { id: 'Surg Tech', base: 8, aySpan: 2 },
-          { id: 'Radiologic Technology', base: 6, aySpan: 2 },
-          { id: 'Respiratory Care', base: 7, aySpan: 2 },
-          { id: 'Medical Assistant', base: 6, aySpan: 2 },
-          { id: 'Diagnostic Medical Sonography', base: 6, aySpan: 2 }
-        ];
         const locations = ['CPNW Medical Center','CPNW Healthcare Facility','Evergreen Health','Providence NW'];
         const statusPool = ['approved','pending','rejected'];
-        const seedCohorts = [];
-        assignmentPrograms.forEach(p => {
-          Array.from({length: p.aySpan}, (_, i) => CURRENT_AY_START - i).forEach(ay => {
-            TERMS.forEach(term => {
-              const year = term === 'Fall' ? ay : ay + 1;
-              const ayStart = term === 'Fall' ? ay : ay - 1;
-              const students = Math.max(8, p.base + termAdjust[term] + (CURRENT_AY_START - ay));
-              seedCohorts.push({
-                cohortLabel: `${p.id} – ${term} ${year}`,
-                program: p.id,
-                ayStart,
-                students,
-                start: `${term} ${year}`
-              });
-            });
-          });
-        });
-        let assignmentCohorts = seedCohorts.filter(c => c.ayStart >= AY_VISIBLE_MIN && c.ayStart <= AY_VISIBLE_MAX);
-        if (cohortAPI){
-          assignmentCohorts = assignmentCohorts.map(c => {
-            const delta = membershipCounts[cohortAPI.seedKeyForLabel(c.cohortLabel)] || 0;
-            return { ...c, students: c.students + delta };
-          });
-          const custom = cohortAPI.listCustomCohortsLegacy({ ayMin: AY_VISIBLE_MIN, ayMax: AY_VISIBLE_MAX });
-          assignmentCohorts = assignmentCohorts.concat(custom);
-        }
-        if (accessPrograms.length){
-          const allowed = new Set(accessPrograms.map(normalizeProgramLabel));
-          assignmentCohorts = assignmentCohorts.filter(c => allowed.has(normalizeProgramLabel(c.program)));
-        }
-        assignmentCohorts = assignmentCohorts.map(c => ({ ...c, school: c.school || pickSchoolForProgram(c.program) }));
-
+        const pickSchoolForProgram = createSchoolPicker();
+        const sharedRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+          ? window.CPNW.getSharedRoster()
+          : [];
         const students = [];
         const seedAssignments = [];
-        assignmentCohorts.forEach((c, idx) => {
-          const count = Math.min(10, c.students);
-          for (let i = 0; i < count; i++){
-            const studentId = `${idx+1}-${i+1}`;
-            const student = {
-              id: studentId,
-              name: `Student ${studentId}`,
-              sid: String(1000 + idx * 50 + i),
-              email: `student${idx+1}${i+1}@demo.cpnw.org`,
-              role: 'Student',
-              program: c.program,
-              school: c.school,
-              cohort: c.cohortLabel
-            };
-            if (cohortAPI){
-              const override = typeof cohortAPI.getUserCohortLabel === 'function'
-                ? cohortAPI.getUserCohortLabel(student.email)
-                : null;
-              if (override !== null && override !== undefined){
-                student.cohort = override;
-              }
-            }
-            students.push(student);
+        const seenStudents = new Set();
+        const fullRosterById = new Map();
+        const fullRosterBySid = new Map();
+        const fullRosterByEmail = new Map();
+        const studentsById = new Map();
+        const studentsBySid = new Map();
+        const studentsByEmail = new Map();
+        const hasAccessFilter = programAccessSet.size > 0;
 
+        function buildRosterEntry(person){
+          const program = person.program || person.programs?.[0] || '';
+          const rawSchool = person.school || person.schools?.[0] || '';
+          const school = rawSchool || pickSchoolForProgram(program);
+          const id = String(person.studentId || person.sid || person.email || '').trim();
+          const email = String(person.email || '').trim();
+          if (!id && !email) return null;
+          const entry = {
+            id: id || email,
+            name: person.name || 'Student',
+            sid: String(person.sid || ''),
+            email,
+            role: person.role || 'student',
+            program,
+            school,
+            cohort: person.cohort || ''
+          };
+          if (cohortAPI && email){
+            const override = typeof cohortAPI.getUserCohortLabel === 'function'
+              ? cohortAPI.getUserCohortLabel(email)
+              : null;
+            if (override !== null && override !== undefined){
+              entry.cohort = override;
+            }
+          }
+          return entry;
+        }
+
+        function indexRosterEntry(entry){
+          if (!entry) return;
+          if (entry.id && !fullRosterById.has(entry.id)) fullRosterById.set(entry.id, entry);
+          if (entry.sid && !fullRosterBySid.has(entry.sid)) fullRosterBySid.set(entry.sid, entry);
+          if (entry.email){
+            const key = normalizeEmail(entry.email);
+            if (key && !fullRosterByEmail.has(key)) fullRosterByEmail.set(key, entry);
+          }
+        }
+
+        function indexStudent(entry){
+          if (!entry) return;
+          if (entry.id) studentsById.set(String(entry.id), entry);
+          if (entry.sid) studentsBySid.set(String(entry.sid), entry);
+          if (entry.email){
+            const key = normalizeEmail(entry.email);
+            if (key) studentsByEmail.set(key, entry);
+          }
+        }
+
+        sharedRoster.forEach(person => {
+          const roleKey = String(person?.role || '').trim().toLowerCase();
+          if (!['student','faculty','faculty-admin'].includes(roleKey)) return;
+          const entry = buildRosterEntry(person);
+          if (!entry) return;
+          indexRosterEntry(entry);
+          if (hasAccessFilter){
+            const key = `${normalize(entry.school)}|${normalizeProgramToken(entry.program)}`;
+            if (!programAccessSet.has(key)) return;
+          }
+          const dedupeKey = entry.id || entry.email;
+          if (seenStudents.has(dedupeKey)) return;
+          seenStudents.add(dedupeKey);
+          students.push(entry);
+          indexStudent(entry);
+        });
+
+        function seedAssignmentsFromStudents(list){
+          list.forEach(student => {
+            const parts = String(student.id || '').split('-');
+            const idx = Number(parts[0]) - 1;
+            const i = Number(parts[1]) - 1;
+            if (!Number.isFinite(idx) || !Number.isFinite(i)) return;
             const hasCurrentUpcoming = ((idx + i) % 5) !== 0;
             const hasPast = ((idx + i) % 3) !== 0;
 
@@ -761,9 +721,10 @@
               const endPast = new Date(startPast);
               endPast.setDate(endPast.getDate() + 60);
               seedAssignments.push({
-                id: `a-past-${studentId}`,
-                studentId,
+                id: `a-past-${student.id}`,
+                studentId: student.id,
                 studentSid: student.sid,
+                studentEmail: student.email,
                 location: locations[(i + idx) % locations.length],
                 start: startPast,
                 end: endPast,
@@ -777,17 +738,18 @@
               const end = new Date(start);
               end.setDate(end.getDate() + 90);
               seedAssignments.push({
-                id: `a-cur-${studentId}`,
-                studentId,
+                id: `a-cur-${student.id}`,
+                studentId: student.id,
                 studentSid: student.sid,
+                studentEmail: student.email,
                 location: locations[(i + idx + 2) % locations.length],
                 start,
                 end,
                 status: statusPool[(i + idx) % statusPool.length]
               });
             }
-          }
-        });
+          });
+        }
 
         function loadJSON(key, fallback){
           try{
@@ -808,9 +770,72 @@
             return { ...item, start, end };
           }).filter(Boolean);
         }
+        function serializeAssignments(list){
+          return (Array.isArray(list) ? list : []).map(item => ({
+            ...item,
+            start: item.start instanceof Date ? item.start.toISOString() : item.start,
+            end: item.end instanceof Date ? item.end.toISOString() : item.end
+          }));
+        }
+
+        if (students.length){
+          seedAssignmentsFromStudents(students);
+        }
 
         const stored = loadJSON(ASSIGNMENTS_KEY, null);
         const assignments = Array.isArray(stored) ? hydrateAssignments(stored) || [] : seedAssignments;
+        const assignmentNormalizer = window.CPNW && typeof window.CPNW.normalizeAssignments === 'function'
+          ? window.CPNW.normalizeAssignments
+          : null;
+        if (assignmentNormalizer){
+          const normalized = assignmentNormalizer(assignments, sharedRoster, { maxCurrent: 1, maxPast: 1 });
+          if (normalized && Array.isArray(normalized.list)){
+            if (normalized.changed){
+              assignments.length = 0;
+              assignments.push(...normalized.list);
+              try{
+                localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify(serializeAssignments(assignments)));
+              }catch{}
+            }else if (normalized.list !== assignments){
+              assignments.length = 0;
+              assignments.push(...normalized.list);
+            }
+          }
+        }
+
+        function ensureAssignmentRoster(list){
+          if (!Array.isArray(list)) return;
+          list.forEach(item => {
+            if (!item || typeof item !== 'object') return;
+            const idKey = String(item.studentId || '').trim();
+            const sidKey = String(item.studentSid || '').trim();
+            const emailKey = normalizeEmail(item.studentEmail || item.studentEmailAddress || '');
+            let match = null;
+            if (idKey) match = studentsById.get(idKey);
+            if (!match && sidKey) match = studentsBySid.get(sidKey);
+            if (!match && emailKey) match = studentsByEmail.get(emailKey);
+            if (!match){
+              match = fullRosterById.get(idKey)
+                || fullRosterBySid.get(sidKey)
+                || fullRosterByEmail.get(emailKey);
+              if (match){
+                const dedupeKey = match.id || match.email;
+                if (!seenStudents.has(dedupeKey)){
+                  seenStudents.add(dedupeKey);
+                  students.push(match);
+                  indexStudent(match);
+                }
+              }
+            }
+            if (match){
+              item.studentId = match.id;
+              item.studentSid = match.sid;
+              item.studentEmail = match.email;
+            }
+          });
+        }
+
+        ensureAssignmentRoster(assignments);
         return { students, assignments };
       }
 
@@ -819,10 +844,8 @@
 
       function matchesSelectedCohorts(label, selectedLabels){
         if (!selectedLabels.length) return true;
-        if (selectedLabels.includes('Unassigned')){
-          if (!label || !String(label).trim()) return true;
-        }
-        return selectedLabels.includes(label);
+        const selectedKeys = new Set(selectedLabels.map(cohortKey));
+        return selectedKeys.has(cohortKey(label));
       }
 
       function countActiveStudents(selectedProgramIds = [], selectedCohortLabels = []){
@@ -854,7 +877,7 @@
         }).length;
       }
 
-      function countReviewNeeded(selectedProgramIds = []){
+      function countReviewNeeded(selectedProgramIds = [], selectedCohortLabels = []){
         return reviewPeople.filter(person => {
           if (getEducationReviewStatus(person) !== 'needs-review') return false;
           if (programAccessSet.size){
@@ -865,6 +888,7 @@
             const programId = programIdFromName(person.program);
             if (!selectedProgramIds.includes(programId)) return false;
           }
+          if (!matchesSelectedCohorts(person.cohort, selectedCohortLabels)) return false;
           return true;
         }).length;
       }
@@ -1090,6 +1114,7 @@
         const selectedPrograms = getSelectedPrograms();
         const selectedProgramIds = selectedPrograms.map(p => p.id);
         const selectedCohortLabels = getSelectedCohortLabels();
+        const cohortFilterLabels = cohortSelectionMode === 'manual' ? selectedCohortLabels : [];
         const totalPrograms = selectedPrograms.length || programs.length;
         const currentSearch = cohortSearch ? cohortSearch.value : '';
         const showArchived = cohortShowArchived ? cohortShowArchived.checked : false;
@@ -1110,10 +1135,10 @@
           acc.expiringStudents += c.expiringStudents;
           return acc;
         }, {students:0, approved:0, pending:0, expiringStudents:0});
-        const reviewNeeded = countReviewNeeded(selectedProgramIds);
-        const activeStudents = countActiveStudents(selectedProgramIds, selectedCohortLabels);
-        const approvedAssignments = countApprovedAssignments(selectedProgramIds, selectedCohortLabels);
-        const expiringStudents = countExpiringStudents(selectedProgramIds, selectedCohortLabels);
+        const reviewNeeded = countReviewNeeded(selectedProgramIds, cohortFilterLabels);
+        const activeStudents = countActiveStudents(selectedProgramIds, cohortFilterLabels);
+        const approvedAssignments = countApprovedAssignments(selectedProgramIds, cohortFilterLabels);
+        const expiringStudents = countExpiringStudents(selectedProgramIds, cohortFilterLabels);
 
         metricApproved.textContent = approvedAssignments;
         metricApprovedNote.textContent = '';
@@ -1132,8 +1157,9 @@
         }
 
         const listForCard = showArchived ? visibleCohorts : cohortsForTotals;
+        const readinessMap = buildReadinessMap(selectedProgramIds, selectedCohortLabels);
         renderCohorts(listForCard);
-        renderReadiness(cohortsForTotals);
+        renderReadiness(cohortsForTotals, readinessMap);
       }
 
       function renderCohorts(items){
@@ -1179,17 +1205,18 @@
         });
       }
 
-      function renderReadiness(list){
+      function renderReadiness(list, readinessMap){
         if (!readinessTableBody) return;
         readinessTableBody.innerHTML = '';
         const rows = (list || []).map(c => {
+          const stats = readinessMap?.get(cohortKey(c.label)) || { students: 0, ready: 0, pending: 0, expiring: 0 };
           return `
             <tr>
               <td class="fw-semibold">${c.label}</td>
-              <td>${c.students}</td>
-              <td><span class="text-success fw-semibold">${c.approvedAssignments}</span></td>
-              <td>${c.requirementsReview}</td>
-              <td>${c.expiringStudents}</td>
+              <td>${stats.students}</td>
+              <td><span class="text-success fw-semibold">${stats.ready}</span></td>
+              <td>${stats.pending}</td>
+              <td>${stats.expiring}</td>
             </tr>
           `;
         }).join('');

@@ -1478,10 +1478,15 @@
       const baseDate = decisionAt instanceof Date && !Number.isNaN(decisionAt.getTime())
         ? decisionAt
         : (submittedAt instanceof Date && !Number.isNaN(submittedAt.getTime()) ? submittedAt : null);
-      const expiration = (status === 'Approved' || status === 'Conditionally Approved') && baseDate
+      const meta = REQUIREMENT_META[req] || { type: 'Forms', frequency: 'Annual' };
+      let expiration = (status === 'Approved' || status === 'Conditionally Approved') && baseDate
         ? new Date(baseDate.getTime() + 365 * DAYS)
         : null;
-      const meta = REQUIREMENT_META[req] || { type: 'Forms', frequency: 'Annual' };
+      if (storedRecord?.meta?.expiration && meta.frequency !== 'Once'
+        && (status === 'Approved' || status === 'Conditionally Approved')){
+        const expDate = new Date(storedRecord.meta.expiration);
+        if (!Number.isNaN(expDate.getTime())) expiration = expDate;
+      }
       const instructionsHTML = buildRequirementInstructions(req);
       const reviewer = (status === 'Approved' || status === 'Conditionally Approved' || status === 'Rejected') ? 'CPNW Reviewer' : '—';
       return {

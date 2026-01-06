@@ -15,6 +15,7 @@
         }
       })();
       const canDeleteDocs = !!currentUser?.permissions?.canDelete;
+      const requirementsStore = (window.CPNW && window.CPNW.requirementsStore) ? window.CPNW.requirementsStore : null;
       const currentPrograms = Array.isArray(currentUser?.programs)
         ? currentUser.programs
         : currentUser?.programs ? [currentUser.programs] : [];
@@ -232,131 +233,35 @@
 	        }
 	        return user;
 	      }
-	      function computeComplianceStatus(user){
-	        const req = user.reqs || {};
-	        const hasExpiring = ['cpnw','ed','hc'].some(k => String(req[k] || '').toLowerCase() === 'expiring');
-	        if (hasExpiring) return 'expiring';
-	        const hasIncomplete = ['cpnw','ed','hc'].some(k => String(req[k] || '').toLowerCase() === 'incomplete');
-	        if (hasIncomplete) return 'incomplete';
-	        return 'complete';
-	      }
-	      cohorts.forEach((c, idx) => {
-	        const base = Math.min(12, c.students);
-	        for (let i=0; i<base; i++){
-	          const expiresInDays = (i % 9 === 0) ? (7 + (idx % 24)) : (i % 11 === 0) ? (14 + (idx % 16)) : (i % 13 === 0) ? (22 + (idx % 8)) : null;
-	          const expDate = expiresInDays ? asISODate(addDays(expiresInDays)) : '';
-	          // OIG/SAM are run bi-monthly (1st/15th). Newer students may be blank; most results are Pass.
-	          let oig = 'pass';
-	          let sam = 'pass';
-	          const screenSeed = (idx * 97 + i * 131) % 1000; // stable demo distribution
-	          if (screenSeed < 80){
-	            oig = '';
-	            sam = '';
-	          }else if (screenSeed === 999){
-	            oig = 'fail';
-	            sam = 'pass';
-	          }
-          const studentId = `${idx+1}-${i+1}`;
-          const person = {
-            name: `Student ${studentId}`,
-            email: `student${idx+1}${i+1}@demo.cpnw.org`,
-            program: c.program,
-            school: c.school,
-            cohort: c.cohortLabel,
-            role: 'student',
-            studentId,
-            sid: String(1000 + idx * 50 + i),
-	            reqs: {
-	              cpnw: (i % 3) ? 'complete' : 'incomplete',
-	              ed: (i % 4) ? 'complete' : 'incomplete',
-	              hc: (i % 5) ? 'complete' : 'incomplete',
-	              oig,
-	              sam
-	            },
-	            reqMeta: {
-	              expiringAt: expDate,
-	              expiringDays: expiresInDays
-	            },
-	            docs: Math.max(1, (i % 4)),
-	            docItems: [
-	              { file:'Immunization.pdf', req:'Immunization', date:'2025-02-10' },
-	              { file:'BLS.pdf', req:'BLS', date:'2025-02-08' }
-	            ]
-	          };
-	          const rosterEntry = (window.CPNW && typeof window.CPNW.findRosterEntry === 'function')
-	            ? window.CPNW.findRosterEntry({ studentId, sid: person.sid, email: person.email })
-	            : null;
-	          if (rosterEntry){
-	            person.name = rosterEntry.name || person.name;
-	            person.email = rosterEntry.email || person.email;
-	            person.sid = rosterEntry.sid || person.sid;
-	          }
-	          // Add some realistic "Expiring" records (expiring within 30 days).
-	          if (expiresInDays && expiresInDays <= 30){
-	            if (i % 9 === 0) person.reqs.cpnw = 'expiring';
-	            else if (i % 11 === 0) person.reqs.ed = 'expiring';
-	            else if (i % 13 === 0) person.reqs.hc = 'expiring';
-	          }
-	          person.status = computeComplianceStatus(person);
-	          users.push(applyCohortOverride(person));
-	        }
-	        // Add a few faculty and faculty-admin tied to this program
-        users.push(applyCohortOverride({
-          name: `Faculty ${c.program} ${idx+1}`,
-          email: `faculty${idx+1}@demo.cpnw.org`,
-          program: c.program,
-          school: c.school,
-          cohort: c.cohortLabel,
-          role: 'faculty',
-	          reqs: {
-	            cpnw: 'complete',
-	            ed: 'complete',
-	            hc: 'complete',
-	            oig: 'pass',
-	            sam: 'pass'
-	          },
-	          docs: 1,
-	          docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
-	        }));
-        users.push(applyCohortOverride({
-          name: `Faculty Admin ${c.program} ${idx+1}`,
-          email: `facadmin${idx+1}@demo.cpnw.org`,
-          program: c.program,
-          school: c.school,
-          cohort: c.cohortLabel,
-          role: 'faculty-admin',
-	          reqs: {
-	            cpnw: 'complete',
-	            ed: 'complete',
-	            hc: 'complete',
-	            oig: (idx % 2) ? 'pass' : 'fail',
-	            sam: (idx % 3) ? 'pass' : 'fail'
-	          },
-	          docs: 1,
-	          docItems: [{ file:'AdminAccess.pdf', req:'Admin Approval', date:'2025-02-11' }]
-	        }));
-	      });
-	      // Ensure any non-student rows still get a computed compliance status.
-	      users.forEach(u => { u.status = u.status || computeComplianceStatus(u); });
-      users.push(applyCohortOverride({
-        name: 'Fran Faculty',
-        email: 'fran.faculty@cpnw.org',
-        program: 'BSN',
-        school: pickSchoolForProgram('BSN'),
-        cohort: '',
-        role: 'faculty',
-	        reqs: {
-	          cpnw: 'complete',
-	          ed: 'complete',
-	          hc: 'complete',
-          oig: 'pass',
-          sam: 'pass'
-        },
-        docs: 1,
-        docItems: [{ file:'FacultyCert.pdf', req:'Faculty Credential', date:'2025-02-12' }]
-      }));
+      function computeComplianceStatus(user){
+        const req = user.reqs || {};
+        const hasExpiring = ['cpnw','ed','hc'].some(k => String(req[k] || '').toLowerCase() === 'expiring');
+        if (hasExpiring) return 'expiring';
+        const hasIncomplete = ['cpnw','ed','hc'].some(k => String(req[k] || '').toLowerCase() === 'incomplete');
+        if (hasIncomplete) return 'incomplete';
+        return 'complete';
+      }
+      const AUTO_COMPLETE_REQS = { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' };
 
-      const demoPeople = (window.CPNW && Array.isArray(window.CPNW.demoPeople)) ? window.CPNW.demoPeople : [];
+      function isAutoCompleteUser(user){
+        if (!requirementsStore?.isAutoApprovedStudent) return false;
+        return requirementsStore.isAutoApprovedStudent({
+          email: user.email,
+          sid: user.sid,
+          studentId: user.studentId
+        });
+      }
+
+      function applyAutoApprovedStatus(user){
+        if (!isAutoCompleteUser(user)) return user;
+        user.reqs = { ...(user.reqs || {}), ...AUTO_COMPLETE_REQS };
+        user.status = 'complete';
+        if (user.reqMeta){
+          user.reqMeta.expiringAt = '';
+          user.reqMeta.expiringDays = null;
+        }
+        return user;
+      }
       function normalizeProgramDisplay(label){
         const name = String(label || '').toLowerCase();
         if (name.includes('surg')) return 'Surg Tech';
@@ -368,12 +273,15 @@
         if (name.includes('adn')) return 'ADN';
         return label || 'BSN';
       }
-      demoPeople.forEach(person => {
-        if (!['student', 'faculty'].includes(person.role)) return;
-        const exists = users.some(u => u.email.toLowerCase() === person.email.toLowerCase());
-        if (exists) return;
-        const program = normalizeProgramDisplay(person.programs?.[0]);
-        const school = person.schools?.[0] || pickSchoolForProgram(program);
+
+      const sharedRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+        ? window.CPNW.getSharedRoster()
+        : [];
+      sharedRoster.forEach(person => {
+        const role = String(person.role || '').toLowerCase();
+        if (!['student','faculty','faculty-admin'].includes(role)) return;
+        const program = normalizeProgramDisplay(person.program || person.programs?.[0]);
+        const school = person.school || person.schools?.[0] || pickSchoolForProgram(program);
         const record = applyCohortOverride({
           name: person.name,
           email: person.email,
@@ -381,6 +289,8 @@
           school,
           cohort: person.cohort || '',
           role: person.role,
+          studentId: person.studentId || person.profile?.studentId || '',
+          sid: person.sid || person.profile?.sid || '',
           reqs: person.reqs || { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
           docs: person.docItems ? person.docItems.length : 0,
           docItems: person.docItems || []
@@ -388,6 +298,21 @@
         record.status = computeComplianceStatus(record);
         users.push(record);
       });
+      users.forEach(applyAutoApprovedStatus);
+
+      const cohortMap = new Map();
+      users.forEach(user => {
+        const label = (user.cohort || '').trim();
+        if (!label) return;
+        const key = label.toLowerCase();
+        if (cohortMap.has(key)) return;
+        cohortMap.set(key, {
+          cohortLabel: label,
+          program: user.program,
+          school: user.school
+        });
+      });
+      cohorts = Array.from(cohortMap.values());
 
       if (programAccessSet.size && !isHealthcareView){
         for (let i = users.length - 1; i >= 0; i--){

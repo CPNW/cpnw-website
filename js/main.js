@@ -1496,6 +1496,34 @@ const cpnwDemoPeople = [
     }
   },
   {
+    email: 'amelia.lovelace@cpnw.org',
+    name: 'Amelia Lovelace',
+    role: 'student',
+    permissions: { canCoordinate: false, canDelete: false },
+    schools: ['CPNW Education'],
+    programs: ['RadTech'],
+    cohort: 'Radiologic Technology – Winter 2026',
+    sid: 'SID-2027',
+    studentId: 'CPNW-2027',
+    reqs: { cpnw: 'complete', ed: 'complete', hc: 'complete', oig: 'pass', sam: 'pass' },
+    docItems: [{ file: 'Immunization.pdf', req: 'Immunization', date: '2025-02-12' }],
+    profile: {
+      firstName: 'Amelia',
+      lastName: 'Lovelace',
+      emailUsername: 'amelia.lovelace@cpnw.org',
+      altEmail: 'amelia@cpnw.org',
+      primaryPhone: '(360) 555-0172',
+      school: 'CPNW Education',
+      program: 'RadTech',
+      emergencyName: 'Ava Lovelace',
+      emergencyPhone: '(360) 555-0187',
+      address: '1220 Pacific Ave',
+      city: 'Tacoma',
+      state: 'WA',
+      zip: '98402'
+    }
+  },
+  {
     email: 'student.surgtech.uni@cpnw.org',
     name: 'Riley Student',
     role: 'student',
@@ -1919,6 +1947,11 @@ window.CPNW.buildSharedRoster = function(){
   const demoPeople = Array.isArray(cpnwDemoPeople) ? cpnwDemoPeople : [];
   const roster = [];
   const seen = new Set();
+  const TARGET_ROSTER_SIZE = 212;
+  const TARGET_FACULTY = 2;
+  const TARGET_FACADMIN = 2;
+  const MAX_STUDENTS = Math.max(0, TARGET_ROSTER_SIZE - TARGET_FACULTY - TARGET_FACADMIN);
+  const roleCounts = { student: 0, faculty: 0, 'faculty-admin': 0 };
 
   const FIRST_NAMES = [
     'Ada','Alan','Grace','Katherine','Marie','Louis','Florence','Gregor','Rosalind','Nikola',
@@ -1956,15 +1989,23 @@ window.CPNW.buildSharedRoster = function(){
   }
 
   function addPerson(person){
+    const roleKey = String(person.role || '').toLowerCase();
     const key = `${String(person.email || '').toLowerCase()}|${String(person.sid || '').toLowerCase()}`;
     if (seen.has(key)) return;
+    if (roleKey === 'student' && roleCounts.student >= MAX_STUDENTS) return;
     seen.add(key);
     const uniqueName = uniqueRosterName(person.name);
     roster.push({ ...person, name: uniqueName });
+    if (Object.prototype.hasOwnProperty.call(roleCounts, roleKey)){
+      roleCounts[roleKey] += 1;
+    }
   }
 
   demoPeople.forEach((person) => {
-    if (!['student','faculty','faculty-admin'].includes(person.role)) return;
+    const role = String(person.role || '').toLowerCase();
+    if (!['student','faculty','faculty-admin'].includes(role)) return;
+    if (role === 'faculty' && roleCounts.faculty >= TARGET_FACULTY) return;
+    if (role === 'faculty-admin' && roleCounts['faculty-admin'] >= TARGET_FACADMIN) return;
     const sidSeed = stringSeed(person.email || person.name || '');
     const sid = person.sid || person.profile?.sid || `SID-${9000 + (sidSeed % 1000)}`;
     const studentId = person.studentId || person.profile?.studentId || `demo-${sidSeed % 9000}`;
@@ -2046,9 +2087,49 @@ window.CPNW.buildSharedRoster = function(){
     cohorts = cohorts.concat(custom);
   }
 
+  function cohortForProgram(programId){
+    const token = String(programId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return cohorts.find(c => String(c.program || '').toLowerCase().replace(/[^a-z0-9]/g, '') === token) || null;
+  }
+
+  function addSyntheticStaff(role, index){
+    const seed = stringSeed(`${role}-${index}-${CURRENT_AY_START}`);
+    const baseName = nameFromSeed(seed);
+    const isAdmin = role === 'faculty-admin';
+    const label = isAdmin ? 'Faculty Admin' : 'Faculty';
+    const programDef = programDefs[index % programDefs.length];
+    const program = programDef?.id || 'BSN';
+    const cohortMatch = cohortForProgram(program);
+    const school = programDef?.school || cohortMatch?.school || 'CPNW Education';
+    const cohort = cohortMatch?.cohortLabel || '';
+    addPerson({
+      name: `${baseName} ${label}`,
+      email: `${isAdmin ? 'facadmin' : 'faculty'}.demo${index + 1}@cpnw.org`,
+      role,
+      permissions: { canCoordinate: isAdmin, canDelete: isAdmin },
+      schools: [school],
+      programs: [program],
+      program,
+      school,
+      cohort,
+      sid: `SID-${8000 + (seed % 1000)}`,
+      studentId: `demo-${7000 + (seed % 1000)}`
+    });
+  }
+
+  for (let i = roleCounts.faculty; i < TARGET_FACULTY; i++){
+    addSyntheticStaff('faculty', i);
+  }
+  for (let i = roleCounts['faculty-admin']; i < TARGET_FACADMIN; i++){
+    addSyntheticStaff('faculty-admin', i);
+  }
+
+  const targetStudents = Math.max(0, TARGET_ROSTER_SIZE - roleCounts.faculty - roleCounts['faculty-admin']);
+
   cohorts.forEach((c, idx) => {
     const count = Math.min(10, c.students);
     for (let i = 0; i < count; i++){
+      if (roleCounts.student >= targetStudents) return;
       const studentId = `${idx + 1}-${i + 1}`;
       const sid = String(1000 + idx * 50 + i);
       const seed = stringSeed(`${studentId}|${c.cohortLabel}|${sid}`);
@@ -2104,6 +2185,101 @@ window.CPNW.findRosterEntry = function({ email, sid, studentId } = {}){
   }) || null;
 };
 
+window.CPNW.normalizeAssignments = function(assignments, roster, opts = {}){
+  const list = Array.isArray(assignments) ? assignments.filter(item => item && typeof item === 'object') : [];
+  const rosterList = Array.isArray(roster)
+    ? roster
+    : (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
+      ? window.CPNW.getSharedRoster()
+      : [];
+  const byId = new Map();
+  const bySid = new Map();
+  const byEmail = new Map();
+  rosterList.forEach(person => {
+    const id = String(person.studentId || '').trim();
+    const sid = String(person.sid || '').trim();
+    const email = String(person.email || '').trim().toLowerCase();
+    if (id) byId.set(id, person);
+    if (sid) bySid.set(sid, person);
+    if (email) byEmail.set(email, person);
+  });
+  const today = opts.today instanceof Date ? opts.today : new Date();
+  const maxCurrent = Number.isFinite(opts.maxCurrent) ? opts.maxCurrent : 1;
+  const maxPast = Number.isFinite(opts.maxPast) ? opts.maxPast : 1;
+  const grouped = new Map();
+  let changed = false;
+
+  function normalizeEmail(value){
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function toDate(value){
+    if (value instanceof Date) return value;
+    if (!value) return null;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  list.forEach((assignment) => {
+    const studentId = String(assignment.studentId || '').trim();
+    const studentSid = String(assignment.studentSid || '').trim();
+    const studentEmail = normalizeEmail(assignment.studentEmail || assignment.studentEmailAddress || '');
+    let match = null;
+    if (studentId && byId.has(studentId)) match = byId.get(studentId);
+    if (!match && studentSid && bySid.has(studentSid)) match = bySid.get(studentSid);
+    if (!match && studentEmail && byEmail.has(studentEmail)) match = byEmail.get(studentEmail);
+    if (!match){
+      changed = true;
+      return;
+    }
+    const key = String(match.studentId || match.sid || match.email || studentId || studentSid || studentEmail);
+    if (!key){
+      changed = true;
+      return;
+    }
+    const start = toDate(assignment.start);
+    const end = toDate(assignment.end);
+    const normalized = {
+      ...assignment,
+      studentId: match.studentId || assignment.studentId || '',
+      studentSid: match.sid || assignment.studentSid || '',
+      studentEmail: match.email || assignment.studentEmail || assignment.studentEmailAddress || ''
+    };
+    if (normalized.studentId !== assignment.studentId
+      || normalized.studentSid !== assignment.studentSid
+      || normalizeEmail(normalized.studentEmail) !== studentEmail){
+      changed = true;
+    }
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push({ assignment: normalized, start, end });
+  });
+
+  const result = [];
+  const todayTime = today.getTime();
+  grouped.forEach((items) => {
+    const current = items.filter(item => {
+      if (item.end) return item.end.getTime() >= todayTime;
+      return true;
+    });
+    const past = items.filter(item => item.end && item.end.getTime() < todayTime);
+
+    const sortTime = (item, fallback) => {
+      if (item.start) return item.start.getTime();
+      if (item.end) return item.end.getTime();
+      return fallback;
+    };
+
+    current.sort((a, b) => sortTime(a, todayTime) - sortTime(b, todayTime));
+    past.sort((a, b) => sortTime(b, 0) - sortTime(a, 0));
+
+    current.slice(0, maxCurrent).forEach(item => result.push(item.assignment));
+    past.slice(0, maxPast).forEach(item => result.push(item.assignment));
+  });
+
+  if (result.length !== list.length) changed = true;
+  return { list: result, changed };
+};
+
 window.CPNW.reviewerRoster = window.CPNW.getSharedRoster();
 
 window.CPNW.requirementsStore = (() => {
@@ -2146,6 +2322,10 @@ window.CPNW.requirementsStore = (() => {
     'facadmin.sono.edu@cpnw.org'
   ];
   const AUTO_APPROVED_KEYS = new Set();
+  const SPECIAL_APPROVAL_EXPIRATION = '2027-01-05';
+  const SPECIAL_APPROVAL_KEYS = new Set();
+  const AUTO_COMPLETE_MOD = 2;
+  const AUTO_COMPLETE_ROLES = new Set(['student','faculty','faculty-admin']);
 
   function stringSeed(value){
     return Array.from(String(value || '')).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
@@ -2153,6 +2333,15 @@ window.CPNW.requirementsStore = (() => {
 
   function normalizeKey(value){
     return String(value || '').trim().toLowerCase();
+  }
+
+  function registerSpecialApproval(identifier){
+    const normalized = normalizeKey(identifier);
+    if (normalized) SPECIAL_APPROVAL_KEYS.add(normalized);
+    if (String(identifier || '').includes('@') && window.CPNW?.findRosterEntry){
+      const rosterEntry = window.CPNW.findRosterEntry({ email: identifier });
+      if (rosterEntry?.sid) SPECIAL_APPROVAL_KEYS.add(normalizeKey(rosterEntry.sid));
+    }
   }
 
   function registerAutoApproved(email){
@@ -2163,6 +2352,48 @@ window.CPNW.requirementsStore = (() => {
   }
 
   AUTO_APPROVED_EMAILS.forEach(registerAutoApproved);
+  registerSpecialApproval('amelia.lovelace@cpnw.org');
+
+  function lookupRosterRole(studentKey){
+    if (!window.CPNW?.findRosterEntry) return '';
+    const rosterEntry = window.CPNW.findRosterEntry({
+      sid: studentKey,
+      email: studentKey,
+      studentId: studentKey
+    });
+    return rosterEntry?.role || '';
+  }
+
+  function isAutoCompleteKey(studentKey){
+    const normalized = normalizeKey(studentKey);
+    if (!normalized) return false;
+    if (SPECIAL_APPROVAL_KEYS.has(normalized)) return true;
+    if (AUTO_APPROVED_KEYS.has(normalized)) return true;
+    const role = lookupRosterRole(normalized);
+    if (!role || !AUTO_COMPLETE_ROLES.has(String(role).toLowerCase())) return false;
+    return stringSeed(normalized) % AUTO_COMPLETE_MOD === 0;
+  }
+
+  function getForcedOverrideRecord(studentKey){
+    const normalized = normalizeKey(studentKey);
+    if (!normalized || !SPECIAL_APPROVAL_KEYS.has(normalized)) return null;
+    return {
+      status: 'Approved',
+      source: 'override',
+      updatedAt: `${SPECIAL_APPROVAL_EXPIRATION}T00:00:00.000Z`,
+      meta: { expiration: SPECIAL_APPROVAL_EXPIRATION }
+    };
+  }
+
+  function getAutoCompleteRecord(studentKey){
+    if (!isAutoCompleteKey(studentKey)) return null;
+    return {
+      status: 'Approved',
+      source: 'seed',
+      updatedAt: `${SPECIAL_APPROVAL_EXPIRATION}T00:00:00.000Z`,
+      meta: { expiration: SPECIAL_APPROVAL_EXPIRATION }
+    };
+  }
 
   function loadStore(){
     try{
@@ -2227,9 +2458,16 @@ window.CPNW.requirementsStore = (() => {
   }
 
   function getRecord(studentKey, reqName){
+    if (!studentKey || !reqName) return null;
+    const forced = getForcedOverrideRecord(studentKey);
+    if (forced) return forced;
     const key = recordKey(studentKey, reqName);
     const store = getStore();
-    return store[key] || null;
+    const stored = store[key] || null;
+    if (stored && stored.source && stored.source !== 'seed') return stored;
+    const autoRecord = getAutoCompleteRecord(studentKey);
+    if (autoRecord) return autoRecord;
+    return stored;
   }
 
   function setRecord(studentKey, reqName, record){
@@ -2246,6 +2484,12 @@ window.CPNW.requirementsStore = (() => {
     const stored = getRecord(studentKey, reqName);
     if (stored?.status) return stored.status;
     return seededStatus(studentKey, reqName, opts);
+  }
+
+  function isAutoApprovedStudent(studentInput){
+    const studentKey = resolveStudentKey(studentInput);
+    if (!studentKey) return false;
+    return isAutoCompleteKey(studentKey);
   }
 
   function setStatus(studentInput, reqName, status, meta = {}){
@@ -2284,7 +2528,8 @@ window.CPNW.requirementsStore = (() => {
     getStatus,
     setStatus,
     setSubmission,
-    setDecision
+    setDecision,
+    isAutoApprovedStudent
   };
 })();
 

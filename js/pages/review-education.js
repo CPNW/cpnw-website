@@ -346,50 +346,6 @@
         .filter(person => ['student','faculty','faculty-admin'].includes(person.role))
         .map(person => ({ ...person }));
 
-      // Include faculty + faculty-admin accounts (education-role users are intentionally excluded from this table)
-      function addPerson(raw){
-        const person = { ...raw };
-        if (cohortAPI){
-          const override = typeof cohortAPI.getUserCohortLabel === 'function'
-            ? cohortAPI.getUserCohortLabel(person.email)
-            : null;
-          if (override !== null && override !== undefined){
-            person.cohort = override;
-          }
-        }
-        people.push(person);
-      }
-
-      addPerson({
-        name: 'Fran Faculty',
-        email: 'fran.faculty@cpnw.org',
-        program: 'BSN',
-        school: 'CPNW Education',
-        cohort: '',
-        sid: 'EID-FF-001',
-        verified: true,
-        status: '',
-        phone: '(555) 010-2000',
-        emergName: '',
-        emergPhone: '',
-        dob: new Date(1988, 5, 12)
-      });
-
-      addPerson({
-        name: 'Faculty Admin (Demo)',
-        email: 'facadmin@cpnw.org',
-        program: 'BSN',
-        school: 'CPNW Education',
-        cohort: '',
-        sid: 'EID-FA-001',
-        verified: true,
-        status: '',
-        phone: '(555) 010-2001',
-        emergName: '',
-        emergPhone: '',
-        dob: new Date(1985, 9, 3)
-      });
-
       const storedAssignments = loadAssignments();
       const assignments = storedAssignments || seedAssignmentsFromPeople(people);
       if (!storedAssignments){
@@ -1357,6 +1313,11 @@
                 }
               }
             }
+            if (storedRecord?.meta?.expiration && frequency !== 'Once'
+              && (status === 'Approved' || status === 'Conditionally Approved')){
+              const expDate = new Date(storedRecord.meta.expiration);
+              if (!Number.isNaN(expDate.getTime())) exp = expDate;
+            }
             const type = !isElearning && isImmunizationRequirement(name) ? 'Immunization' : baseType;
 
             rows.push({
@@ -1567,13 +1528,25 @@
         renderReviews();
       });
 
-      // initialize status buttons (set "All" active)
-      statusChipButtons.forEach(btn=>{
-        if (btn.dataset.statusChip === 'all'){
-          btn.classList.remove('btn-outline-secondary');
-          btn.classList.add('btn-cpnw','btn-cpnw-primary');
+      function setStatusChipActive(nextStatus){
+        statusChipButtons.forEach(b=>{
+          b.classList.remove('btn-cpnw','btn-cpnw-primary');
+          b.classList.add('btn-outline-secondary');
+        });
+        const target = Array.from(statusChipButtons).find(b => b.dataset.statusChip === nextStatus);
+        if (target){
+          target.classList.remove('btn-outline-secondary');
+          target.classList.add('btn-cpnw','btn-cpnw-primary');
+          currentStatusChip = nextStatus;
         }
-      });
+      }
+
+      const statusParam = new URLSearchParams(window.location.search).get('status');
+      if (statusParam && ['all','needs-review','expiring'].includes(statusParam)){
+        setStatusChipActive(statusParam);
+      }else{
+        setStatusChipActive('all');
+      }
 
       sortButtons.forEach(btn=>{
         btn.addEventListener('click', ()=>{

@@ -51,7 +51,6 @@
             userType: 'Student',
             status: 'Active',
             createdAt: withOffset(180),
-            retiredAt: '',
             instructionsHTML: '<p>Review the parking map before your first day at the site.</p>',
             linkedFiles: [{ name: 'ParkingMap.pdf', url: '#' }]
           },
@@ -65,7 +64,6 @@
             userType: 'Student',
             status: 'Active',
             createdAt: withOffset(120),
-            retiredAt: '',
             instructionsHTML: '<p>Upload proof of current liability insurance.</p>',
             linkedFiles: []
           },
@@ -79,7 +77,6 @@
             userType: 'Student',
             status: 'Active',
             createdAt: withOffset(90),
-            retiredAt: '',
             instructionsHTML: '<p>Upload a color copy of your current driver’s license.</p>',
             linkedFiles: []
           }
@@ -98,7 +95,6 @@
         const norm = String(status || '').toLowerCase();
         if (norm === 'active') return '<span class="badge text-bg-success">Active</span>';
         if (norm === 'inactive') return '<span class="badge text-bg-secondary">Inactive</span>';
-        if (norm === 'retired') return '<span class="badge text-bg-secondary">Retired</span>';
         return `<span class="badge text-bg-secondary">${status || '—'}</span>`;
       }
 
@@ -117,7 +113,7 @@
       }
 
       function normalizeSortVal(field, item){
-        if (field === 'createdAt' || field === 'retiredAt'){
+        if (field === 'createdAt'){
           return item[field] ? new Date(item[field]).getTime() : 0;
         }
         return String(item[field] ?? '').toLowerCase();
@@ -154,7 +150,7 @@
         tableBody.innerHTML = '';
         if (!items.length){
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td colspan="10" class="text-body-secondary small py-4">No requirements found.</td>`;
+          tr.innerHTML = `<td colspan="9" class="text-body-secondary small py-4">No requirements found.</td>`;
           tableBody.appendChild(tr);
         }else{
           items.forEach(r => {
@@ -169,7 +165,6 @@
               <td class="d-none d-xl-table-cell">${Array.isArray(r.requiredBy) ? r.requiredBy.join(', ') : (r.requiredBy || '—')}</td>
               <td class="d-none d-xl-table-cell">${Array.isArray(r.userType) ? r.userType.join(', ') : (r.userType || '—')}</td>
               <td class="text-nowrap">${prettyDate(r.createdAt)}</td>
-              <td class="text-nowrap d-none d-lg-table-cell">${prettyDate(r.retiredAt)}</td>
               <td class="text-nowrap">${statusBadge(r.status)}</td>
               <td class="text-end">
                 <a class="btn btn-cpnw btn-cpnw-primary btn-sm" href="requirement-builder-healthcare.html?id=${encodeURIComponent(r.id)}">Edit</a>
