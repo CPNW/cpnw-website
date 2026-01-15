@@ -1595,17 +1595,25 @@
         }
       }
 
-      statusChipButtons.forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          statusChipButtons.forEach(b=>{
-            b.classList.remove('btn-cpnw','btn-cpnw-primary');
-            b.classList.add('btn-outline-secondary');
-          });
+      function applyStatusChip(chip){
+        statusChipButtons.forEach(b=>{
+          b.classList.remove('btn-cpnw','btn-cpnw-primary');
+          b.classList.add('btn-outline-secondary');
+        });
+        const next = String(chip || 'all');
+        statusChipButtons.forEach(btn=>{
+          if (btn.dataset.statusChip !== next) return;
           btn.classList.remove('btn-outline-secondary');
           btn.classList.add('btn-cpnw','btn-cpnw-primary');
-          currentStatusChip = btn.dataset.statusChip;
-          reviewPage = 1;
-          renderReviews();
+        });
+        currentStatusChip = next;
+        reviewPage = 1;
+        renderReviews();
+      }
+
+      statusChipButtons.forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          applyStatusChip(btn.dataset.statusChip);
         });
       });
 
@@ -1635,12 +1643,16 @@
       });
 
       // initialize status buttons (set "All" active)
-      statusChipButtons.forEach(btn=>{
-        if (btn.dataset.statusChip === 'all'){
-          btn.classList.remove('btn-outline-secondary');
-          btn.classList.add('btn-cpnw','btn-cpnw-primary');
+      applyStatusChip('all');
+
+      if (isHealthcareView){
+        const statusParam = new URLSearchParams(window.location.search).get('status');
+        const normalizedStatus = String(statusParam || '').toLowerCase();
+        const allowedStatuses = new Set(['all', 'needs-review', 'expiring']);
+        if (allowedStatuses.has(normalizedStatus)){
+          applyStatusChip(normalizedStatus);
         }
-      });
+      }
 
       sortButtons.forEach(btn=>{
         btn.addEventListener('click', ()=>{

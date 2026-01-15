@@ -71,7 +71,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="review-healthcare.html">Review</a></li>
               <li><a class="dropdown-item" href="reports-healthcare.html">Reports</a></li>
-              <li><a class="dropdown-item" href="clinical-roster-healthcare.html">Clinical Roster</a></li>
+              <!-- <li><a class="dropdown-item" href="clinical-roster-healthcare.html">Clinical Roster</a></li> -->
               <li><a class="dropdown-item" href="users-healthcare.html">Users</a></li>
             </ul>
           </div>
@@ -98,33 +98,42 @@
 
 	    <div class="row g-3 g-lg-4 mb-4">
 	        <div class="col-12 col-md-6 col-xl-3">
-	          <div class="cpnw-shell p-3 h-100">
+	          <div class="cpnw-shell p-3 h-100 d-flex flex-column">
             <p class="text-body-secondary small mb-1">Students Ready for Review</p>
             <div class="h2 mb-0" id="metricPending">--</div>
-            <a class="btn btn-outline-secondary btn-sm btn-cpnw mt-2" href="review-healthcare.html">Review submissions</a>
+            <div class="mt-auto pt-3">
+              <a class="btn btn-outline-secondary btn-sm btn-cpnw mb-0" href="review-healthcare.html">Review Submissions</a>
+            </div>
 	          </div>
 	        </div>
         <div class="col-12 col-md-6 col-xl-3">
-          <div class="cpnw-shell p-3 h-100">
+          <div class="cpnw-shell p-3 h-100 d-flex flex-column">
             <p class="text-body-secondary small mb-1">Approved Assignments</p>
             <div class="h2 mb-0" id="metricApproved">--</div>
             <p class="small text-body-secondary mb-0" id="metricApprovedNote"></p>
-            <a class="btn btn-outline-secondary btn-sm btn-cpnw mt-2" href="clinical-roster-healthcare.html">Clinical roster</a>
+            <div class="mt-auto pt-3">
+              <a class="btn btn-outline-secondary btn-sm btn-cpnw mb-0" href="reports-healthcare.html">Clinical Roster Reports</a>
+            </div>
           </div>
         </div>
         <div class="col-12 col-md-6 col-xl-3">
-          <div class="cpnw-shell p-3 h-100">
+          <div class="cpnw-shell p-3 h-100 d-flex flex-column">
             <p class="text-body-secondary small mb-1">Rejected assignments needing attention</p>
             <div class="h2 mb-0" id="metricRejected">--</div>
             <p class="small text-body-secondary mb-0" id="metricRejectedNote"></p>
-            <a class="btn btn-outline-secondary btn-sm btn-cpnw mt-2" href="clinical-roster-healthcare.html?status=rejected">View rejected</a>
+            <div class="mt-auto pt-3">
+              <a class="btn btn-outline-secondary btn-sm btn-cpnw mb-0" href="reports-healthcare.html?status=rejected">View Rejected</a>
+            </div>
           </div>
         </div>
         <div class="col-12 col-md-6 col-xl-3">
-          <div class="cpnw-shell p-3 h-100">
-            <p class="text-body-secondary small mb-1">Expiring items</p>
+          <div class="cpnw-shell p-3 h-100 d-flex flex-column">
+            <p class="text-body-secondary small mb-1">Students with expiring/expired requirements</p>
             <div class="h2 mb-0" id="metricExpiring">--</div>
             <p class="small text-danger mb-0" id="metricExpiringNote"></p>
+            <div class="mt-auto pt-3">
+              <a class="btn btn-outline-secondary btn-sm btn-cpnw mb-0" href="review-healthcare.html?status=expiring">View Expiring</a>
+            </div>
           </div>
         </div>
       </div>

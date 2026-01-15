@@ -76,6 +76,14 @@
         }).filter(Boolean);
       }
 
+      function serializeAssignments(list){
+        return (Array.isArray(list) ? list : []).map(item => ({
+          ...item,
+          start: item.start instanceof Date ? item.start.toISOString() : item.start,
+          end: item.end instanceof Date ? item.end.toISOString() : item.end
+        }));
+      }
+
       function loadAssignments(){
         try{
           const raw = localStorage.getItem(ASSIGNMENTS_KEY);
@@ -84,6 +92,19 @@
         }catch{
           return [];
         }
+      }
+
+      function saveAssignments(list){
+        try{
+          localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify(serializeAssignments(list)));
+        }catch{
+          // ignore
+        }
+      }
+
+      function formatShortDate(date){
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '—';
+        return date.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit', year: 'numeric' });
       }
 
       function getHealthcareFacilityNames(){
@@ -170,6 +191,23 @@
         return map;
       }
 
+      function buildAssignmentLookup(assignments, facilityNames){
+        const map = new Map();
+        (assignments || []).forEach(assignment => {
+          if (!assignmentWithinWindow(assignment)) return;
+          if (facilityNames?.size && !assignmentMatchesFacility(assignment, facilityNames)) return;
+          const keys = [];
+          if (assignment.studentId) keys.push(`id:${assignment.studentId}`);
+          if (assignment.studentSid) keys.push(`sid:${assignment.studentSid}`);
+          if (assignment.studentEmail) keys.push(`email:${normalizeEmail(assignment.studentEmail)}`);
+          keys.forEach(key => {
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(assignment);
+          });
+        });
+        return map;
+      }
+
       function assignmentMatchesFacility(assignment, facilityNames){
         if (!facilityNames.size) return false;
         return facilityNames.has(normalize(assignment?.location));
@@ -192,18 +230,18 @@
         return startsSoon || activeOrRecent;
       }
 
-      function buildHealthcareEligibility(){
-        const assignments = loadAssignments();
-        const facilityNames = getHealthcareFacilityNames();
+      function buildHealthcareEligibility(assignments, facilityNames){
         const ids = new Set();
         const sids = new Set();
-        assignments.forEach(assignment => {
+        const emails = new Set();
+        (assignments || []).forEach(assignment => {
           if (!assignmentMatchesFacility(assignment, facilityNames)) return;
           if (!assignmentWithinWindow(assignment)) return;
           if (assignment.studentId) ids.add(String(assignment.studentId));
           if (assignment.studentSid) sids.add(String(assignment.studentSid));
+          if (assignment.studentEmail) emails.add(normalizeEmail(assignment.studentEmail));
         });
-        return { ids, sids };
+        return { ids, sids, emails };
       }
 
       const programToSchools = new Map();
@@ -357,6 +395,17 @@
       const sharedRoster = (window.CPNW && typeof window.CPNW.getSharedRoster === 'function')
         ? window.CPNW.getSharedRoster()
         : [];
+      let assignments = loadAssignments();
+      const assignmentNormalizer = (window.CPNW && typeof window.CPNW.normalizeAssignments === 'function')
+        ? window.CPNW.normalizeAssignments
+        : null;
+      if (assignmentNormalizer){
+        const normalized = assignmentNormalizer(assignments, sharedRoster, { maxCurrent: 1, maxPast: 1 });
+        if (normalized && Array.isArray(normalized.list)){
+          assignments = normalized.list;
+          if (normalized.changed) saveAssignments(assignments);
+        }
+      }
       sharedRoster.forEach(person => {
         const role = String(person.role || '').toLowerCase();
         if (!['student','faculty','faculty-admin'].includes(role)) return;
@@ -403,7 +452,7 @@
         }
       }
       if (isHealthcareView){
-        const { ids, sids } = buildHealthcareEligibility();
+        const { ids, sids, emails } = buildHealthcareEligibility(assignments, facilityNames);
         for (let i = users.length - 1; i >= 0; i--){
           const user = users[i];
           const role = String(user.role || '').toLowerCase();
@@ -413,20 +462,22 @@
           }
           const idMatch = user.studentId && ids.has(String(user.studentId));
           const sidMatch = user.sid && sids.has(String(user.sid));
-          if (!idMatch && !sidMatch){
+          const emailMatch = user.email && emails.has(normalizeEmail(user.email));
+          if (!idMatch && !sidMatch && !emailMatch){
             users.splice(i, 1);
           }
         }
       }
 
-      const statusButtons = document.querySelectorAll('[data-status]');
       const reportSearch = document.getElementById('reportSearch');
       const locationFilter = document.getElementById('locationFilter');
       const schoolFilter = document.getElementById('schoolFilter');
       const programFilterSelect = document.getElementById('programFilter');
       const reportTableBody = document.getElementById('reportTableBody');
       const selectAllReports = document.getElementById('selectAllReports');
+      const showAllBtn = document.getElementById('showAll');
       const showSelectedBtn = document.getElementById('showSelected');
+      const approveSelectedBtn = document.getElementById('approveSelected');
       const exportBtn = document.getElementById('exportBtn');
       const reportPageSizeSelect = document.getElementById('reportPageSize');
       const reportPrevPage = document.getElementById('reportPrevPage');
@@ -435,11 +486,34 @@
       const reqModalBody = document.getElementById('reqModalBody');
       const reqModalLabel = document.getElementById('reqModalLabel');
       const reqModalSub = document.getElementById('reqModalSub');
+      const rejectModalEl = document.getElementById('rejectAssignmentModal');
+      const rejectModal = rejectModalEl ? new bootstrap.Modal(rejectModalEl) : null;
+      const rejectReasonInput = document.getElementById('rejectReasonInput');
+      const rejectReasonError = document.getElementById('rejectReasonError');
+      const rejectModalSub = document.getElementById('rejectAssignmentModalSub');
+      const confirmRejectAssignment = document.getElementById('confirmRejectAssignment');
+      const approveWarningModalEl = document.getElementById('approveWarningModal');
+      const approveWarningModal = approveWarningModalEl ? new bootstrap.Modal(approveWarningModalEl) : null;
+      const approveWarningList = document.getElementById('approveWarningList');
+      const approveAnywayBtn = document.getElementById('approveAnywayBtn');
+      const reviewModalEl = document.getElementById('assignmentReviewModal');
+      const reviewModal = reviewModalEl ? new bootstrap.Modal(reviewModalEl) : null;
+      const reviewModalSub = document.getElementById('assignmentReviewSub');
+      const reviewLocation = document.getElementById('assignmentReviewLocation');
+      const reviewStart = document.getElementById('assignmentReviewStart');
+      const reviewEnd = document.getElementById('assignmentReviewEnd');
+      const reviewStatus = document.getElementById('assignmentReviewStatus');
+      const reviewReason = document.getElementById('assignmentReviewReason');
+      const reviewApproveBtn = document.getElementById('assignmentReviewApprove');
+      const reviewRejectBtn = document.getElementById('assignmentReviewReject');
+      const statusFilterButtons = document.querySelectorAll('[data-status-filter]');
+      const allowedStatusFilters = new Set(['approved', 'pending', 'rejected']);
       const buildMultiSelect = (window.CPNW && typeof window.CPNW.buildCheckboxMultiSelect === 'function')
         ? window.CPNW.buildCheckboxMultiSelect
         : null;
       const useSeparateFilters = isHealthcareView && schoolFilter && !!buildMultiSelect;
-      const assignmentLocationMap = buildAssignmentLocationMap(loadAssignments(), facilityNames);
+      const assignmentLocationMap = buildAssignmentLocationMap(assignments, facilityNames);
+      const assignmentLookup = buildAssignmentLookup(assignments, facilityNames);
 
       if (locationFilter){
         locationFilter.innerHTML = [
@@ -612,11 +686,203 @@
         return locations;
       }
 
+      function assignmentSortValue(assignment){
+        if (assignment?.start instanceof Date && !Number.isNaN(assignment.start.getTime())){
+          return assignment.start.getTime();
+        }
+        if (assignment?.end instanceof Date && !Number.isNaN(assignment.end.getTime())){
+          return assignment.end.getTime();
+        }
+        return Number.MAX_SAFE_INTEGER;
+      }
+
+      function getUserAssignments(user, locationSelection = ''){
+        if (!assignmentLookup.size) return [];
+        const keys = [];
+        if (user.studentId) keys.push(`id:${user.studentId}`);
+        if (user.sid) keys.push(`sid:${user.sid}`);
+        if (user.email) keys.push(`email:${normalizeEmail(user.email)}`);
+        const list = [];
+        const seen = new Set();
+        keys.forEach(key => {
+          const items = assignmentLookup.get(key) || [];
+          items.forEach(item => {
+            if (!item || !item.id || seen.has(item.id)) return;
+            seen.add(item.id);
+            list.push(item);
+          });
+        });
+        const scoped = locationSelection
+          ? list.filter(item => String(item.location || '').trim() === locationSelection)
+          : list;
+        return scoped.sort((a, b) => assignmentSortValue(a) - assignmentSortValue(b));
+      }
+
+      function getPrimaryAssignment(user, locationSelection = ''){
+        const list = getUserAssignments(user, locationSelection);
+        return list.length ? list[0] : null;
+      }
+
       updateCohortItems();
-      let currentStatus = 'all';
       let reportPage = 1;
       let reportPageSize = Number(reportPageSizeSelect?.value || 10);
       const selectedIds = new Set();
+      let showOnlySelected = false;
+      let currentStatusFilter = '';
+      let pendingRejectId = '';
+      let pendingReviewId = '';
+      let pendingApproveIds = [];
+
+      function findAssignmentById(id){
+        return assignments.find(item => String(item.id || '') === String(id || '')) || null;
+      }
+
+      function findPersonForAssignment(assignment){
+        if (!assignment) return null;
+        return users.find(u => String(u.studentId || '') === String(assignment.studentId || '')
+          || String(u.sid || '') === String(assignment.studentSid || '')
+          || normalizeEmail(u.email) === normalizeEmail(assignment.studentEmail));
+      }
+
+      function approveAssignment(assignment){
+        if (!assignment) return;
+        assignment.status = 'approved';
+        assignment.rejectionReason = '';
+        assignment.rejectionAt = '';
+        saveAssignments(assignments);
+        renderReports();
+      }
+
+      function rejectAssignment(assignment, reason){
+        if (!assignment) return;
+        assignment.status = 'rejected';
+        assignment.rejectionReason = reason;
+        assignment.rejectionAt = new Date().toISOString();
+        saveAssignments(assignments);
+        renderReports();
+      }
+
+      function requirementStatus(person, name, category, isElearning){
+        if (!requirementsStore || !person) return '';
+        return requirementsStore.getStatus(
+          { sid: person.sid || '', email: person.email || '' },
+          name,
+          { category, isElearning }
+        );
+      }
+
+      function isApprovedStatus(status, isElearning){
+        const norm = String(status || '').toLowerCase();
+        if (isElearning) return norm === 'approved';
+        return APPROVED_STATUSES.has(norm);
+      }
+
+      function listMissingRequirements(person){
+        if (!person) return [];
+        const missing = [];
+        CPNW_ELEARNING.forEach(name => {
+          const status = requirementStatus(person, name, 'CPNW Clinical Passport', true);
+          if (!isApprovedStatus(status, true)){
+            missing.push({ name, status: status || 'Not Submitted' });
+          }
+        });
+        CPNW_REQUIREMENTS.forEach(name => {
+          const status = requirementStatus(person, name, 'CPNW Clinical Passport', false);
+          if (!isApprovedStatus(status, false)){
+            missing.push({ name, status: status || 'Not Submitted' });
+          }
+        });
+        HEALTHCARE_REQUIREMENTS.forEach(name => {
+          const status = requirementStatus(person, name, 'Healthcare', false);
+          if (!isApprovedStatus(status, false)){
+            missing.push({ name, status: status || 'Not Submitted' });
+          }
+        });
+        return missing;
+      }
+
+      function renderApprovalWarnings(warnings){
+        if (!approveWarningList) return;
+        if (!warnings.length){
+          approveWarningList.innerHTML = '<li class="list-group-item text-body-secondary small">All selected assignments are ready to approve.</li>';
+          return;
+        }
+        approveWarningList.innerHTML = warnings.map(item => {
+          const missingList = item.missing
+            .map(req => `${req.name} (${req.status})`)
+            .join(', ');
+          const link = item.sid
+            ? `<a class="btn btn-outline-secondary btn-sm btn-cpnw" href="review-healthcare.html?sid=${encodeURIComponent(item.sid)}" target="_blank" rel="noopener">View requirements</a>`
+            : '';
+          return `
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                  <div class="fw-semibold">${item.name}</div>
+                  <div class="small text-body-secondary">${missingList || 'Missing requirements'}</div>
+                </div>
+                ${link}
+              </div>
+            </li>
+          `;
+        }).join('');
+      }
+
+      function collectApprovalWarnings(ids){
+        const warnings = [];
+        const locationSelection = isHealthcareView ? String(locationFilter?.value || '').trim() : '';
+        ids.forEach(email => {
+          const person = users.find(u => u.email === email);
+          if (!person) return;
+          const assignment = getPrimaryAssignment(person, locationSelection);
+          if (!assignment) return;
+          const missing = listMissingRequirements(person);
+          if (missing.length){
+            warnings.push({ email, name: person.name, sid: person.sid || '', missing });
+          }
+        });
+        return warnings;
+      }
+
+      function applyApproval(ids){
+        if (!ids.length) return 0;
+        let updatedCount = 0;
+        const locationSelection = isHealthcareView ? String(locationFilter?.value || '').trim() : '';
+        ids.forEach(email => {
+          const user = users.find(u => u.email === email);
+          if (!user) return;
+          const assignment = getPrimaryAssignment(user, locationSelection);
+          if (!assignment) return;
+          assignment.status = 'approved';
+          assignment.rejectionReason = '';
+          assignment.rejectionAt = '';
+          updatedCount += 1;
+        });
+        if (updatedCount) saveAssignments(assignments);
+        return updatedCount;
+      }
+
+      function handleApprove(ids){
+        const uniqueIds = Array.from(new Set(ids)).filter(Boolean);
+        if (!uniqueIds.length){
+          alert('Select at least one assignment to approve.');
+          return;
+        }
+        const warnings = collectApprovalWarnings(uniqueIds);
+        if (warnings.length){
+          pendingApproveIds = uniqueIds;
+          renderApprovalWarnings(warnings);
+          approveWarningModal?.show();
+          return;
+        }
+        const approvedCount = applyApproval(uniqueIds);
+        if (!approvedCount){
+          alert('No assignments are available to approve for the selected users.');
+          return;
+        }
+        alert(`Successfully approved ${approvedCount} assignment${approvedCount === 1 ? '' : 's'}.`);
+        renderReports();
+      }
 
       function statusBadge(val){
         if (!val) return '<span class="text-body-secondary">—</span>';
@@ -629,25 +895,130 @@
         return `<span class="badge ${cls}">${label}</span>`;
       }
 
-      const reqCounts = { cpnw:20, ed:4, hc:6 };
+      function assignmentStatusBadge(val){
+        const normalized = String(val || '').toLowerCase();
+        if (!normalized) return '<span class="text-body-secondary">—</span>';
+        if (normalized === 'approved') return '<span class="badge text-bg-success">Approved</span>';
+        if (normalized === 'rejected') return '<span class="badge text-bg-danger">Rejected</span>';
+        return '<span class="badge text-bg-secondary">Pending</span>';
+      }
+
+      function assignmentStatusKey(status){
+        const normalized = String(status || '').toLowerCase();
+        if (normalized === 'approved') return 'approved';
+        if (normalized === 'rejected') return 'rejected';
+        return 'pending';
+      }
+
+      const CPNW_ELEARNING = [
+        'Bloodborne Pathogens and Workplace Safety',
+        'Emergency Procedures',
+        'Patient Rights',
+        'Infection Prevention and Standard Precautions',
+        'Fall Risk Prevention',
+        'Patient Safety',
+        'Infectious Medical Waste',
+        'Magnetic Resonance Imaging Safety',
+        'Chemical Hazard Communication',
+        'Compliance'
+      ];
+      const CPNW_REQUIREMENTS = [
+        'CPNW: Varicella',
+        'CPNW: Influenza',
+        'CPNW: Tetanus, Diphtheria, & Pertussis',
+        'CPNW: Criminal History Disclosure',
+        'CPNW: BLS Provider Course',
+        'CPNW: Tuberculin',
+        'CPNW: Hepatitis B',
+        'CPNW: Measles, Mumps, and Rubella',
+        'CPNW: COVID-19',
+        'CPNW: Independent Background Check',
+        'CPNW: Independent WATCH'
+      ];
+      const HEALTHCARE_REQUIREMENTS = Array.from({ length: 6 }, (_, idx) => `Healthcare Req ${idx + 1}`);
       const reqLabels = { cpnw:'CPNW', ed:'Education', hc:'Healthcare' };
+      const APPROVED_STATUSES = new Set(['approved','conditionally approved']);
+      const EXPIRING_STATUSES = new Set(['expired','expiring','expiring soon']);
+      const STATUS_BADGE_MAP = {
+        'Not Submitted':'text-bg-secondary',
+        'Submitted':'text-bg-info text-dark',
+        'In Review':'text-bg-warning text-dark',
+        'Approved':'text-bg-success',
+        'Conditionally Approved':'text-bg-primary',
+        'Rejected':'text-bg-danger',
+        'Declination':'text-bg-danger-subtle text-danger',
+        'Expired':'text-bg-dark',
+        'Expiring':'text-bg-warning text-dark',
+        'Expiring Soon':'text-bg-warning text-dark'
+      };
 
-	      function buildReqList(type, overallStatus){
-	        const total = reqCounts[type] || 0;
-	        const list = [];
-	        for (let i=1;i<=total;i++){
-	          let itemStatus = 'complete';
-	          if (overallStatus === 'expiring'){
-	            itemStatus = (i % 5 === 0) ? 'expiring' : 'complete';
-	          }else if (overallStatus !== 'complete'){
-	            itemStatus = (i % 4 === 0) ? 'incomplete' : 'complete';
-	          }
-	          list.push({ name: `${reqLabels[type] || type.toUpperCase()} Req ${i}`, status: itemStatus });
-	        }
-	        return list;
-	      }
+      function getRequirementNames(type){
+        if (type === 'cpnw') return [...CPNW_ELEARNING, ...CPNW_REQUIREMENTS];
+        if (type === 'ed') return Array.from({ length: 4 }, (_, i) => `Education Req ${i + 1}`);
+        if (type === 'hc') return [...HEALTHCARE_REQUIREMENTS];
+        return [];
+      }
 
-      function renderReports(showOnlySelected = false){
+      function buildFallbackReqList(type, overallStatus){
+        const names = getRequirementNames(type);
+        const normalized = String(overallStatus || '').toLowerCase();
+        return names.map((name, idx) => {
+          let status = 'Approved';
+          if (normalized === 'expiring'){
+            status = (idx % 5 === 0) ? 'Expiring Soon' : 'Approved';
+          }else if (normalized && normalized !== 'complete'){
+            status = (idx % 4 === 0) ? 'Not Submitted' : 'Approved';
+          }
+          return { name, status };
+        });
+      }
+
+      function getRequirementList(type, user){
+        const names = getRequirementNames(type);
+        if (!names.length || !user) return [];
+        if (!requirementsStore) return buildFallbackReqList(type, user.reqs?.[type]);
+        return names.map((name, idx) => {
+          const isCPNW = type === 'cpnw';
+          const isElearning = isCPNW && idx < CPNW_ELEARNING.length;
+          const category = isCPNW ? 'CPNW Clinical Passport' : (type === 'hc' ? 'Healthcare' : 'Education');
+          const status = requirementsStore.getStatus({
+            sid: user.sid,
+            email: user.email,
+            studentId: user.studentId
+          }, name, { category, isElearning });
+          return { name, status };
+        });
+      }
+
+      function summarizeRequirementList(list){
+        let hasExpiring = false;
+        let hasIncomplete = false;
+        list.forEach(item => {
+          const statusKey = String(item?.status || '').toLowerCase();
+          if (!statusKey){
+            hasIncomplete = true;
+            return;
+          }
+          if (EXPIRING_STATUSES.has(statusKey)){
+            hasExpiring = true;
+            return;
+          }
+          if (!APPROVED_STATUSES.has(statusKey)){
+            hasIncomplete = true;
+          }
+        });
+        if (hasExpiring) return 'expiring';
+        if (hasIncomplete) return 'incomplete';
+        return 'complete';
+      }
+
+      function requirementStatusBadge(status){
+        const label = status ? String(status) : 'Not Submitted';
+        const cls = STATUS_BADGE_MAP[label] || 'text-bg-secondary';
+        return `<span class="badge ${cls}">${label}</span>`;
+      }
+
+      function renderReports(){
         const q = (reportSearch?.value || '').toLowerCase();
         const schoolSelections = useSeparateFilters && schoolFilterControl
           ? schoolFilterControl.getSelection()
@@ -670,8 +1041,8 @@
         const cohortSet = new Set(cohortSelections);
         const hasCohortSelections = cohortSet.size > 0;
         const locationSelection = isHealthcareView ? String(locationFilter?.value || '').trim() : '';
+        const assignmentByUser = new Map();
 	        const filtered = users.filter(u=>{
-	          if (currentStatus !== 'all' && u.status !== currentStatus) return false;
           if (useSeparateFilters){
             if (hasSchoolSelections && !schoolSet.has(normalizeSchool(u.school))) return false;
             if (hasProgramSelections && !programSet.has(normalizeProgramLabel(u.program))) return false;
@@ -696,8 +1067,15 @@
             if (locations.size && !locations.has(locationSelection)) return false;
             if (!locations.size) return false;
           }
-          if (showOnlySelected && !selectedIds.has(u.email)) return false;
           if (q && !`${u.name} ${u.email}`.toLowerCase().includes(q)) return false;
+          const assignment = getPrimaryAssignment(u, locationSelection);
+          if (locationSelection && !assignment) return false;
+          if (currentStatusFilter){
+            if (!assignment) return false;
+            if (assignmentStatusKey(assignment.status) !== currentStatusFilter) return false;
+          }
+          if (showOnlySelected && !selectedIds.has(u.email)) return false;
+          assignmentByUser.set(u.email, assignment);
           return true;
         });
         const total = filtered.length;
@@ -708,22 +1086,43 @@
         const pageItems = filtered.slice(start, end);
 
 	        reportTableBody.innerHTML = '';
+        if (!pageItems.length){
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td colspan="12" class="text-body-secondary small">No reports match your filters.</td>';
+          reportTableBody.appendChild(tr);
+        }else{
 	        pageItems.forEach(u=>{
+            const assignment = assignmentByUser.get(u.email) || getPrimaryAssignment(u, locationSelection);
+            const assignmentStatus = assignment?.status ? String(assignment.status).toLowerCase() : '';
+            const reviewDisabled = assignment ? '' : 'disabled';
+            const reqSummary = {
+              cpnw: summarizeRequirementList(getRequirementList('cpnw', u)),
+              ed: summarizeRequirementList(getRequirementList('ed', u)),
+              hc: summarizeRequirementList(getRequirementList('hc', u))
+            };
+
 	          const tr = document.createElement('tr');
 	          tr.innerHTML = `
 	            <td><input type="checkbox" class="form-check-input report-row" data-id="${u.email}" ${selectedIds.has(u.email) ? 'checked' : ''}></td>
-	            <td class="fw-semibold">${u.name}</td>
-	            <td>${u.program}</td>
-	            <td>${u.cohort ? u.cohort : '<span class="text-body-secondary">Unassigned</span>'}</td>
-	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="cpnw" data-user="${u.email}">${statusBadge(u.reqs?.cpnw)}</button></td>
-	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="ed" data-user="${u.email}">${statusBadge(u.reqs?.ed)}</button></td>
-	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="hc" data-user="${u.email}">${statusBadge(u.reqs?.hc)}</button></td>
+	            <td class="fw-semibold" title="${u.cohort ? u.cohort : 'No Cohort Assigned'}">${u.name}</td>
+	            <td>${u.school || '—'}</td>
+	            <td class="cpnw-cell-tight">${u.program}</td>
+	            <td><button class="btn btn-outline-secondary btn-sm" data-docs="${u.name}">Open</button></td>
+	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="cpnw" data-user="${u.email}">${statusBadge(reqSummary.cpnw)}</button></td>
+	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="ed" data-user="${u.email}">${statusBadge(reqSummary.ed)}</button></td>
+	            <td><button class="btn btn-link p-0 text-decoration-none req-cell" data-req-type="hc" data-user="${u.email}">${statusBadge(reqSummary.hc)}</button></td>
 	            <td>${statusBadge(u.reqs?.oig)}</td>
 	            <td>${statusBadge(u.reqs?.sam)}</td>
-	            <td><button class="btn btn-outline-secondary btn-sm" data-docs="${u.name}">Open</button></td>
+	            <td class="text-center">${assignmentStatusBadge(assignmentStatus)}</td>
+	            <td class="text-center">
+                <button class="btn btn-outline-secondary btn-sm" type="button" data-review-assignment="${assignment ? assignment.id : ''}" ${reviewDisabled}>
+                  Review
+                </button>
+              </td>
 	          `;
 	          reportTableBody.appendChild(tr);
 	        });
+        }
 
         if (reportPageInfo){
           reportPageInfo.textContent = total ? `Showing ${start + 1}–${end} of ${total}` : 'No results';
@@ -733,20 +1132,6 @@
           reportNextPage.disabled = end >= total;
         }
       }
-
-      statusButtons.forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          statusButtons.forEach(b=>{
-            b.classList.remove('btn-cpnw','btn-cpnw-primary');
-            b.classList.add('btn-outline-secondary');
-          });
-          btn.classList.remove('btn-outline-secondary');
-          btn.classList.add('btn-cpnw','btn-cpnw-primary');
-          currentStatus = btn.dataset.status;
-          reportPage = 1;
-          renderReports();
-        });
-      });
 
       [reportSearch, cohortFilter, locationFilter].forEach(el=>{
         if (!el) return;
@@ -787,19 +1172,41 @@
           }
         }
 
+        const reviewBtn = e.target.closest('[data-review-assignment]');
+        if (reviewBtn){
+          const assignmentId = reviewBtn.dataset.reviewAssignment;
+          const assignment = findAssignmentById(assignmentId);
+          if (!assignment) return;
+          pendingReviewId = assignmentId;
+          const person = users.find(u => String(u.studentId || '') === String(assignment.studentId || '')
+            || String(u.sid || '') === String(assignment.studentSid || '')
+            || normalizeEmail(u.email) === normalizeEmail(assignment.studentEmail));
+          if (reviewModalSub){
+            reviewModalSub.textContent = person ? `${person.name} • ${person.program || ''}` : 'Assignment details';
+          }
+          if (reviewLocation) reviewLocation.textContent = assignment.location || '—';
+          if (reviewStart) reviewStart.textContent = formatShortDate(assignment.start);
+          if (reviewEnd) reviewEnd.textContent = formatShortDate(assignment.end);
+          if (reviewStatus) reviewStatus.innerHTML = assignmentStatusBadge(assignment.status);
+          if (reviewReason){
+            reviewReason.textContent = assignment.rejectionReason ? assignment.rejectionReason : '—';
+          }
+          reviewModal?.show();
+        }
+
         const reqBtn = e.target.closest('.req-cell');
         if (reqBtn){
           const type = reqBtn.dataset.reqType;
           const userId = reqBtn.dataset.user;
           const person = users.find(u=>u.email === userId);
-          if (person && reqCounts[type]){
-            const list = buildReqList(type, person.reqs?.[type]);
+          if (person){
+            const list = getRequirementList(type, person);
             reqModalLabel.textContent = `${reqLabels[type] || type.toUpperCase()} requirements`;
             reqModalSub.textContent = person.name;
             reqModalBody.innerHTML = list.map(item=>`
               <tr>
                 <td>${item.name}</td>
-                <td>${statusBadge(item.status)}</td>
+                <td>${requirementStatusBadge(item.status)}</td>
               </tr>
             `).join('');
             const modal = new bootstrap.Modal(document.getElementById('reqModal'));
@@ -842,6 +1249,76 @@
         modal.show();
       });
 
+      reviewApproveBtn?.addEventListener('click', () => {
+        const assignment = findAssignmentById(pendingReviewId);
+        if (!assignment) return;
+        const person = findPersonForAssignment(assignment);
+        if (person?.email){
+          reviewModal?.hide();
+          pendingReviewId = '';
+          handleApprove([person.email]);
+          return;
+        }
+        approveAssignment(assignment);
+        pendingReviewId = '';
+        reviewModal?.hide();
+      });
+
+      reviewRejectBtn?.addEventListener('click', () => {
+        const assignment = findAssignmentById(pendingReviewId);
+        if (!assignment) return;
+        pendingRejectId = assignment.id;
+        if (rejectModalSub){
+          const person = findPersonForAssignment(assignment);
+          const label = person ? `${person.name} • ${assignment.location || 'Assignment'}` : 'Let the student know what needs attention.';
+          rejectModalSub.textContent = label;
+        }
+        if (rejectReasonInput) rejectReasonInput.value = assignment.rejectionReason || '';
+        if (rejectReasonError){
+          rejectReasonError.classList.add('d-none');
+          rejectReasonError.textContent = '';
+        }
+        reviewModal?.hide();
+        rejectModal?.show();
+      });
+
+      reviewModalEl?.addEventListener('hidden.bs.modal', () => {
+        pendingReviewId = '';
+        if (reviewModalSub) reviewModalSub.textContent = '';
+        if (reviewLocation) reviewLocation.textContent = '—';
+        if (reviewStart) reviewStart.textContent = '—';
+        if (reviewEnd) reviewEnd.textContent = '—';
+        if (reviewStatus) reviewStatus.textContent = '—';
+        if (reviewReason) reviewReason.textContent = '—';
+      });
+
+      confirmRejectAssignment?.addEventListener('click', () => {
+        const assignment = findAssignmentById(pendingRejectId);
+        if (!assignment) return;
+        const reason = String(rejectReasonInput?.value || '').trim();
+        if (!reason){
+          if (rejectReasonError){
+            rejectReasonError.textContent = 'Please provide a reason for the rejection.';
+            rejectReasonError.classList.remove('d-none');
+          }
+          return;
+        }
+        rejectAssignment(assignment, reason);
+        pendingRejectId = '';
+        rejectModal?.hide();
+      });
+
+      rejectModalEl?.addEventListener('hidden.bs.modal', () => {
+        if (rejectReasonInput) rejectReasonInput.value = '';
+        if (rejectReasonError){
+          rejectReasonError.classList.add('d-none');
+          rejectReasonError.textContent = '';
+        }
+        if (rejectModalSub){
+          rejectModalSub.textContent = 'Let the student know what needs attention.';
+        }
+      });
+
       if (selectAllReports){
         selectAllReports.addEventListener('change', () => {
           const check = selectAllReports.checked;
@@ -856,14 +1333,82 @@
         });
       }
 
+      function updateSelectionButtons(){
+        if (showAllBtn){
+          showAllBtn.classList.toggle('btn-cpnw', !showOnlySelected);
+          showAllBtn.classList.toggle('btn-cpnw-primary', !showOnlySelected);
+          showAllBtn.classList.toggle('btn-outline-secondary', showOnlySelected);
+        }
+        if (showSelectedBtn){
+          showSelectedBtn.classList.toggle('btn-cpnw', showOnlySelected);
+          showSelectedBtn.classList.toggle('btn-cpnw-primary', showOnlySelected);
+          showSelectedBtn.classList.toggle('btn-outline-secondary', !showOnlySelected);
+        }
+      }
+
+      showAllBtn?.addEventListener('click', () => {
+        showOnlySelected = false;
+        updateSelectionButtons();
+        renderReports();
+      });
+
       showSelectedBtn?.addEventListener('click', () => {
-        renderReports(true);
+        showOnlySelected = true;
+        updateSelectionButtons();
+        renderReports();
+      });
+
+      function applyStatusFilter(next){
+        currentStatusFilter = String(next || '');
+        statusFilterButtons.forEach(btn => {
+          const active = String(btn.dataset.statusFilter || '') === currentStatusFilter;
+          btn.classList.toggle('btn-cpnw', active);
+          btn.classList.toggle('btn-cpnw-primary', active);
+          btn.classList.toggle('btn-outline-secondary', !active);
+        });
+        reportPage = 1;
+        renderReports();
+      }
+
+      statusFilterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          applyStatusFilter(btn.dataset.statusFilter || '');
+        });
+      });
+
+      if (isHealthcareView){
+        const statusParam = new URLSearchParams(window.location.search).get('status');
+        const normalizedStatus = String(statusParam || '').toLowerCase();
+        if (allowedStatusFilters.has(normalizedStatus)){
+          applyStatusFilter(normalizedStatus);
+        }
+      }
+
+      approveSelectedBtn?.addEventListener('click', () => {
+        handleApprove(Array.from(selectedIds));
+      });
+
+      approveAnywayBtn?.addEventListener('click', () => {
+        if (!pendingApproveIds.length){
+          approveWarningModal?.hide();
+          return;
+        }
+        if (!applyApproval(pendingApproveIds)){
+          alert('No assignments are available to approve for the selected users.');
+        }
+        pendingApproveIds = [];
+        approveWarningModal?.hide();
+        renderReports();
       });
 
       exportBtn?.addEventListener('click', () => {
         alert(`Exporting ${selectedIds.size} selected records (demo).`);
       });
 
+      updateSelectionButtons();
+      if (!currentStatusFilter){
+        applyStatusFilter('');
+      }
       renderReports();
     })();
   

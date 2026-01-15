@@ -316,6 +316,28 @@ body{
   border-top: 1px solid color-mix(in srgb, var(--bs-border-color) 60%, transparent);
 }
 
+.cpnw-table-compact{
+  font-size: 0.875rem;
+}
+.cpnw-table-compact td,
+.cpnw-table-compact th{
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+.cpnw-table-compact .btn{
+  padding: 0.2rem 0.45rem;
+}
+.cpnw-table-compact .btn-sm,
+.cpnw-table-compact .btn-group-sm > .btn{
+  font-size: 0.75rem;
+}
+.cpnw-cell-tight{
+  max-width: 160px;
+  line-height: 1.15;
+  word-break: break-word;
+  hyphens: auto;
+}
+
 .cpnw-table.reviewer-attention-table tbody tr + tr{
   border-top: 2px solid #fff;
 }

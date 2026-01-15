@@ -669,15 +669,13 @@
 	          programCount.textContent = effective.length === programs.length ? 'All' : String(effective.length);
 	        }
 
-	        const submittedReviewStudentCount = new Set(
-	          reviewPeople
-	            .filter(p => (p.studentId && assignmentEligibility.ids.has(p.studentId))
-	              || assignmentEligibility.sids.has(p.sid)
-                || (p.email && assignmentEligibility.emails.has(normalizeEmail(p.email))))
-	            .filter(p => effective.includes(programIdForPerson(p)))
-	            .filter(p => hasHealthcareReviewItems(p))
-	            .map(p => p.studentId || p.sid || normalizeEmail(p.email))
-	        ).size;
+	        const submittedReviewStudentCount = reviewPeople
+	          .filter(p => (p.studentId && assignmentEligibility.ids.has(p.studentId))
+	            || assignmentEligibility.sids.has(p.sid)
+	            || (p.email && assignmentEligibility.emails.has(normalizeEmail(p.email))))
+	          .filter(p => effective.includes(programIdForPerson(p)))
+	          .filter(p => hasHealthcareReviewItems(p))
+	          .length;
 
           const isFiltered = effective.length !== programs.length;
           const scopedAssignments = assignments
@@ -693,15 +691,21 @@
         const rejectedAssignments = scopedAssignments.filter(a => isStatusRejected(a.status)).length;
         const pendingAssignments = scopedAssignments.filter(a => isStatusPending(a.status)).length;
         const totalAssignments = scopedAssignments.length;
-        const expiring = Math.max(0, 3 + pendingAssignments - approvedAssignments);
+        const expiringCount = reviewPeople
+          .filter(p => (p.studentId && assignmentEligibility.ids.has(p.studentId))
+            || assignmentEligibility.sids.has(p.sid)
+            || (p.email && assignmentEligibility.emails.has(normalizeEmail(p.email))))
+          .filter(p => effective.includes(programIdForPerson(p)))
+          .filter(p => getHealthcareReadinessSummary(p).hasExpiring)
+          .length;
 
 	        if (metricPending) metricPending.textContent = String(submittedReviewStudentCount);
 	        if (metricApproved) metricApproved.textContent = `${approvedAssignments}/${totalAssignments}`;
 	        if (metricApprovedNote) metricApprovedNote.textContent = totalAssignments ? 'Approved / total assignments' : 'No assignments in window';
         if (metricRejected) metricRejected.textContent = String(rejectedAssignments);
         if (metricRejectedNote) metricRejectedNote.textContent = rejectedAssignments ? 'Requires follow up' : 'No rejected assignments';
-        if (metricExpiring) metricExpiring.textContent = String(expiring);
-        if (metricExpiringNote) metricExpiringNote.textContent = expiring ? 'Follow up this week' : 'No expiring items';
+        if (metricExpiring) metricExpiring.textContent = String(expiringCount);
+        if (metricExpiringNote) metricExpiringNote.textContent = expiringCount ? 'Follow up this week' : 'No expiring items';
 
         const range = getSummaryRange();
         const rangedAssignments = scopedAssignments.filter(a => assignmentStartsWithinRange(a, range));
