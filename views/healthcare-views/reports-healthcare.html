@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CPNW — Healthcare Reports</title>
+  <title>CPNW — Clinical Roster Reports</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
     rel="stylesheet"
@@ -54,7 +54,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="review-healthcare.html">Review</a></li>
               <li><a class="dropdown-item" href="reports-healthcare.html">Reports</a></li>
-              <li><a class="dropdown-item" href="clinical-roster-healthcare.html">Clinical Roster</a></li>
+              <!-- <li><a class="dropdown-item" href="clinical-roster-healthcare.html">Clinical Roster</a></li> -->
               <li><a class="dropdown-item" href="users-healthcare.html">Users</a></li>
             </ul>
           </div>
@@ -64,7 +64,7 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
           <p class="text-uppercase fw-bold cpnw-ls-08 cpnw-fs-75 mb-1">Admin</p>
-          <h1 class="h3 fw-semibold mb-1">Healthcare Reports</h1>
+          <h1 class="h3 fw-semibold mb-1">Clinical Roster Reports</h1>
           <p class="text-body-secondary mb-0">Program and cohort compliance for healthcare partners.</p>
         </div>
       </div>
@@ -124,43 +124,44 @@
           </div>
         </div>
       </div>
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-md-4">
-          <div class="form-floating">
-            <input type="search" class="form-control" id="reportSearch" placeholder="Search..." />
-            <label for="reportSearch">Search name/email</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <div class="d-flex gap-2">
-          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" data-status="all">All</button>
-          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status="complete">Complete</button>
-          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status="incomplete">Incomplete</button>
-          <button class="btn btn-outline-secondary btn-sm btn-cpnw" data-status="expiring">Expiring</button>
-        </div>
-        <div class="d-flex gap-2 ms-auto">
-          <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="showSelected">Show selected</button>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" id="showAll">Show All</button>
+          <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="showSelected">Show Selected</button>
+          <button class="btn btn-outline-success btn-sm btn-cpnw" type="button" id="approveSelected">Approve Selected</button>
           <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" id="exportBtn">Export</button>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Status filter">
+            <button class="btn btn-cpnw btn-cpnw-primary btn-sm" type="button" data-status-filter="">All statuses</button>
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" data-status-filter="pending">Pending</button>
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" data-status-filter="approved">Approved</button>
+            <button class="btn btn-outline-secondary btn-sm btn-cpnw" type="button" data-status-filter="rejected">Rejected</button>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-body-secondary mb-0" for="reportSearch">Search:</label>
+            <input type="search" class="form-control form-control-sm" id="reportSearch" placeholder="Search..." />
+          </div>
         </div>
       </div>
 
       <div class="cpnw-shell p-3 p-md-4">
         <div class="table-responsive">
-          <table class="table align-middle mb-0 cpnw-table">
+          <table class="table align-middle mb-0 cpnw-table cpnw-table-compact table-sm">
 	            <thead class="text-body-secondary small position-sticky top-0 cpnw-table-head">
 	              <tr>
 	                <th scope="col"><input type="checkbox" id="selectAllReports" /></th>
 	                <th scope="col">Name</th>
+	                <th scope="col">School</th>
 	                <th scope="col">Program</th>
-	                <th scope="col">Cohort</th>
-	            <th scope="col">CPNW</th>
-	            <th scope="col">ED</th>
-	            <th scope="col">HC</th>
-	            <th scope="col">OIG</th>
-	            <th scope="col">SAM</th>
 	                <th scope="col">Docs</th>
+	                <th scope="col">CPNW</th>
+	                <th scope="col">ED</th>
+	                <th scope="col">HC</th>
+	                <th scope="col">OIG</th>
+	                <th scope="col">SAM</th>
+	                <th scope="col" class="text-center">Assignment status</th>
+	                <th scope="col" class="text-center">Review assignment</th>
 	              </tr>
 	            </thead>
 	            <tbody id="reportTableBody"></tbody>
@@ -272,6 +273,98 @@
             <button class="btn btn-outline-secondary btn-cpnw" type="button">Upload files</button>
             <button class="btn btn-cpnw btn-cpnw-primary" type="button">Download all</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="assignmentReviewModal" tabindex="-1" aria-labelledby="assignmentReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header cpnw-modal-header">
+          <div>
+            <h5 class="modal-title mb-0" id="assignmentReviewModalLabel">Review assignment</h5>
+            <p class="small text-body-secondary mb-0" id="assignmentReviewSub"></p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2">
+            <div class="col-12">
+              <div class="small text-body-secondary">Location</div>
+              <div class="fw-semibold" id="assignmentReviewLocation">—</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-body-secondary">Start date</div>
+              <div class="fw-semibold" id="assignmentReviewStart">—</div>
+            </div>
+            <div class="col-6">
+              <div class="small text-body-secondary">End date</div>
+              <div class="fw-semibold" id="assignmentReviewEnd">—</div>
+            </div>
+            <div class="col-12">
+              <div class="small text-body-secondary">Status</div>
+              <div id="assignmentReviewStatus">—</div>
+            </div>
+            <div class="col-12">
+              <div class="small text-body-secondary">Rejection reason</div>
+              <div class="fw-semibold" id="assignmentReviewReason">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-cpnw" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-outline-danger btn-cpnw" id="assignmentReviewReject">Reject</button>
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary" id="assignmentReviewApprove">Approve</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="rejectAssignmentModal" tabindex="-1" aria-labelledby="rejectAssignmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header cpnw-modal-header">
+          <div>
+            <h5 class="modal-title mb-0" id="rejectAssignmentModalLabel">Reject assignment</h5>
+            <p class="small text-body-secondary mb-0" id="rejectAssignmentModalSub">Let the student know what needs attention.</p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small" for="rejectReasonInput">Reason for rejection</label>
+            <textarea class="form-control" id="rejectReasonInput" rows="3" placeholder="Add the issue the student needs to resolve..."></textarea>
+          </div>
+          <div class="alert alert-danger d-none mb-0" role="alert" id="rejectReasonError"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-cpnw" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger btn-cpnw" id="confirmRejectAssignment">Reject assignment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="approveWarningModal" tabindex="-1" aria-labelledby="approveWarningModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header cpnw-modal-header">
+          <div>
+            <h5 class="modal-title mb-0" id="approveWarningModalLabel">Requirements not fully approved</h5>
+            <p class="small text-body-secondary mb-0">Some accounts still have CPNW or Healthcare requirements awaiting approval.</p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning" role="alert">
+            You can approve these assignments anyway, or review the missing requirements first.
+          </div>
+          <ul class="list-group" id="approveWarningList"></ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-cpnw" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-cpnw btn-cpnw-primary" id="approveAnywayBtn">Approve anyway</button>
         </div>
       </div>
     </div>
